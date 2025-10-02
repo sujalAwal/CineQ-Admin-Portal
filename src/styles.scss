@@ -1,0 +1,126 @@
+// Toast notifications
+@import 'ngx-toastr/toastr';
+
+// Custom Status Change Toast - Clean White Design
+.toast-status-change {
+  background-color: #ffffff !important; // Clean white background
+  color: #333333 !important; // Dark text for readability
+  border: 1px solid #e9ecef !important; // Light border
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important; // Soft shadow
+  border-radius: 8px !important; // Rounded corners
+  min-height: 60px !important; // Consistent height
+  
+  .toast-title {
+    color: #28a745 !important; // Green title color
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    margin-bottom: 2px !important;
+    
+    &::before {
+      content: "✓" !important; // Green tick icon
+      width: 22px !important;
+      height: 22px !important;
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+      border-radius: 50% !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: white !important;
+      font-size: 14px !important;
+      font-weight: bold !important;
+      margin-right: 10px !important;
+      box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+    }
+  }
+  
+  .toast-message {
+    color: #666666 !important; // Gray message text
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    margin-left: 32px !important; // Align with title after icon
+  }
+  
+  .toast-progress {
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%) !important; // Green gradient progress bar
+    height: 4px !important;
+    border-radius: 0 0 8px 8px !important;
+    box-shadow: 0 1px 3px rgba(40, 167, 69, 0.3) !important;
+  }
+  
+  .toast-close-button {
+    color: #999999 !important;
+    opacity: 0.6 !important;
+    font-size: 18px !important;
+    
+    &:hover {
+      opacity: 1 !important;
+      color: #666666 !important;
+    }
+  }
+  
+  &:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+    transform: translateY(-2px) !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  // Animation when appearing
+  &.ngx-toastr {
+    animation: slideInRight 0.3s ease-out !important;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+// Enhanced Success Toast for other actions
+.toast-success {
+  &:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+  }
+}
+
+// main framework
+@import 'node_modules/bootstrap/scss/functions';
+@import 'node_modules/bootstrap/scss/variables';
+@import 'node_modules/bootstrap/scss/variables-dark';
+
+@import 'scss/settings/color-variables';
+@import 'scss/settings/theme-variables';
+@import 'scss/settings/bootstrap-variables.scss';
+
+@import 'scss/bootstrap/bootstrap.scss';
+
+@import 'node_modules/bootstrap/scss/utilities';
+@import 'node_modules/bootstrap/scss/utilities/api';
+
+@import 'scss/themes/generic.scss';
+@import 'scss/themes/general.scss';
+
+// Layouts
+@import 'scss/themes/layouts/layouts';
+
+// Components
+@import 'scss/themes/components/components';
+
+// pages
+@import 'scss/themes/pages/page.scss';
+
+@import 'scss/themes/customizer';
+@import 'scss/style-preset.scss';
+
+// fonts
+@import url('scss/fonts/berry/berry-icons.css');
+@import 'scss/fonts/tabler-icons.min.css';
+@import 'scss/fonts/phosphor/duotone/style.css';

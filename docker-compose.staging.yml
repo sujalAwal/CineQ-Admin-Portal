@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  cineq-dashboard-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile.staging
+    container_name: cineq-dashboard-staging
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=staging
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cineq-dashboard-staging.rule=Host(`staging-dashboard.cineq.com`)"
+      - "traefik.http.services.cineq-dashboard-staging.loadbalancer.server.port=80"
+    networks:
+      - cineq-staging-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  cineq-staging-network:
+    driver: bridge

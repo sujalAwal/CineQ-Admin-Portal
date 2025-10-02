@@ -1,0 +1,92 @@
+<div class="auth-main">
+  <div class="auth-wrapper v3">
+    <div class="auth-form">
+      <div class="card my-5">
+        <div class="card-body">
+          <a href="#" class="d-flex justify-content-center">
+            <img [src]="environment.app.logoUrl" alt="logo" />
+          </a>
+          <div class="row">
+            <div class="d-flex justify-content-center">
+              <div class="auth-header">
+                <p class="fs-4 mt-2">Enter your credentials to continue</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Login Form with Reactive Forms -->
+          <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+            
+            <!-- Error Message Display -->
+            <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+              {{ errorMessage }}
+            </div>
+            
+            <!-- Email Field -->
+            <div class="form-floating mb-3">
+              <input 
+                type="email" 
+                class="form-control" 
+                id="floatingInput" 
+                formControlName="email"
+                [class.is-invalid]="isFieldInvalid('email')"
+                placeholder="Email address" />
+              <label for="floatingInput">Email address / Username</label>
+              <div *ngIf="isFieldInvalid('email')" class="invalid-feedback">
+                {{ getFieldError('email') }}
+              </div>
+            </div>
+            
+            <!-- Password Field -->
+            <div class="form-floating mb-3">
+              <input 
+                type="password" 
+                class="form-control" 
+                id="password" 
+                formControlName="password"
+                [class.is-invalid]="isFieldInvalid('password')"
+                placeholder="Password" />
+              <label for="password">Password</label>
+              <div *ngIf="isFieldInvalid('password')" class="invalid-feedback">
+                {{ getFieldError('password') }}
+              </div>
+            </div>
+            
+            <!-- Remember Me & Forgot Password -->
+            <div class="d-flex mt-1 justify-content-between">
+              <div class="form-check" *ngIf="environment.features.enableRememberMe">
+                <input 
+                  class="form-check-input input-primary" 
+                  type="checkbox" 
+                  id="customCheckc1" 
+                  formControlName="remember_me" />
+                <label class="form-check-label text-muted" for="customCheckc1">Remember me</label>
+              </div>
+              <h5 class="text-secondary" *ngIf="environment.features.enableForgotPassword">
+                <a href="javascript:">Forgot Password?</a>
+              </h5>
+            </div>
+            
+            <!-- Login Button -->
+            <div class="d-grid mt-4">
+              <button 
+                type="submit" 
+                class="btn btn-secondary"
+                [disabled]="isLoading || loginForm.invalid">
+                <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                {{ isLoading ? 'Logging in...' : 'Login' }}
+              </button>
+            </div>
+          </form>
+          
+          <hr />
+          
+          <!-- Registration Link -->
+          <h5 class="d-flex justify-content-center" *ngIf="environment.features.enableRegistration">
+            <a [routerLink]="['/register']">Don't have an account?</a>
+          </h5>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

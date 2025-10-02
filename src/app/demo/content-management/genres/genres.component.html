@@ -1,0 +1,47 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>🎭 Genres Management</h5>
+      </div>
+      <div class="card-body">
+        <!-- Header Section -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <h6 class="mb-3">Manage Movie Genres</h6>
+            <p class="text-muted">
+              Create, edit, and organize movie genres for your cinema platform.
+            </p>
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-primary" (click)="openAddGenreModal()">
+              <i class="ti ti-plus me-2"></i>Add New Genre
+            </button>
+          </div>
+        </div>
+        
+        <!-- Data Table Component -->
+        <app-data-table
+          [config]="tableConfig"
+          [data]="genresData"
+          [loading]="loading"
+          [pagination]="pagination"
+          (search)="onSearch($event)"
+          (pageChange)="onPageChange($event)"
+          (sort)="onSort($event)"
+          (toggleChange)="onToggleChange($event)"
+          (actionClick)="onTableAction($event)">
+        </app-data-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Genre Modal -->
+<app-genre-modal
+  [isVisible]="showGenreModal"
+  [genre]="selectedGenre"
+  [isLoading]="modalLoading"
+  (closed)="onGenreModalClosed()"
+  (genreSaved)="onGenreSaved($event)">
+</app-genre-modal>

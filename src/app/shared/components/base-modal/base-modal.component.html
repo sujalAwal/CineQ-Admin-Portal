@@ -1,0 +1,73 @@
+<!-- Modal Structure -->
+<div class="modal fade custom-modal" 
+     [class.show]="isVisible" 
+     [style.display]="isVisible ? 'block' : 'none'"
+     (click)="onBackdropClick($event)">
+  
+  <div class="modal-dialog" [ngClass]="getModalSizeClass()">
+    <div class="modal-content">
+      
+      <!-- REUSABLE HEADER -->
+      <div class="modal-header">
+        <h5 class="modal-title d-flex align-items-center">
+          <i *ngIf="config.icon" [class]="'ti ti-' + config.icon + ' me-2 text-primary'"></i>
+          {{ config.title }}
+        </h5>
+        <button 
+          type="button" 
+          class="btn-close" 
+          (click)="onCancel()"
+          [disabled]="config.primaryButtonLoading">
+        </button>
+      </div>
+      
+      <!-- DYNAMIC CONTENT (Content Projection) -->
+      <div class="modal-body">
+        <ng-content></ng-content>
+      </div>
+      
+      <!-- REUSABLE FOOTER -->
+      <div class="modal-footer" *ngIf="config.showFooter !== false">
+        
+        <!-- Secondary Button (Cancel/Close) -->
+        <button 
+          *ngIf="config.showSecondaryButton !== false"
+          type="button" 
+          class="btn btn-secondary me-2" 
+          (click)="onSecondaryClick()"
+          [disabled]="config.primaryButtonLoading">
+          {{ config.secondaryButtonText || 'Cancel' }}
+        </button>
+        
+        <!-- Primary Button (Save/Submit) -->
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="onPrimaryClick()"
+          [disabled]="config.primaryButtonDisabled || config.primaryButtonLoading">
+          
+          <!-- Loading Spinner -->
+          <span *ngIf="config.primaryButtonLoading" 
+                class="spinner-border spinner-border-sm me-2"></span>
+          
+          <!-- Button Icon -->
+          <i *ngIf="!config.primaryButtonLoading && config.primaryButtonIcon" 
+             [class]="'ti ti-' + config.primaryButtonIcon + ' me-1'"></i>
+          
+          <!-- Button Text -->
+          <span>
+            {{ config.primaryButtonLoading ? 'Saving...' : (config.primaryButtonText || 'Save') }}
+          </span>
+        </button>
+        
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backdrop -->
+<div class="modal-backdrop fade" 
+     [class.show]="isVisible" 
+     *ngIf="isVisible">
+</div>

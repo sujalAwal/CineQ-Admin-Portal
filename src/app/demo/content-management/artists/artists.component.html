@@ -1,0 +1,37 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>👥 Artists Management</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <h6 class="mb-3">Manage Artists & Performers</h6>
+            <p class="text-muted">
+              Add and manage actors, directors, producers, and other talent.
+            </p>
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-primary">
+              <i class="ti ti-plus me-2"></i>Add New Artist
+            </button>
+          </div>
+        </div>
+        
+        <!-- Data Table Component -->
+        <app-data-table
+          [config]="tableConfig"
+          [data]="artistsData"
+          [loading]="loading"
+          [pagination]="pagination"
+          (search)="onSearch($event)"
+          (pageChange)="onPageChange($event)"
+          (sort)="onSort($event)"
+          (toggleChange)="onToggleChange($event)"
+          (actionClick)="onTableAction($event)">
+        </app-data-table>
+      </div>
+    </div>
+  </div>
+</div>
