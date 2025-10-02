@@ -6,16 +6,16 @@ export const environment = {
   
   // Production API Configuration
   api: {
-    baseUrl: 'https://api.cineq.com/api',    // Your production API
+    baseUrl: 'https://api.awal.ct.ws/api',    // Your production API
     timeout: 30000,
-    retryAttempts: 3
+    retryAttempts: 1
   },
   
   // Authentication Configuration
   auth: {
-    tokenKey: 'auth_token',
-    refreshTokenKey: 'refresh_token',
-    tokenExpiry: 24 * 60 * 60 * 1000,
+     tokenKey: 'jwt-auth-token',               // Cookie name used by Laravel server
+    refreshTokenKey: 'jwt-refresh-token', 
+    tokenExpiry: 1 * 60 * 60 * 1000,
   },
   
   // App Configuration
