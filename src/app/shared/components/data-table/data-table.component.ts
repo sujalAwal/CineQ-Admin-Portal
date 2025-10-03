@@ -240,6 +240,7 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
    * Get toggle value as boolean
    */
   getToggleValue(item: any, column: TableColumn): boolean {
+    
     const value = this.getNestedValue(item, column.field);
     return Boolean(value);
   }

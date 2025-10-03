@@ -2,7 +2,7 @@
 export interface TableColumn {
   header: string;
   field: string;
-  type?: 'text' | 'date' | 'number' | 'badge' | 'toggle' | 'currency' | 'image' | 'email';
+  type?: 'text' | 'date' | 'number' | 'badge' | 'toggle' | 'currency' | 'image' | 'email'|'sn';
   sortable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';

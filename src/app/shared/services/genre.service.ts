@@ -19,7 +19,9 @@ import {
 export class GenreService {
   private currentGenreSubject = new BehaviorSubject<Genre | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
-  
+
+  private readonly url = `${environment.api.baseUrl}/genre`;
+
   // Public observables (like Laravel's Auth::user())
   public currentGenre$ = this.currentGenreSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -33,11 +35,36 @@ export class GenreService {
   }
 
   /**
+   * Fetch all genres with basic error handling
+   */
+  getGenres(): Observable<Genre[]> {
+    return this.http.get<ApiResponse<Genre[]>>(this.url, { withCredentials: true })
+      .pipe(
+        map(response => {
+          if (response && response.success && response.data) {
+            return response.data;
+          }
+          throw new Error(response?.message || 'Failed to fetch genres');
+        }),
+
+        catchError(error => this.handleError(error))
+      );
+  }
+
+  /**
    * Store genre with simplified error handling
    */
   storeGenre(genre: GenreRequest): Observable<GenreResponse> {
-    const url = `${environment.api.baseUrl}/genre`;
 
+    let url = '';
+    if(genre?.id){
+       url = `${this.url}/${genre.id}`;
+    }else{
+     url = `${this.url}`;
+
+    }
+    console.log('Storing genre to URL:', url, 'with data:', genre);
+    
     return this.http.post<ApiResponse<GenreResponse>>(url, genre, {
       withCredentials: true
 
@@ -78,7 +105,25 @@ export class GenreService {
     return this.currentGenreSubject.value;
   }
 
- /**
+  deleteGenre(id: string): Observable<boolean> {
+    const url = `${this.url}/${id}`;
+    return this.http.delete<ApiResponse<boolean>>(url, { withCredentials: true })
+      .pipe(
+        map(response => {
+          if (response && response.success) {
+            this.toastr.success(response.message || 'Genre deleted successfully!', 'Success');
+            return true;
+          }
+          throw new Error(response?.message || 'Failed to delete genre');
+        }),
+        catchError((error: any) => {
+          console.log('🚨 CatchError triggered with:', error);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  /**
    * Handle HTTP errors with comprehensive error scenarios
    */
   private handleError = (error: HttpErrorResponse | any): Observable<never> => {

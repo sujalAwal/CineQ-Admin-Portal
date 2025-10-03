@@ -42,7 +42,7 @@
         <!-- Primary Button (Save/Submit) -->
         <button 
           type="button" 
-          class="btn btn-primary" 
+          [class]="'btn ' + (config.primaryButtonClass || 'btn-primary')"
           (click)="onPrimaryClick()"
           [disabled]="config.primaryButtonDisabled || config.primaryButtonLoading">
           

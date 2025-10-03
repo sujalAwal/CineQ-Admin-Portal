@@ -45,3 +45,11 @@
   (closed)="onGenreModalClosed()"
   (genreSaved)="onGenreSaved($event)">
 </app-genre-modal>
+
+<!-- Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [config]="confirmationConfig"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()">
+</app-confirmation-modal>

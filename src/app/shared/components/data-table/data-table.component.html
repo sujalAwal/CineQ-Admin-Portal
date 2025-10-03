@@ -70,17 +70,22 @@
         <!-- Table Body -->
         <tbody>
           <!-- Data Rows -->
-          <tr *ngFor="let item of data; trackBy: trackByFn">
+          <tr *ngFor="let item of data; let i = index; trackBy: trackByFn">
             <!-- Data Cells -->
             <td
               *ngFor="let column of config.columns"
               [class.text-center]="column.align === 'center'"
               [class.text-end]="column.align === 'right'"
             >
+             <!-- SN -->
+              <span *ngIf="column.type === 'sn' ">
+                {{ i+1 }}
+              </span>
               <!-- Text/Number/Date/Email Display -->
               <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'">
                 {{ getColumnValue(item, column) }}
               </span>
+             
 
               <!-- Email with Link -->
               <a *ngIf="column.type === 'email'" 
@@ -96,7 +101,7 @@
                   [alt]="item.full_name || item.name || 'Image'"
                   class="rounded-circle border"
                   style="width: 40px; height: 40px; object-fit: cover;"
-                  onerror="this.src='https://via.placeholder.com/40x40?text=?'">
+                  onerror="this.src='assets/images/user/avatar-1.jpg'">
               </div>
 
               <!-- Badge Display -->

@@ -4,9 +4,10 @@ import { CommonModule } from '@angular/common';
 export interface ModalConfig {
   title: string;
   icon?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showFooter?: boolean;
   primaryButtonText?: string;
+  primaryButtonClass?: string;
   secondaryButtonText?: string;
   primaryButtonIcon?: string;
   primaryButtonLoading?: boolean;
@@ -56,6 +57,7 @@ export class BaseModalComponent implements OnInit {
 
   getModalSizeClass(): string {
     switch (this.config.size) {
+      case 'xs': return 'modal-sm'; // Extra small uses same as small but we'll add custom CSS
       case 'sm': return 'modal-sm';
       case 'md': return '';
       case 'lg': return 'modal-lg';

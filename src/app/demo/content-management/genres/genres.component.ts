@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { SharedModule } from '../../../theme/shared/shared.module';
 import { DataTableComponent } from '../../../shared/components/data-table/data-table.component';
 import { GenreModalComponent } from '../../../shared/components/genre-modal/genre-modal.component';
+import { ConfirmationModalComponent, ConfirmationConfig } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Genre } from '../../../shared/interfaces/genre.interface';
 import { 
@@ -14,10 +15,11 @@ import {
   PaginationInfo,
   TableActionEvent 
 } from '../../../shared/interfaces/table.interface';
+import { GenreService } from 'src/app/shared/services/genre.service';
 
 @Component({
   selector: 'app-genres',
-  imports: [CommonModule, SharedModule, DataTableComponent, GenreModalComponent],
+  imports: [CommonModule, SharedModule, DataTableComponent, GenreModalComponent, ConfirmationModalComponent],
   templateUrl: './genres.component.html',
   styleUrls: ['./genres.component.scss']
 })
@@ -34,10 +36,10 @@ export class GenresComponent implements OnInit {
     sortable: true,
     columns: [
       {
-        header: 'ID',
-        field: 'id',
-        type: 'number',
-        sortable: true,
+        header: 'S.N',
+        field: 'sn',
+        type: 'sn',
+        sortable: false,
         width: '80px',
         align: 'center'
       },
@@ -89,7 +91,7 @@ export class GenresComponent implements OnInit {
   };
 
   // Component state
-  genresData: any[] = [];
+  genresData: Genre[] = [];
   loading: boolean = false;
   pagination: PaginationInfo = {
     currentPage: 1,
@@ -103,7 +105,22 @@ export class GenresComponent implements OnInit {
   selectedGenre: Genre | null = null;
   modalLoading: boolean = false;
 
-  constructor(private toastService: ToastService) {}
+  // Confirmation modal state
+  showConfirmationModal: boolean = false;
+  confirmationConfig: ConfirmationConfig = {
+    title: 'Confirm Delete',
+    message: '',
+    icon: 'ti ti-trash',
+    iconColor: 'danger',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    confirmButtonClass: 'btn-danger'
+  };
+  genreToDelete: Genre | null = null;
+
+  constructor(private toastService: ToastService,
+              private genreService: GenreService
+  ) {}
 
   ngOnInit() {
     this.loadGenres();
@@ -117,46 +134,10 @@ export class GenresComponent implements OnInit {
     
     // Simulate API call delay
     setTimeout(() => {
-        
-      // Mock data - replace with actual API call
-      this.genresData = [
-        {
-          id: 1,
-          name: 'Action',
-          description: 'High-energy movies with intense sequences',
-          is_active: true,
-          created_at: '2024-01-15'
-        },
-        {
-          id: 2,
-          name: 'Comedy',
-          description: 'Funny and entertaining movies',
-          is_active: true,
-          created_at: '2024-01-16'
-        },
-        {
-          id: 3,
-          name: 'Drama',
-          description: 'Serious narrative movies with emotional themes',
-          is_active: false,
-          created_at: '2024-01-17'
-        },
-        {
-          id: 4,
-          name: 'Horror',
-          description: 'Scary movies designed to frighten',
-          is_active: true,
-          is_active_disabled: true, // Cannot change is_active
-          created_at: '2024-01-18',
-        },
-        {
-          id: 5,
-          name: 'Romance',
-          description: 'Love stories and romantic relationships',
-          is_active: true,
-          created_at: '2024-01-19'
-        }
-      ];
+
+      this.genreService.getGenres().subscribe(genres => {
+        this.genresData = genres;
+      });
 
       // Mock pagination
       this.pagination = {
@@ -309,13 +290,11 @@ export class GenresComponent implements OnInit {
       } else {
         // Add new genre
         const newGenre = {
-          id: this.genresData.length + 1,
           name: genreData.name,
           description: genreData.description,
           is_active: genreData.is_active,
           created_at: new Date().toISOString()
         };
-        this.genresData = [newGenre, ...this.genresData];
         
         this.toastService.success(
           `"${genreData.name}" has been created successfully!`,
@@ -324,6 +303,7 @@ export class GenresComponent implements OnInit {
       }
       
       this.modalLoading = false;
+      this.loadGenres();
       this.onGenreModalClosed();
     }, 1000);
   }
@@ -343,20 +323,48 @@ export class GenresComponent implements OnInit {
   private deleteGenre(genre: any) {
     console.log('Deleting genre:', genre);
     
-    if (confirm(`Are you sure you want to delete "${genre.name}"?`)) {
-      this.loading = true;
+    // Set up confirmation modal
+    this.genreToDelete = genre;
+    this.confirmationConfig = {
+      title: 'Delete Genre',
+      message: `Are you sure you want to delete <strong>"${genre.name}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+      icon: 'ti ti-trash',
+      iconColor: 'danger',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      loading: false
+    };
+    this.showConfirmationModal = true;
+  }
+
+  /**
+   * Handle confirmation modal actions
+   */
+  onDeleteConfirmed() {
+    if (!this.genreToDelete) return;
+
+    // Show loading state
+    this.confirmationConfig.loading = true;
+    
+    setTimeout(() => {
+      // Remove from local data
+      this.genresData = this.genresData.filter(g => g.id !== this.genreToDelete!.id);
       
-      setTimeout(() => {
-        // Remove from local data
-        this.genresData = this.genresData.filter(g => g.id !== genre.id);
-        
-        this.toastService.success(
-          `"${genre.name}" has been deleted successfully!`,
-          'Genre Deleted'
-        );
-        
-        this.loading = false;
-      }, 500);
-    }
+      this.genreService.deleteGenre(this.genreToDelete.id).subscribe(success => {
+        if (success) {
+          this.loadGenres();
+        }
+      });
+      // Reset state
+      this.showConfirmationModal = false;
+      this.genreToDelete = null;
+      this.confirmationConfig.loading = false;
+    }, 100);
+  }
+
+  onDeleteCancelled() {
+    this.showConfirmationModal = false;
+    this.genreToDelete = null;
+    this.confirmationConfig.loading = false;
   }
 }

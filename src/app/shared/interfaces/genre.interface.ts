@@ -1,6 +1,6 @@
 // Genre Interface 
 export interface Genre {
-  id: string;
+    id: string;
     name: string;
     description?: string;
     is_active: boolean;
@@ -8,6 +8,7 @@ export interface Genre {
 }
 // Genre Request Interface
 export interface GenreRequest {
+  id?: string;
   name: string;
   description?: string;
   is_active: boolean;

@@ -42,7 +42,6 @@ export class AuthService {
     })
       .pipe(
         map(response => {
-            console.log('Login response:', response); // Debug log
         
           if (response.success && response.data) {
             

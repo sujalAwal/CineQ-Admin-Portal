@@ -8,6 +8,7 @@ import {
 } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, filter, take, switchMap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../services/auth.service';
@@ -17,7 +18,7 @@ export class AuthInterceptor implements HttpInterceptor {
   private isRefreshing = false;
   private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private router: Router) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // For cookie-based auth, just ensure withCredentials is set
@@ -25,7 +26,6 @@ export class AuthInterceptor implements HttpInterceptor {
 
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
-        console.log('🚨 AuthInterceptor caught error:', error.status, error.url);
         
         // Handle 401 errors with token refresh (for cookie-based auth)
         if (error.status === 401 && !authReq.url.includes('/auth/login')) {
@@ -60,30 +60,9 @@ export class AuthInterceptor implements HttpInterceptor {
    */
   private handle401Error(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (!this.isRefreshing) {
-      this.isRefreshing = true;
-      this.refreshTokenSubject.next(null);
-
-      return this.authService.refreshToken().pipe(
-        switchMap((tokenResponse: any) => {
-          this.isRefreshing = false;
-          this.refreshTokenSubject.next(tokenResponse.token);
-          
-          return next.handle(this.addCookieCredentials(request));
-        }),
-        catchError((error) => {
-          this.isRefreshing = false;
-          // If refresh fails, logout user
-          this.authService.logout().subscribe();
-          return throwError(error);
-        })
-      );
+     this.router.navigate(['/login']);
     }
 
-    // Wait for token refresh to complete
-    return this.refreshTokenSubject.pipe(
-      filter(token => token !== null),
-      take(1),
-      switchMap(() => next.handle(this.addCookieCredentials(request)))
-    );
+    return throwError(() => new Error('Unauthorized'));
   }
 }

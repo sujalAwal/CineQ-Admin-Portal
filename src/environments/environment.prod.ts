@@ -21,7 +21,7 @@ export const environment = {
   // App Configuration
   app: {
     name: 'CineQ Dashboard',
-    logoUrl: 'assets/images/cineQ-stext.jpg',
+    logoUrl: 'assets/images/cineq/cineq-auth.png',
     defaultRoute: '/dashboard',
     loginRoute: '/login'
   },

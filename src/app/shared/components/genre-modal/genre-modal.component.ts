@@ -122,12 +122,7 @@ export class GenreModalComponent implements OnInit {
       const isAuthenticated = this.authService.isAuthenticated();
       const currentUser = this.authService.getCurrentUser();
       
-      console.log('🔐 Auth Status Check (Cookie-based):');
-      console.log('🔐 Is Authenticated:', isAuthenticated);
-      console.log('🔐 Current User:', currentUser?.name || 'Not logged in');
-      
       if (!isAuthenticated || !currentUser) {
-        console.log('❌ User not authenticated - redirecting to login');
         this.toastr.error('You must be logged in to perform this action', 'Authentication Required');
         this.resetLoadingState();
         // AuthService will handle redirect to login
@@ -148,7 +143,6 @@ export class GenreModalComponent implements OnInit {
       try {
         this.genreService.storeGenre(genreData).subscribe({
           next: (savedGenre) => {
-            console.log('Genre saved successfully:', savedGenre);
             // Success - emit the saved genre
             // The service returns response.data which should be the genre object
             this.genreSaved.emit(savedGenre as any);

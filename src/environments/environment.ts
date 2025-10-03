@@ -10,7 +10,8 @@ export const environment = {
   
   // API Configuration (like Laravel .env)
   api: {
-    baseUrl: 'http://localhost:8080/api',  // Your local Laravel API
+   // baseUrl: 'http://localhost:8080/api',  // Your local Laravel API
+      baseUrl: 'https://api.awal.ct.ws/api',    // Your production API
     timeout: 30000,                        // Request timeout
     retryAttempts: 2                       // Number of retry attempts
   },
@@ -25,7 +26,7 @@ export const environment = {
   // App Configuration
   app: {
     name: 'CineQ Dashboard',
-    logoUrl: 'assets/images/cineQ-stext.jpg',
+    logoUrl: 'assets/images/cineq/cineq-auth.png',
     defaultRoute: '/dashboard',
     loginRoute: '/login'
   },
