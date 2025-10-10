@@ -34,6 +34,29 @@ export interface ApiResponse<T = any> {
   };
 }
 
+// Paginated API Response Interface
+export interface PaginatedApiResponse<T = any> {
+  success: boolean;
+  message: string;
+  data: T[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+// Genre Page Request Interface
+export interface GenrePageRequest {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  search?: string;
+  active?: boolean;
+}
+
 // Error Response Interface
 export interface ErrorResponse {
   message: string;

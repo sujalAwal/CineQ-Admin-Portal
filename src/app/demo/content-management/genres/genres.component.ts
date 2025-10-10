@@ -13,9 +13,12 @@ import {
   TableColumn, 
   TableAction, 
   PaginationInfo,
-  TableActionEvent 
+  TableActionEvent,
+  BulkSelectionEvent,
+  BulkAction 
 } from '../../../shared/interfaces/table.interface';
 import { GenreService } from 'src/app/shared/services/genre.service';
+import { GenrePageRequest, PaginatedApiResponse } from '../../../shared/interfaces/genre.interface';
 
 @Component({
   selector: 'app-genres',
@@ -32,8 +35,24 @@ export class GenresComponent implements OnInit {
     apiEndpoint: '/api/genres',
     searchable: true,
     paginated: true,
-    pageSize: 10,
+    pageSize: 20,
     sortable: true,
+    // 🆕 Enable bulk selection
+    bulkSelectable: true,
+    bulkActions: [
+      {
+        label: 'Enable',
+        icon: '',
+        type: 'bulk-enable',
+        class: 'btn-success'
+      },
+      {
+        label: 'Disable',
+        icon: '',
+        type: 'bulk-disable',
+        class: 'btn-warning'
+      }
+    ],
     columns: [
       {
         header: 'S.N',
@@ -97,7 +116,15 @@ export class GenresComponent implements OnInit {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    pageSize: 10
+    pageSize: 20
+  };
+
+  // Search and filter state
+  currentFilters: GenrePageRequest = {
+    page: 1,
+    size: 20,
+    sortBy: 'name',
+    sortDirection: 'asc'
   };
 
   // Modal state
@@ -118,6 +145,15 @@ export class GenresComponent implements OnInit {
   };
   genreToDelete: Genre | null = null;
 
+  // 🆕 Bulk operation state
+  bulkOperation: {
+    type: 'enable' | 'disable' | null;
+    selectedIds: string[];
+  } = {
+    type: null,
+    selectedIds: []
+  };
+
   constructor(private toastService: ToastService,
               private genreService: GenreService
   ) {}
@@ -127,28 +163,40 @@ export class GenresComponent implements OnInit {
   }
 
   /**
-   * Load genres data (simulated API call)
+   * Load genres data with pagination support
    */
-  loadGenres(filters?: any) {
+  loadGenres(additionalFilters?: Partial<GenrePageRequest>) {
     this.loading = true;
     
-    // Simulate API call delay
-    setTimeout(() => {
+    // Merge current filters with any additional filters
+    const requestParams: GenrePageRequest = {
+      ...this.currentFilters,
+      ...additionalFilters
+    };
 
-      this.genreService.getGenres().subscribe(genres => {
-        this.genresData = genres;
-      });
+    this.genreService.getGenres(requestParams).subscribe({
+      next: (response: PaginatedApiResponse<Genre>) => {
+        console.log('Genres loaded:', response);
+        
+        // Extract data and pagination info from response
+        this.genresData = response.data;
+        
+        // Update pagination info
+        this.pagination = {
+          currentPage: response.page,
+          totalPages: response.totalPages,
+          totalItems: response.totalElements,
+          pageSize: response.size
+        };
 
-      // Mock pagination
-      this.pagination = {
-        currentPage: 1,
-        totalPages: 3,
-        totalItems: 25,
-        pageSize: 10
-      };
-
-      this.loading = false;
-    }, 1000);
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Failed to load genres:', error);
+        this.genresData = [];
+        this.loading = false;
+      }
+    });
   }
 
   /**
@@ -175,8 +223,15 @@ export class GenresComponent implements OnInit {
    */
   onSearch(searchTerm: string) {
     console.log('Searching for:', searchTerm);
-    // TODO: Call API with search parameter
-    this.loadGenres({ search: searchTerm });
+    
+    // Update current filters and reset to first page
+    this.currentFilters = {
+      ...this.currentFilters,
+      search: searchTerm || undefined,
+      page: 1
+    };
+    
+    this.loadGenres();
   }
 
   /**
@@ -184,9 +239,9 @@ export class GenresComponent implements OnInit {
    */
   onPageChange(page: number) {
     console.log('Page changed to:', page);
-    this.pagination.currentPage = page;
-    // TODO: Call API with page parameter
-    this.loadGenres({ page: page });
+    
+    this.currentFilters.page = page;
+    this.loadGenres();
   }
 
   /**
@@ -194,11 +249,16 @@ export class GenresComponent implements OnInit {
    */
   onSort(sortInfo: {field: string, order: 'asc' | 'desc'}) {
     console.log('Sorting by:', sortInfo);
-    // TODO: Call API with sort parameters
-    this.loadGenres({ 
-      sortBy: sortInfo.field, 
-      sortOrder: sortInfo.order 
-    });
+    
+    // Update current filters with new sorting
+    this.currentFilters = {
+      ...this.currentFilters,
+      sortBy: sortInfo.field,
+      sortDirection: sortInfo.order,
+      page: 1 // Reset to first page when sorting
+    };
+    
+    this.loadGenres();
   }
 
   /**
@@ -207,30 +267,142 @@ export class GenresComponent implements OnInit {
   onToggleChange(event: {item: any, field: string, value: boolean}) {
     console.log('Toggle changed:', event);
     
-    // Simulate API call to update is_active
+    const genreId = event.item.id;
+    const genreName = event.item.name;
+    
     this.loading = true;
+    
+    if (event.value) {
+      // Trying to enable genre
+      this.genreService.enableGenre([genreId]).subscribe({
+        next: (success) => {
+          console.log('Enable genre response:', success);
+          if (success) {
+            this.toastService.activated(
+              `Genre "${genreName}" is now active and available.`,
+              'Genre Activated'
+            );
+            // Refresh the data to get the latest state
+            this.loadGenres();
+          } else {
+            // Revert the UI change
+            this.revertToggleState(genreId, false);
+            this.loading = false;
+          }
+        },
+        error: (error) => {
+          console.error('Failed to enable genre:', error);
+          this.revertToggleState(genreId, false);
+          this.loading = false;
+        }
+      });
+    } else {
+      // Trying to disable genre
+      this.genreService.disableGenre([genreId]).subscribe({
+        next: (success) => {
+          console.log('Disable genre response:', success);
+          if (success) {
+            this.toastService.inactive(
+              `Genre "${genreName}" has been set to inactive.`,
+              'Genre Deactivated'
+            );
+            // Refresh the data to get the latest state
+            this.loadGenres();
+          } else {
+            // Revert the UI change
+            this.revertToggleState(genreId, true);
+            this.loading = false;
+          }
+        },
+        error: (error) => {
+          console.error('Failed to disable genre:', error);
+          this.revertToggleState(genreId, true);
+          this.loading = false;
+        }
+      });
+    }
+  }
+
+  // 🆕 BULK OPERATIONS
+
+  /**
+   * Handle bulk actions from data table
+   */
+  onBulkAction(event: BulkSelectionEvent) {
+    console.log('Bulk action triggered:', event);
+    
+    if (event.selectedIds.length === 0) {
+      this.toastService.warning('Please select at least one genre.', 'No Selection');
+      return;
+    }
+
+    // Store bulk operation details
+    this.bulkOperation.selectedIds = event.selectedIds;
+    
+    switch (event.action) {
+      case 'bulk-enable':
+        this.bulkOperation.type = 'enable';
+        this.showBulkConfirmation('enable', event.selectedIds);
+        break;
+      case 'bulk-disable':
+        this.bulkOperation.type = 'disable';
+        this.showBulkConfirmation('disable', event.selectedIds);
+        break;
+      default:
+        console.warn('Unknown bulk action:', event.action);
+    }
+  }
+
+  /**
+   * Show confirmation modal for bulk operations
+   */
+  private showBulkConfirmation(operation: 'enable' | 'disable', selectedIds: string[]) {
+    const selectedGenres = this.genresData.filter(genre => selectedIds.includes(genre.id));
+    const genreNames = selectedGenres.map(g => g.name).join(', ');
+    const count = selectedIds.length;
+    
+    if (operation === 'enable') {
+      this.confirmationConfig = {
+        title: 'Enable Genres',
+        message: `Are you sure you want to <strong>enable</strong> ${count} genre(s)?<br><br><div class="text-muted small">${genreNames}</div>`,
+        icon: 'ti ti-toggle-right',
+        iconColor: 'success',
+        confirmText: 'Enable',
+        cancelText: 'Cancel',
+        confirmButtonClass: 'btn-success',
+        loading: false,
+        size: 'sm'
+      };
+    } else {
+      this.confirmationConfig = {
+        title: 'Disable Genres',
+        message: `Are you sure you want to <strong>disable</strong> ${count} genre(s)?<br><br><div class="text-muted small">${genreNames}</div>`,
+        icon: 'ti ti-toggle-left',
+        iconColor: 'warning',
+        confirmText: 'Disable',
+        cancelText: 'Cancel',
+        confirmButtonClass: 'btn-warning',
+        loading: false,
+        size: 'sm'
+      };
+    }
+    
+    this.showConfirmationModal = true;
+  }
+
+  /**
+   * Revert toggle state when API fails
+   */
+  private revertToggleState(genreId: string, originalValue: boolean) {
+    this.genresData = this.genresData.map(genre => 
+      genre.id === genreId ? { ...genre, is_active: originalValue } : genre
+    );
+    
+    // Force change detection to update the UI
+    // This ensures the toggle switches back to original position
     setTimeout(() => {
-      // Update local data
-      const genre = this.genresData.find(g => g.id === event.item.id);
-      if (genre) {
-        genre[event.field] = event.value;
-      }
-      
-      // Show appropriate toast based on the new is_active
-      if (event.value) {
-        this.toastService.activated(
-          `Genre "${event.item.name}" is now active and available.`,
-          'Genre Activated'
-        );
-      } else {
-        this.toastService.inactive(
-          `Genre "${event.item.name}" has been set to inactive.`,
-          'Genre Deactivated'
-        );
-      }
-      
-      this.loading = false;
-    }, 500);
+      // Trigger change detection if needed
+    }, 0);
   }
 
   /**
@@ -270,42 +442,44 @@ export class GenresComponent implements OnInit {
   onGenreSaved(genreData: Genre) {
     this.modalLoading = true;
     
-    // Simulate API call
-    setTimeout(() => {
-      if (genreData.id) {
-        // Update existing genre
-        const index = this.genresData.findIndex(g => g.id === genreData.id);
-        if (index !== -1) {
-          this.genresData[index] = {
-            ...this.genresData[index],
-            name: genreData.name,
-            description: genreData.description,
-            is_active: genreData.is_active
-          };
-        }
-        this.toastService.success(
-          `"${genreData.name}" has been updated successfully!`,
-          'Genre Updated'
-        );
-      } else {
-        // Add new genre
-        const newGenre = {
-          name: genreData.name,
-          description: genreData.description,
-          is_active: genreData.is_active,
-          created_at: new Date().toISOString()
-        };
+    // Prepare the request data
+    const genreRequest = {
+      id: genreData.id,
+      name: genreData.name,
+      description: genreData.description,
+      is_active: genreData.is_active
+    };
+
+    this.genreService.storeGenre(genreRequest).subscribe({
+      next: (response) => {
+        console.log('Genre save response:', response);
         
-        this.toastService.success(
-          `"${genreData.name}" has been created successfully!`,
-          'Genre Created'
-        );
+        if (genreData.id) {
+          // Update existing genre
+          this.toastService.success(
+            `"${genreData.name}" has been updated successfully!`,
+            'Genre Updated'
+          );
+        } else {
+          // Add new genre
+          this.toastService.success(
+            `"${genreData.name}" has been created successfully!`,
+            'Genre Created'
+          );
+        }
+        
+        this.modalLoading = false;
+        this.onGenreModalClosed();
+        
+        // Refresh the genre list to show the latest data
+        this.loadGenres();
+      },
+      error: (error) => {
+        console.error('Failed to save genre:', error);
+        this.modalLoading = false;
+        // Don't close modal on error so user can try again
       }
-      
-      this.modalLoading = false;
-      this.loadGenres();
-      this.onGenreModalClosed();
-    }, 1000);
+    });
   }
 
   /**
@@ -328,7 +502,7 @@ export class GenresComponent implements OnInit {
     this.confirmationConfig = {
       title: 'Delete Genre',
       message: `Are you sure you want to delete <strong>"${genre.name}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
-      icon: 'ti ti-trash',
+      icon: 'ti ti-trash-x',
       iconColor: 'danger',
       confirmText: 'Delete',
       cancelText: 'Cancel',
@@ -341,30 +515,99 @@ export class GenresComponent implements OnInit {
    * Handle confirmation modal actions
    */
   onDeleteConfirmed() {
-    if (!this.genreToDelete) return;
-
-    // Show loading state
-    this.confirmationConfig.loading = true;
-    
-    setTimeout(() => {
-      // Remove from local data
-      this.genresData = this.genresData.filter(g => g.id !== this.genreToDelete!.id);
+    // Handle single genre deletion
+    if (this.genreToDelete) {
+      this.confirmationConfig.loading = true;
       
-      this.genreService.deleteGenre(this.genreToDelete.id).subscribe(success => {
-        if (success) {
-          this.loadGenres();
+      this.genreService.deleteGenre(this.genreToDelete.id).subscribe({
+        next: (success) => {
+          if (success) {
+            this.toastService.success(
+              `Genre "${this.genreToDelete!.name}" has been deleted successfully!`,
+              'Genre Deleted'
+            );
+            // Refresh the data to show updated list
+            this.loadGenres();
+          }
+          // Reset state
+          this.showConfirmationModal = false;
+          this.genreToDelete = null;
+          this.confirmationConfig.loading = false;
+        },
+        error: (error) => {
+          console.error('Failed to delete genre:', error);
+          // Reset state on error
+          this.showConfirmationModal = false;
+          this.genreToDelete = null;
+          this.confirmationConfig.loading = false;
         }
       });
-      // Reset state
-      this.showConfirmationModal = false;
-      this.genreToDelete = null;
-      this.confirmationConfig.loading = false;
-    }, 100);
+      return;
+    }
+
+    // 🆕 Handle bulk operations
+    if (this.bulkOperation.type && this.bulkOperation.selectedIds.length > 0) {
+      this.confirmationConfig.loading = true;
+      
+      const selectedIds = this.bulkOperation.selectedIds;
+      const operation = this.bulkOperation.type;
+      
+      if (operation === 'enable') {
+        this.genreService.enableGenre(selectedIds).subscribe({
+          next: (success) => {
+            if (success) {
+              this.toastService.activated(
+                `${selectedIds.length} genre(s) have been enabled successfully!`,
+                'Genres Enabled'
+              );
+              this.loadGenres(); // Refresh data from API
+            }
+            this.resetBulkOperation();
+          },
+          error: (error) => {
+            console.error('Failed to enable genres:', error);
+            this.resetBulkOperation();
+          }
+        });
+      } else if (operation === 'disable') {
+        this.genreService.disableGenre(selectedIds).subscribe({
+          next: (success) => {
+            if (success) {
+              this.toastService.inactive(
+                `${selectedIds.length} genre(s) have been disabled successfully!`,
+                'Genres Disabled'
+              );
+              this.loadGenres(); // Refresh data from API
+            }
+            this.resetBulkOperation();
+          },
+          error: (error) => {
+            console.error('Failed to disable genres:', error);
+            this.resetBulkOperation();
+          }
+        });
+      }
+    }
   }
 
   onDeleteCancelled() {
     this.showConfirmationModal = false;
     this.genreToDelete = null;
+    this.confirmationConfig.loading = false;
+    
+    // 🆕 Reset bulk operation state
+    this.resetBulkOperation();
+  }
+
+  /**
+   * Reset bulk operation state
+   */
+  private resetBulkOperation() {
+    this.bulkOperation = {
+      type: null,
+      selectedIds: []
+    };
+    this.showConfirmationModal = false;
     this.confirmationConfig.loading = false;
   }
 }

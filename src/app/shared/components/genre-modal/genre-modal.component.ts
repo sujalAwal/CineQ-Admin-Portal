@@ -105,7 +105,7 @@ export class GenreModalComponent implements OnInit {
       this.genreForm.patchValue({
         name: this.genre.name,
         description: this.genre.description || '',
-        status: this.genre.is_active
+        status: this.genre.is_active ? 'active' : 'inactive'
       });
     }
   }
@@ -136,7 +136,9 @@ export class GenreModalComponent implements OnInit {
       const formValue = this.genreForm.value;
       
       const genreData: Genre = {
-        ...formValue,
+        name: formValue.name,
+        description: formValue.description,
+        is_active: formValue.status === 'active',
         ...(this.genre?.id && { id: this.genre.id })
       };
       

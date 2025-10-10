@@ -27,6 +27,24 @@ export interface TableConfig {
   paginated?: boolean;
   pageSize?: number;
   sortable?: boolean;
+  // 🆕 Bulk selection feature
+  bulkSelectable?: boolean;
+  bulkActions?: BulkAction[];
+}
+
+// 🆕 Bulk Action Configuration
+export interface BulkAction {
+  label: string;
+  icon: string;
+  type: 'bulk-enable' | 'bulk-disable' | 'bulk-delete' | string;
+  class?: string;
+  confirmationRequired?: boolean;
+}
+
+// 🆕 Bulk Selection Events
+export interface BulkSelectionEvent {
+  selectedIds: string[];
+  action: string;
 }
 
 export interface PaginationInfo {

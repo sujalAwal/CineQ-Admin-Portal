@@ -9,7 +9,8 @@ import {
   TableConfig, 
   PaginationInfo, 
   TableFilters,
-  TableActionEvent 
+  TableActionEvent,
+  BulkSelectionEvent 
 } from '../../interfaces/table.interface';
 
 @Component({
@@ -40,11 +41,16 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
   @Output() pageChange = new EventEmitter<number>();
   @Output() sort = new EventEmitter<{field: string, order: 'asc' | 'desc'}>();
   @Output() toggleChange = new EventEmitter<{item: any, field: string, value: boolean}>();
+  // 🆕 Bulk selection events
+  @Output() bulkActionClick = new EventEmitter<BulkSelectionEvent>();
 
   // Component state
   searchTerm: string = '';
   currentSort: {field: string, order: 'asc' | 'desc'} | null = null;
   pageNumbers: number[] = [];
+  // 🆕 Bulk selection state
+  selectedItems: Set<string> = new Set();
+  isAllSelected: boolean = false;
 
   ngOnInit() {
     // Setup search debouncing (wait 300ms after user stops typing)
@@ -65,6 +71,11 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
     // Only recalculate page numbers when pagination data changes
     if (changes['pagination'] && !changes['pagination'].firstChange) {
       this.calculatePageNumbers();
+    }
+    
+    // 🆕 Clear selections when data changes (e.g., page change, search)
+    if (changes['data']) {
+      this.clearSelection();
     }
   }
 
@@ -271,6 +282,92 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
       default:
         return '';
     }
+  }
+
+  // 🆕 BULK SELECTION METHODS
+
+  /**
+   * Toggle individual item selection
+   */
+  onItemSelect(item: any, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const itemId = item.id;
+
+    if (target.checked) {
+      this.selectedItems.add(itemId);
+    } else {
+      this.selectedItems.delete(itemId);
+      this.isAllSelected = false;
+    }
+
+    // Update "select all" state
+    this.updateSelectAllState();
+  }
+
+  /**
+   * Toggle select all items
+   */
+  onSelectAll(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.isAllSelected = target.checked;
+
+    if (this.isAllSelected) {
+      // Select all items on current page
+      this.data.forEach(item => {
+        this.selectedItems.add(item.id);
+      });
+    } else {
+      // Deselect all items
+      this.selectedItems.clear();
+    }
+  }
+
+  /**
+   * Check if individual item is selected
+   */
+  isItemSelected(item: any): boolean {
+    return this.selectedItems.has(item.id);
+  }
+
+  /**
+   * Update select all checkbox state based on individual selections
+   */
+  private updateSelectAllState(): void {
+    const currentPageIds = this.data.map(item => item.id);
+    const selectedOnCurrentPage = currentPageIds.filter(id => this.selectedItems.has(id));
+    
+    this.isAllSelected = currentPageIds.length > 0 && selectedOnCurrentPage.length === currentPageIds.length;
+  }
+
+  /**
+   * Get count of selected items
+   */
+  getSelectedCount(): number {
+    return this.selectedItems.size;
+  }
+
+  /**
+   * Handle bulk action click
+   */
+  onBulkAction(actionType: string): void {
+    const selectedIds = Array.from(this.selectedItems);
+    
+    if (selectedIds.length === 0) {
+      return;
+    }
+
+    this.bulkActionClick.emit({
+      selectedIds: selectedIds,
+      action: actionType
+    });
+  }
+
+  /**
+   * Clear all selections
+   */
+  clearSelection(): void {
+    this.selectedItems.clear();
+    this.isAllSelected = false;
   }
 
   /**

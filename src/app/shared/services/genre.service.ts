@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
 import { map, catchError, tap, timeout, retry } from 'rxjs/operators';
 import { Router } from '@angular/router';
@@ -10,7 +10,9 @@ import {
   Genre, 
   GenreResponse,
   ApiResponse,
-  GenreRequest
+  GenreRequest,
+  PaginatedApiResponse,
+  GenrePageRequest
 } from '../interfaces/genre.interface';
 
 @Injectable({
@@ -35,18 +37,31 @@ export class GenreService {
   }
 
   /**
-   * Fetch all genres with basic error handling
+   * Fetch all genres with pagination support
    */
-  getGenres(): Observable<Genre[]> {
-    return this.http.get<ApiResponse<Genre[]>>(this.url, { withCredentials: true })
+  getGenres(request?: GenrePageRequest): Observable<PaginatedApiResponse<Genre>> {
+    let httpParams = new HttpParams();
+    
+    if (request) {
+      if (request.page) httpParams = httpParams.set('page', request.page.toString());
+      if (request.size) httpParams = httpParams.set('size', request.size.toString());
+      if (request.sortBy) httpParams = httpParams.set('sortBy', request.sortBy);
+      if (request.sortDirection) httpParams = httpParams.set('sortDirection', request.sortDirection);
+      if (request.search) httpParams = httpParams.set('search', request.search);
+      if (request.active !== undefined) httpParams = httpParams.set('active', request.active.toString());
+    }
+
+    return this.http.get<PaginatedApiResponse<Genre>>(this.url, { 
+      params: httpParams, 
+      withCredentials: true 
+    })
       .pipe(
         map(response => {
-          if (response && response.success && response.data) {
-            return response.data;
+          if (response && response.success) {
+            return response;
           }
           throw new Error(response?.message || 'Failed to fetch genres');
         }),
-
         catchError(error => this.handleError(error))
       );
   }
@@ -55,47 +70,51 @@ export class GenreService {
    * Store genre with simplified error handling
    */
   storeGenre(genre: GenreRequest): Observable<GenreResponse> {
-
     let url = '';
+    let httpMethod: Observable<ApiResponse<GenreResponse>>;
+    
     if(genre?.id){
-       url = `${this.url}/${genre.id}`;
-    }else{
-     url = `${this.url}`;
-
+      // Update existing genre - use PUT method
+      url = `${this.url}/${genre.id}`;
+      httpMethod = this.http.put<ApiResponse<GenreResponse>>(url, genre, {
+        withCredentials: true
+      });
+    } else {
+      // Create new genre - use POST method
+      url = `${this.url}`;
+      httpMethod = this.http.post<ApiResponse<GenreResponse>>(url, genre, {
+        withCredentials: true
+      });
     }
+    
     console.log('Storing genre to URL:', url, 'with data:', genre);
     
-    return this.http.post<ApiResponse<GenreResponse>>(url, genre, {
-      withCredentials: true
-
-    })
-
-      .pipe(
-          tap(response => {
-      console.log('📥 Got response:', response);
-    }),
-        map(response => {
-          console.log('Genre response:', response);
-          
-          // ✅ SIMPLE: Just check success and return data
-          if (response && response.success && response.data) {
-            this.toastr.success('Genre saved successfully!', 'Success');
-            return response.data;
-          }
-          
-          // ✅ SIMPLE: Just throw error, let catchError handle it
-          throw new Error(response?.message || 'Failed to save genre');
-        }),
-        catchError((error: any) => {
-          console.log('🚨 CatchError triggered with:', error);
-          console.log('🚨 Error type:', typeof error);
-          console.log('🚨 Error status:', error.status);
-          console.log('🚨 Error instanceof HttpErrorResponse:', error instanceof HttpErrorResponse);
-          
-          // ✅ SIMPLE: One place handles ALL errors
-          return this.handleError(error);
-        })
-      );
+    return httpMethod.pipe(
+      tap(response => {
+        console.log('📥 Got response:', response);
+      }),
+      map(response => {
+        console.log('Genre response:', response);
+        
+        // ✅ SIMPLE: Just check success and return data
+        if (response && response.success && response.data) {
+          this.toastr.success('Genre saved successfully!', 'Success');
+          return response.data;
+        }
+        
+        // ✅ SIMPLE: Just throw error, let catchError handle it
+        throw new Error(response?.message || 'Failed to save genre');
+      }),
+      catchError((error: any) => {
+        console.log('🚨 CatchError triggered with:', error);
+        console.log('🚨 Error type:', typeof error);
+        console.log('🚨 Error status:', error.status);
+        console.log('🚨 Error instanceof HttpErrorResponse:', error instanceof HttpErrorResponse);
+        
+        // ✅ SIMPLE: One place handles ALL errors
+        return this.handleError(error);
+      })
+    );
   }
 
   /**
@@ -115,6 +134,40 @@ export class GenreService {
             return true;
           }
           throw new Error(response?.message || 'Failed to delete genre');
+        }),
+        catchError((error: any) => {
+          console.log('🚨 CatchError triggered with:', error);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  enableGenre(ids: string[]): Observable<boolean> {
+    const url = `${this.url}/bulk-enable`;
+    return this.http.post<ApiResponse<boolean>>(url, { ids }, { withCredentials: true })
+      .pipe(
+        map(response => {
+          if (response && response.success) {
+            return true;
+          }
+          throw new Error(response?.message || 'Failed to enable genres');
+        }),
+        catchError((error: any) => {
+          console.log('🚨 CatchError triggered with:', error);
+          return this.handleError(error);
+        })
+      );
+  }
+
+  disableGenre(ids: string[]): Observable<boolean> {
+    const url = `${this.url}/bulk-disable`;
+    return this.http.post<ApiResponse<boolean>>(url, { ids }, { withCredentials: true })
+      .pipe(
+        map(response => {
+          if (response && response.success) {
+            return true;
+          }
+          throw new Error(response?.message || 'Failed to disable genres');
         }),
         catchError((error: any) => {
           console.log('🚨 CatchError triggered with:', error);

@@ -29,13 +29,19 @@ export interface ConfirmationConfig {
         (secondaryAction)="onCancel()">
         
         <div class="modal-body text-center py-3">
-          <!-- Icon -->
-          <div class="mb-2" *ngIf="config.icon">
-            <i [class]="config.icon + ' fs-2 ' + getIconColorClass()"></i>
+          <!-- Icon with background circle -->
+          <div class="mb-3" *ngIf="config.icon">
+            <div class="icon-container d-inline-flex align-items-center justify-content-center rounded-circle"
+                 [ngClass]="getIconBgClass()">
+              <i [class]="config.icon + ' ' + getIconColorClass()" 
+                 style="font-size: 2.5rem;"></i>
+            </div>
           </div>
           
           <!-- Message -->
-          <p class="mb-0" [innerHTML]="config.message"></p>
+          <div class="message-container">
+            <p class="mb-0 fw-medium" [innerHTML]="config.message"></p>
+          </div>
         </div>
         
       </app-base-modal>
@@ -74,12 +80,23 @@ export class ConfirmationModalComponent {
 
   getIconColorClass(): string {
     switch (this.config.iconColor) {
-      case 'primary': return 'text-primary';
-      case 'warning': return 'text-warning';
-      case 'danger': return 'text-danger';
-      case 'success': return 'text-success';
-      case 'info': return 'text-info';
-      default: return 'text-warning';
+      case 'primary': return 'text-white';
+      case 'warning': return 'text-white';
+      case 'danger': return 'text-white';
+      case 'success': return 'text-white';
+      case 'info': return 'text-white';
+      default: return 'text-white';
+    }
+  }
+
+  getIconBgClass(): string {
+    switch (this.config.iconColor) {
+      case 'primary': return 'bg-primary bg-opacity-15 text-primary-emphasis';
+      case 'warning': return 'bg-warning bg-opacity-15 text-warning-emphasis';
+      case 'danger': return 'bg-danger bg-opacity-15 text-danger-emphasis';
+      case 'success': return 'bg-success bg-opacity-15 text-success-emphasis';
+      case 'info': return 'bg-info bg-opacity-15 text-info-emphasis';
+      default: return 'bg-warning bg-opacity-15 text-warning-emphasis';
     }
   }
 

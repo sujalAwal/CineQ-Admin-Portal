@@ -60,8 +60,8 @@
   font-size: 0.775rem;
 }
 
-/* Toggle Switch Styling */
-.form-check-input {
+/* Toggle Switch Styling - Only for column type 'toggle' */
+.form-check.form-switch .form-check-input {
   width: 2.5rem;
   height: 1.25rem;
   border-radius: 1rem;
@@ -115,6 +115,48 @@
   }
 }
 
+/* 🆕 Bulk Selection Checkbox Styling - Standard checkboxes */
+.bulk-selection-checkbox .form-check-input {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  border-radius: 0.25rem !important;
+  border: 2px solid #ced4da !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  transition: all 0.2s ease-in-out;
+  transform: scale(1.1);
+  
+  &:checked {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
+    background-size: 100% 100% !important;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3) !important;
+  }
+  
+  &:not(:checked) {
+    background-color: #fff !important;
+    border-color: #ced4da !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+  
+  &:focus {
+    border-color: #007bff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+  }
+  
+  &:hover {
+    border-color: #007bff !important;
+  }
+  
+  &:indeterminate {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e") !important;
+  }
+}
+
 .form-check-label {
   font-size: 0.75rem;
   font-weight: 600;
@@ -135,6 +177,11 @@
     color: #6c757d !important;
     font-weight: 500;
   }
+}
+
+/* 🆕 Hide labels for bulk selection checkboxes */
+.bulk-selection-checkbox .form-check-label {
+  display: none;
 }
 
 /* Badge Styling */
