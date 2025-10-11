@@ -1,53 +1,59 @@
 <div class="card">
   <!-- Card Header with Title and Search -->
   <div class="card-header d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">{{ config.title }}</h5>
+    <!-- Left side - Title or empty space -->
+    <div>
+      <!-- <h5 class="mb-0">{{ config.title }}</h5> -->
+    </div>
     
-    <!-- 🆕 Bulk Actions (shown when items are selected) -->
-    <div class="d-flex align-items-center gap-2" *ngIf="config.bulkSelectable && getSelectedCount() > 0">
-      <span class="badge bg-primary">{{ getSelectedCount() }} selected</span>
-      
-      <div class="btn-group btn-group-sm" *ngIf="config.bulkActions && config.bulkActions.length > 0">
-        <button
-          *ngFor="let action of config.bulkActions"
-          type="button"
-          class="btn"
-          [class]="action.class || 'btn-outline-primary'"
-          (click)="onBulkAction(action.type)"
-          [title]="action.label"
-        >
-          <i *ngIf="action.icon" [class]="action.icon" class="me-1"></i>
-          {{ action.label }}
+    <!-- Right side - Bulk Actions or Search -->
+    <div class="d-flex align-items-center gap-2">
+      <!-- 🆕 Bulk Actions (shown when items are selected) -->
+      <div class="d-flex align-items-center gap-2" *ngIf="config.bulkSelectable && getSelectedCount() > 0">
+        <span class="badge bg-primary">{{ getSelectedCount() }} selected</span>
+        
+        <div class="btn-group btn-group-sm" *ngIf="config.bulkActions && config.bulkActions.length > 0">
+          <button
+            *ngFor="let action of config.bulkActions"
+            type="button"
+            class="btn"
+            [class]="action.class || 'btn-outline-primary'"
+            (click)="onBulkAction(action.type)"
+            [title]="action.label"
+          >
+            <i *ngIf="action.icon" [class]="action.icon" class="me-1"></i>
+            {{ action.label }}
+          </button>
+        </div>
+        
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary btn-sm" 
+          (click)="clearSelection()"
+          title="Clear Selection">
+          <i class="ti ti-x"></i>
         </button>
       </div>
       
-      <button 
-        type="button" 
-        class="btn btn-outline-secondary btn-sm" 
-        (click)="clearSelection()"
-        title="Clear Selection">
-        <i class="ti ti-x"></i>
-      </button>
-    </div>
-    
-    <!-- Search Box -->
-    <div class="d-flex align-items-center gap-3" *ngIf="config.searchable && getSelectedCount() === 0">
-      <div class="input-group" style="width: 350px;">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Search {{ config.entityName }}..."
-          [(ngModel)]="searchTerm"
-          (input)="onSearchChange($event)"
-          (keyup.enter)="onManualSearch()"
-        />
-        <button 
-          class="btn btn-outline-primary" 
-          type="button"
-          (click)="onManualSearch()"
-          [disabled]="loading">
-          <i class="ti ti-search"></i>
-        </button>
+      <!-- Search Box -->
+      <div class="d-flex align-items-center gap-3" *ngIf="config.searchable && getSelectedCount() === 0">
+        <div class="input-group" style="width: 350px;">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Search {{ config.entityName }}..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange($event)"
+            (keyup.enter)="onManualSearch()"
+          />
+          <button 
+            class="btn btn-outline-primary" 
+            type="button"
+            (click)="onManualSearch()"
+            [disabled]="loading">
+            <i class="ti ti-search"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -173,23 +179,15 @@
               </span>
 
               <!-- Toggle Switch -->
-              <div *ngIf="column.type === 'toggle'" class="form-check form-switch d-flex justify-content-center align-items-center">
+              <div *ngIf="column.type === 'toggle'" class="form-check form-switch d-flex justify-content-center">
                 <input
-                  class="form-check-input me-2"
+                  class="form-check-input"
                   type="checkbox"
                   [checked]="getToggleValue(item, column)"
                   [disabled]="isToggleDisabled(item, column)"
                   (change)="onToggleChange(item, column, $event)"
                   [id]="'toggle_' + item.id + '_' + column.field"
                 />
-                <label
-                  class="form-check-label small"
-                  [class.text-success]="getToggleValue(item, column) && !isToggleDisabled(item, column)"
-                  [class.text-danger]="!getToggleValue(item, column) && !isToggleDisabled(item, column)"
-                  [class.text-muted]="isToggleDisabled(item, column)"
-                  [for]="'toggle_' + item.id + '_' + column.field"
-                >
-                </label>
               </div>
             </td>
 

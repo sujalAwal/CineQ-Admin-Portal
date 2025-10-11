@@ -149,6 +149,7 @@ export class GenreModalComponent implements OnInit {
             // The service returns response.data which should be the genre object
             this.genreSaved.emit(savedGenre as any);
             this.resetLoadingState();
+            this.resetForm();
           },
           error: (error) => {
             console.log('Failed to save genre:', error);

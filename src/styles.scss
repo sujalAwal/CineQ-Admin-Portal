@@ -124,3 +124,9 @@
 @import url('scss/fonts/berry/berry-icons.css');
 @import 'scss/fonts/tabler-icons.min.css';
 @import 'scss/fonts/phosphor/duotone/style.css';
+
+// Global Data Table Utilities
+.btn-outline-success { color: #28a745; border-color: #28a745; &:hover { color: #fff; background: #28a745; border-color: #28a745; } }
+.btn-outline-warning { color: #ffc107; border-color: #ffc107; &:hover { color: #212529; background: #ffc107; border-color: #ffc107; } }
+.btn-outline-danger { color: #dc3545; border-color: #dc3545; &:hover { color: #fff; background: #dc3545; border-color: #dc3545; } }
+.sortable { cursor: pointer; user-select: none; &:hover { background: rgba(0,0,0,.05); } }

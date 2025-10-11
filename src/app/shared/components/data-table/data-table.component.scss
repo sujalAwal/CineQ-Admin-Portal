@@ -1,253 +1,75 @@
-/* Data Table Component Styles */
-
-.sortable {
-  cursor: pointer;
-  user-select: none;
-  
-  &:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-  }
-}
-
-/* Search Input Group Styling */
+// Search & Table
 .input-group {
-  .form-control {
-    border-right: none;
-    
-    &:focus {
-      border-color: #007bff;
-      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-      border-right: none;
-    }
-  }
-  
+  .form-control { border-right: none; &:focus { border-color: #007bff; box-shadow: 0 0 0 .2rem rgba(0,123,255,.25); border-right: none; } }
   .btn-outline-primary {
-    border-left: none;
-    border-color: #ced4da;
-    color: #6c757d;
-    
-    &:hover {
-      background-color: #007bff;
-      border-color: #007bff;
-      color: white;
-    }
-    
-    &:focus {
-      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-    
-    &:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
+    border-left: none; border-color: #ced4da; color: #6c757d;
+    &:hover { background: #007bff; border-color: #007bff; color: white; }
+    &:focus { box-shadow: 0 0 0 .2rem rgba(0,123,255,.25); }
+    &:disabled { opacity: .65; cursor: not-allowed; }
   }
 }
 
-.table th {
-  border-top: none;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #495057;
+.table { 
+  th { border-top: none; font-weight: 600; font-size: .875rem; color: #495057; }
+  td { vertical-align: middle; padding: .75rem; }
+  // Center align toggle switches
+  td.text-center { text-align: center !important; }
 }
+.btn-group-sm .btn { padding: .25rem .5rem; font-size: .775rem; }
 
-.table td {
-  vertical-align: middle;
-  padding: 0.75rem;
-}
-
-.btn-group-sm .btn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.775rem;
-}
-
-/* Toggle Switch Styling - Only for column type 'toggle' */
+// Toggle Switch - Clean iOS Style
 .form-check.form-switch .form-check-input {
-  width: 2.5rem;
-  height: 1.25rem;
-  border-radius: 1rem;
-  transition: all 0.3s ease-in-out;
-  border: 2px solid;
+  width: 2.5rem; height: 1.25rem; border-radius: 1rem; border: 2px solid; transition: all .3s;
+  background-image: none !important; // Remove all Bootstrap defaults
+  background-size: auto !important;
+  background-repeat: no-repeat !important;
+  position: relative;
   
-  &:checked {
-    background-color: #28a745 !important;
-    border-color: #28a745 !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important;
-    box-shadow: 0 0 8px rgba(40, 167, 69, 0.3);
-  }
+  // Remove Bootstrap's pseudo-element
+  &::before { display: none !important; }
   
-  &:not(:checked) {
-    background-color: #dc3545 !important;
-    border-color: #dc3545 !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e") !important;
-    box-shadow: 0 0 8px rgba(220, 53, 69, 0.3);
+  &:checked { 
+    background: #28a745 !important; border-color: #28a745 !important; box-shadow: 0 0 8px rgba(40,167,69,.3);
+    // Single circle positioned on the right (ON state)
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3e%3ccircle cx='30' cy='10' r='8' fill='%23fff'/%3e%3c/svg%3e") !important;
   }
-  
-  &:focus {
-    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25) !important;
-    border-color: #28a745 !important;
+  &:not(:checked) { 
+    background: #dc3545 !important; border-color: #dc3545 !important; box-shadow: 0 0 8px rgba(220,53,69,.3);
+    // Single circle positioned on the left (OFF state)
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3e%3ccircle cx='10' cy='10' r='8' fill='%23fff'/%3e%3c/svg%3e") !important;
   }
-  
-  &:focus:not(:checked) {
-    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
-    border-color: #dc3545 !important;
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    box-shadow: none !important;
-    
-    &:checked {
-      background-color: #6c757d !important;
-      border-color: #6c757d !important;
-    }
-    
-    &:not(:checked) {
-      background-color: #6c757d !important;
-      border-color: #6c757d !important;
-    }
-  }
-  
-  // Override Bootstrap default styles
-  &:checked[type=checkbox] {
-    background-color: #28a745 !important;
-    border-color: #28a745 !important;
-  }
+  &:focus { box-shadow: 0 0 0 .25rem rgba(40,167,69,.25) !important; border-color: #28a745 !important; }
+  &:focus:not(:checked) { box-shadow: 0 0 0 .25rem rgba(220,53,69,.25) !important; border-color: #dc3545 !important; }
+  &:disabled { opacity: .6; cursor: not-allowed; box-shadow: none !important; &, &:checked, &:not(:checked) { background: #6c757d !important; border-color: #6c757d !important; } }
 }
 
-/* 🆕 Bulk Selection Checkbox Styling - Standard checkboxes */
+// Bulk Selection Checkboxes
 .bulk-selection-checkbox .form-check-input {
-  width: 1.25rem !important;
-  height: 1.25rem !important;
-  border-radius: 0.25rem !important;
-  border: 2px solid #ced4da !important;
-  background-color: #fff !important;
-  background-image: none !important;
-  transition: all 0.2s ease-in-out;
-  transform: scale(1.1);
-  
-  &:checked {
-    background-color: #007bff !important;
-    border-color: #007bff !important;
+  width: 1.25rem !important; height: 1.25rem !important; border-radius: .25rem !important;
+  border: 2px solid #ced4da !important; background: #fff !important; transition: all .2s; transform: scale(1.1);
+  &:checked { 
+    background: #007bff !important; border-color: #007bff !important; box-shadow: 0 0 5px rgba(0,123,255,.3) !important;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
-    background-size: 100% 100% !important;
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3) !important;
+    background-size: 100% !important;
   }
-  
-  &:not(:checked) {
-    background-color: #fff !important;
-    border-color: #ced4da !important;
-    background-image: none !important;
-    box-shadow: none !important;
-  }
-  
-  &:focus {
-    border-color: #007bff !important;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
-  }
-  
-  &:hover {
-    border-color: #007bff !important;
-  }
-  
-  &:indeterminate {
-    background-color: #007bff !important;
-    border-color: #007bff !important;
+  &:focus { border-color: #007bff !important; box-shadow: 0 0 0 .2rem rgba(0,123,255,.25) !important; }
+  &:hover { border-color: #007bff !important; }
+  &:indeterminate { 
+    background: #007bff !important; border-color: #007bff !important;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e") !important;
   }
 }
 
-.form-check-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  margin-left: 0.5rem;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  
-  &.text-success {
-    color: #28a745 !important;
-  }
-  
-  &.text-danger {
-    color: #dc3545 !important;
-  }
-  
-  &.text-muted {
-    color: #6c757d !important;
-    font-weight: 500;
-  }
-}
+// Form Labels
+.form-check-label { font-size: .75rem; font-weight: 600; margin-left: .5rem; cursor: pointer; text-transform: uppercase; letter-spacing: .5px; }
+.bulk-selection-checkbox .form-check-label { display: none; }
 
-/* 🆕 Hide labels for bulk selection checkboxes */
-.bulk-selection-checkbox .form-check-label {
-  display: none;
-}
+// Utilities & Responsive
+.badge { font-size: .75rem; font-weight: 500; }
+.pagination-sm .page-link { padding: .375rem .75rem; font-size: .875rem; }
+.spinner-border { width: 2rem; height: 2rem; }
 
-/* Badge Styling */
-.badge {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-/* Pagination Styling */
-.pagination-sm .page-link {
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-/* Loading Spinner */
-.spinner-border {
-  width: 2rem;
-  height: 2rem;
-}
-
-/* Responsive Table */
 @media (max-width: 768px) {
-  .table-responsive {
-    font-size: 0.875rem;
-  }
-  
-  .btn-group-sm .btn {
-    padding: 0.125rem 0.25rem;
-    font-size: 0.7rem;
-  }
-}
-
-/* Action Button Colors */
-.btn-outline-primary:hover {
-  color: #fff;
-}
-
-.btn-outline-success {
-  color: #28a745;
-  border-color: #28a745;
-  
-  &:hover {
-    color: #fff;
-    background-color: #28a745;
-    border-color: #28a745;
-  }
-}
-
-.btn-outline-warning {
-  color: #ffc107;
-  border-color: #ffc107;
-  
-  &:hover {
-    color: #212529;
-    background-color: #ffc107;
-    border-color: #ffc107;
-  }
-}
-
-.btn-outline-danger {
-  color: #dc3545;
-  border-color: #dc3545;
-  
-  &:hover {
-    color: #fff;
-    background-color: #dc3545;
-    border-color: #dc3545;
-  }
+  .table-responsive { font-size: .875rem; }
+  .btn-group-sm .btn { padding: .125rem .25rem; font-size: .7rem; }
 }
