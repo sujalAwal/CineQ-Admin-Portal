@@ -1,44 +1,70 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, takeUntil, finalize } from 'rxjs/operators';
 
-// project imports
-import { SharedModule } from '../../../theme/shared/shared.module';
+// Shared Components
 import { DataTableComponent } from '../../../shared/components/data-table/data-table.component';
-import { ToastService } from '../../../shared/services/toast.service';
-import { 
-  TableConfig, 
-  TableColumn, 
-  TableAction, 
-  PaginationInfo,
-  TableActionEvent 
-} from '../../../shared/interfaces/table.interface';
+import { ArtistModalComponent } from '../../../shared/components/artist-modal/artist-modal.component';
+import { ConfirmationModalComponent } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
+
+// Interfaces
+import { TableConfig, TableActionEvent, TableColumn } from '../../../shared/interfaces/table.interface';
+import { Artist, ArtistPageRequest, ArtistResponse } from '../../../shared/interfaces/artist.interface';
+
+// Services
+import { ArtistService } from '../../../shared/services/artist.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-artists',
-  imports: [CommonModule, SharedModule, DataTableComponent],
+  standalone: true,
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule,
+    DataTableComponent, 
+    ArtistModalComponent,
+    ConfirmationModalComponent
+  ],
   templateUrl: './artists.component.html',
-  styleUrls: ['./artists.component.scss']
+  styleUrls: ['./artists.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ArtistsComponent implements OnInit {
+export class ArtistsComponent implements OnInit, OnDestroy {
+  // Optimistic UI updates for perceived performance
+  private optimisticUpdates = new Map<string, Artist>();
   
-  // Table configuration - different from genres to show flexibility
+  // Memory leak prevention
+  private destroy$ = new Subject<void>();
+  
+  // Component state
+  artists: Artist[] = [];
+  loading = false;
+  searchControl = new FormControl('');
+  
+  // Modal states
+  showArtistModal = false;
+  showConfirmModal = false;
+  selectedArtist: Artist | null = null;
+  artistToDelete: Artist | null = null;
+  
+  // Pagination
+  currentPage = 1;
+  totalPages = 1;
+  totalItems = 0;
+  pageSize = 10;
+  
+  // Table configuration
   tableConfig: TableConfig = {
     title: 'Artists Management',
     entityName: 'Artist',
     apiEndpoint: '/api/artists',
     searchable: true,
     paginated: true,
-    pageSize: 15, // Different page size
+    pageSize: this.pageSize,
     sortable: true,
     columns: [
-      {
-        header: 'Avatar',
-        field: 'avatar',
-        type: 'image',
-        sortable: false,
-        width: '80px',
-        align: 'center'
-      },
       {
         header: 'Name',
         field: 'full_name',
@@ -86,22 +112,14 @@ export class ArtistsComponent implements OnInit {
         align: 'center'
       },
       {
-        header: 'Joined',
+        header: 'Created',
         field: 'created_at',
         type: 'date',
         sortable: true,
-        width: '120px',
-        align: 'center'
+        width: '120px'
       }
     ],
     actions: [
-      {
-        label: 'View Profile',
-        icon: 'ti ti-user',
-        type: 'view',
-        class: 'btn-outline-info',
-        visible: true
-      },
       {
         label: 'Edit',
         icon: 'ti ti-edit',
@@ -119,186 +137,232 @@ export class ArtistsComponent implements OnInit {
     ]
   };
 
-  // Component state
-  artistsData: any[] = [];
-  loading: boolean = false;
-  pagination: PaginationInfo = {
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    pageSize: 15
-  };
+  constructor(
+    private artistService: ArtistService,
+    private toastr: ToastrService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  constructor(private toastService: ToastService) {}
-
-  ngOnInit() {
+  ngOnInit(): void {
+    this.setupSearch();
     this.loadArtists();
   }
 
-  /**
-   * Load artists data (simulated API call)
-   */
-  loadArtists(filters?: any) {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  // Setup debounced search with performance optimization
+  private setupSearch(): void {
+    this.searchControl.valueChanges
+      .pipe(
+        debounceTime(300), // Prevent API spam
+        distinctUntilChanged(), // Only search when value actually changes
+        takeUntil(this.destroy$) // Prevent memory leaks
+      )
+      .subscribe(searchTerm => {
+        this.currentPage = 1;
+        this.loadArtists(searchTerm || '');
+      });
+  }
+
+  // Load artists with caching and error handling
+  loadArtists(searchTerm = '', page = this.currentPage): void {
     this.loading = true;
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      // Mock data with different structure to show flexibility
-      this.artistsData =[] ;
+    this.cdr.detectChanges();
 
-      // Mock pagination - different total
-      this.pagination = {
-        currentPage: 1,
-        totalPages: 8,
-        totalItems: 117,
-        pageSize: 15
-      };
+    const request: ArtistPageRequest = {
+      page,
+      size: this.pageSize,
+      search: searchTerm.trim() || undefined
+    };
 
-      this.loading = false;
-    }, 800);
+    this.artistService.getArtists(request)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.loading = false;
+          this.cdr.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          // Apply optimistic updates if any
+          this.artists = this.applyOptimisticUpdates(response.data);
+          this.totalItems = response.totalElements;
+          this.totalPages = response.totalPages;
+          this.currentPage = response.page;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error loading artists:', error);
+          this.toastr.error('Failed to load artists', 'Error');
+          this.artists = [];
+          this.cdr.detectChanges();
+        }
+      });
   }
 
-  /**
-   * Handle table actions (view, edit, delete, movies)
-   */
-  onTableAction(event: TableActionEvent) {
-    const { action, item } = event;
-
-    switch (action) {
-      case 'view':
-        this.viewArtist(item);
-        break;
-      case 'edit':
-        this.editArtist(item);
-        break;
-      case 'movies':
-        this.viewArtistMovies(item);
-        break;
-      case 'delete':
-        this.deleteArtist(item);
-        break;
-    }
-  }
-
-  /**
-   * Handle search functionality
-   */
-  onSearch(searchTerm: string) {
-    console.log('Searching artists for:', searchTerm);
-    // TODO: Call API with search parameter
-    this.loadArtists({ search: searchTerm });
-  }
-
-  /**
-   * Handle pagination
-   */
-  onPageChange(page: number) {
-    console.log('Artists page changed to:', page);
-    this.pagination.currentPage = page;
-    // TODO: Call API with page parameter
-    this.loadArtists({ page: page });
-  }
-
-  /**
-   * Handle sorting
-   */
-  onSort(sortInfo: {field: string, order: 'asc' | 'desc'}) {
-    console.log('Sorting artists by:', sortInfo);
-    // TODO: Call API with sort parameters
-    this.loadArtists({ 
-      sortBy: sortInfo.field, 
-      sortOrder: sortInfo.order 
+  // Apply optimistic updates to maintain UI responsiveness
+  private applyOptimisticUpdates(artists: Artist[]): Artist[] {
+    return artists.map(artist => {
+      const optimisticUpdate = this.optimisticUpdates.get(artist.id!);
+      return optimisticUpdate ? { ...artist, ...optimisticUpdate } : artist;
     });
   }
 
-  /**
-   * Handle status toggle
-   */
-  onToggleChange(event: {item: any, field: string, value: boolean}) {
-    console.log('Artist toggle changed:', event);
+  // Handle search with performance optimization
+  onSearch(searchTerm: string): void {
+    this.searchControl.setValue(searchTerm, { emitEvent: false });
+    this.currentPage = 1;
+    this.loadArtists(searchTerm);
+  }
+
+  // Handle pagination
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadArtists(this.searchControl.value || '', page);
+  }
+
+  // Handle sorting
+  onSort(event: { field: string; order: 'asc' | 'desc' }): void {
+    // TODO: Implement sorting when API supports it
+    console.log('Sort event:', event);
+  }
+
+  // Handle toggle changes with optimistic updates
+  onToggleChange(event: { item: any; field: string; value: boolean }): void {
+    const artist = event.item as Artist;
+    const newStatus = event.value;
     
-    // Simulate API call to update status
-    this.loading = true;
-    setTimeout(() => {
-      // Update local data
-      const artist = this.artistsData.find(a => a.id === event.item.id);
-      if (artist) {
-        artist[event.field] = event.value;
-      }
-      
-      // Show appropriate toast based on the new status
-      if (event.value) {
-        this.toastService.activated(
-          `${event.item.full_name} is now active and available.`,
-          'Artist Activated'
-        );
-      } else {
-        this.toastService.inactive(
-          `${event.item.full_name} has been set to inactive.`,
-          'Artist Deactivated'
-        );
-      }
-      
-      this.loading = false;
-    }, 600);
-  }
-
-  /**
-   * View artist profile
-   */
-  private viewArtist(artist: any) {
-    console.log('Viewing artist profile:', artist);
-    this.toastService.info(
-      `Opening profile for ${artist.full_name}`, 
-      'Artist Profile'
-    );
-    // TODO: Navigate to artist profile page or open modal
-  }
-
-  /**
-   * Edit artist
-   */
-  private editArtist(artist: any) {
-    console.log('Editing artist:', artist);
-    this.toastService.info(
-      `Editing ${artist.full_name}'s information`, 
-      'Edit Artist'
-    );
-    // TODO: Navigate to edit page or open edit modal
-  }
-
-  /**
-   * View artist's movies
-   */
-  private viewArtistMovies(artist: any) {
-    console.log('Viewing movies for artist:', artist);
-    this.toastService.info(
-      `Loading ${artist.movies_count} movies for ${artist.full_name}`, 
-      'Artist Movies'
-    );
-    // TODO: Navigate to movies page filtered by artist
-  }
-
-  /**
-   * Delete artist
-   */
-  private deleteArtist(artist: any) {
-    console.log('Deleting artist:', artist);
+    // Optimistic update
+    this.optimisticUpdates.set(artist.id!, { ...artist, is_active: newStatus });
     
-    if (confirm(`Are you sure you want to delete "${artist.full_name}"? This action cannot be undone.`)) {
-      this.loading = true;
-      
-      setTimeout(() => {
-        // Remove from local data
-        this.artistsData = this.artistsData.filter(a => a.id !== artist.id);
-        
-        this.toastService.success(
-          `${artist.full_name} has been deleted successfully!`,
-          'Artist Deleted'
-        );
-        
-        this.loading = false;
-      }, 700);
+    // Update UI immediately for better UX
+    const artistIndex = this.artists.findIndex(g => g.id === artist.id);
+    if (artistIndex !== -1) {
+      this.artists[artistIndex] = { ...this.artists[artistIndex], is_active: newStatus };
+      this.cdr.detectChanges();
     }
+
+    // Perform bulk enable/disable
+    const operation = newStatus 
+      ? this.artistService.enableArtist([artist.id!])
+      : this.artistService.disableArtist([artist.id!]);
+
+    operation
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Remove optimistic update on success
+          this.optimisticUpdates.delete(artist.id!);
+          const message = newStatus ? 'Artist enabled successfully' : 'Artist disabled successfully';
+          this.toastr.success(message);
+        },
+        error: (error) => {
+          // Revert optimistic update on error
+          this.optimisticUpdates.delete(artist.id!);
+          if (artistIndex !== -1) {
+            this.artists[artistIndex] = { ...this.artists[artistIndex], is_active: !newStatus };
+            this.cdr.detectChanges();
+          }
+          console.error('Error updating artist status:', error);
+          this.toastr.error('Failed to update artist status', 'Error');
+        }
+      });
+  }
+
+  // Handle table actions
+  onTableAction(event: TableActionEvent): void {
+    const artist = event.item as Artist;
+    
+    switch (event.action) {
+      case 'edit':
+        this.openEditModal(artist);
+        break;
+      case 'delete':
+        this.openDeleteConfirmation(artist);
+        break;
+    }
+  }
+
+  // Modal Management
+  openCreateModal(): void {
+    this.selectedArtist = null;
+    this.showArtistModal = true;
+    this.cdr.detectChanges();
+  }
+
+  openEditModal(artist: Artist): void {
+    this.selectedArtist = { ...artist };
+    this.showArtistModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeArtistModal(): void {
+    this.showArtistModal = false;
+    this.selectedArtist = null;
+    this.cdr.detectChanges();
+  }
+
+  onArtistSaved(artist: any): void {
+    this.closeArtistModal();
+    this.loadArtists(this.searchControl.value || '', this.currentPage);
+  }
+
+  // Delete Confirmation
+  openDeleteConfirmation(artist: Artist): void {
+    this.artistToDelete = artist;
+    this.showConfirmModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeDeleteConfirmation(): void {
+    this.showConfirmModal = false;
+    this.artistToDelete = null;
+    this.cdr.detectChanges();
+  }
+
+  confirmDelete(): void {
+    if (!this.artistToDelete) return;
+
+    const artistId = this.artistToDelete.id!;
+    const artistName = this.artistToDelete.full_name;
+
+    // Optimistic update - remove from UI immediately
+    this.artists = this.artists.filter(g => g.id !== artistId);
+    this.cdr.detectChanges();
+    
+    this.artistService.deleteArtist(artistId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastr.success(`${artistName} deleted successfully`);
+          this.closeDeleteConfirmation();
+          this.loadArtists(this.searchControl.value || '', this.currentPage);
+        },
+        error: (error) => {
+          console.error('Error deleting artist:', error);
+          this.toastr.error('Failed to delete artist', 'Error');
+          // Revert optimistic update on error
+          this.loadArtists(this.searchControl.value || '', this.currentPage);
+          this.closeDeleteConfirmation();
+        }
+      });
+  }
+
+  // Utility getters for template
+  get pagination() {
+    return {
+      currentPage: this.currentPage,
+      totalPages: this.totalPages,
+      totalItems: this.totalItems,
+      pageSize: this.pageSize
+    };
+  }
+
+  get artistsData() {
+    return this.artists;
   }
 }

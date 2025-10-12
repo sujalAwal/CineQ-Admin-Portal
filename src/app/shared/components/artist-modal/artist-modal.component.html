@@ -22,19 +22,19 @@
             type="text"
             id="artistName"
             class="form-control"
-            [class.is-invalid]="isFieldInvalid('name')"
-            formControlName="name"
+            [class.is-invalid]="isFieldInvalid('full_name')"
+            formControlName="full_name"
             placeholder="Enter artist name"
             maxlength="100">
           
           <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
-            {{ getFieldError('name') }}
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('full_name')">
+            {{ getFieldError('full_name') }}
           </div>
           
           <!-- Character Counter -->
           <div class="form-text">
-            {{ artistForm.get('name')?.value?.length || 0 }}/100 characters
+            {{ artistForm.get('full_name')?.value?.length || 0 }}/100 characters
           </div>
         </div>
         
@@ -56,41 +56,25 @@
           </div>
         </div>
         
-        <!-- Phone Field -->
-        <div class="mb-3">
-          <label for="artistPhone" class="form-label">Phone</label>
-          <input
-            type="tel"
-            id="artistPhone"
-            class="form-control"
-            [class.is-invalid]="isFieldInvalid('phone')"
-            formControlName="phone"
-            placeholder="Enter phone number"
-            maxlength="20">
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('phone')">
-            {{ getFieldError('phone') }}
-          </div>
-        </div>
-        
         <!-- Status Field -->
         <div class="mb-3">
           <label for="artistStatus" class="form-label">
             Status <span class="text-danger">*</span>
           </label>
-          <select
-            id="artistStatus"
-            class="form-select"
-            [class.is-invalid]="isFieldInvalid('status')"
-            formControlName="status">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+          <div class="form-check form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="artistStatus"
+              formControlName="is_active">
+            <label class="form-check-label" for="artistStatus">
+              Active
+            </label>
+          </div>
           
           <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('status')">
-            {{ getFieldError('status') }}
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('is_active')">
+            {{ getFieldError('is_active') }}
           </div>
         </div>
         

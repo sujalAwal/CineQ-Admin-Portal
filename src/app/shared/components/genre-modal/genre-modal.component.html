@@ -62,18 +62,20 @@
       <label for="genreStatus" class="form-label">
         Status <span class="text-danger">*</span>
       </label>
-      <select
-        id="genreStatus"
-        class="form-select"
-        [class.is-invalid]="isFieldInvalid('status')"
-        formControlName="status">
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-      </select>
+      <div class="form-check form-switch glass-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="genreStatus"
+          formControlName="is_active">
+        <label class="form-check-label" for="genreStatus">
+          Active Genre
+        </label>
+      </div>
       
       <!-- Error Message -->
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('status')">
-        {{ getFieldError('status') }}
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('is_active')">
+        {{ getFieldError('is_active') }}
       </div>
     </div>
     

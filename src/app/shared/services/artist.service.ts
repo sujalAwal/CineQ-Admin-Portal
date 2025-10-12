@@ -7,48 +7,46 @@ import { ToastrService } from 'ngx-toastr';
 
 import { environment } from '../../../environments/environment';
 import { 
-  Genre, 
-  GenreResponse,
+  Artist, 
+  ArtistResponse,
   ApiResponse,
-  GenreRequest,
+  ArtistRequest,
   PaginatedApiResponse,
-  GenrePageRequest
-} from '../interfaces/genre.interface';
+  ArtistPageRequest
+} from '../interfaces/artist.interface';
 
 @Injectable({
   providedIn: 'root'
 })
-export class GenreService {
-  private currentGenreSubject = new BehaviorSubject<Genre | null>(null);
+export class ArtistService {
+  private currentArtistSubject = new BehaviorSubject<Artist | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
 
-  private readonly url = `${environment.api.baseUrl}/genre`;
+  private readonly url = `${environment.api.baseUrl}/artist`;
 
   // 🚀 Performance optimizations
-  private genreCache = new Map<string, { data: any, timestamp: number }>();
+  private artistCache = new Map<string, { data: any, timestamp: number }>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private pendingRequests = new Map<string, Observable<any>>();
 
-  // Public observables (like Laravel's Auth::user())
-  public currentGenre$ = this.currentGenreSubject.asObservable();
+  // Public observables
+  public currentArtist$ = this.currentArtistSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor(
     private http: HttpClient,
     private router: Router,
     private toastr: ToastrService
-  ) {
-    
-  }
+  ) {}
 
   /**
    * 🚀 Optimized fetch with caching and request deduplication
    */
-  getGenres(request?: GenrePageRequest): Observable<PaginatedApiResponse<Genre>> {
+  getArtists(request?: ArtistPageRequest): Observable<PaginatedApiResponse<Artist>> {
     const cacheKey = this.buildCacheKey(request);
     
     // Check cache first
-    const cached = this.genreCache.get(cacheKey);
+    const cached = this.artistCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < this.CACHE_DURATION) {
       return of(cached.data);
     }
@@ -67,9 +65,10 @@ export class GenreService {
       if (request.sortDirection) httpParams = httpParams.set('sortDirection', request.sortDirection);
       if (request.search) httpParams = httpParams.set('search', request.search);
       if (request.active !== undefined) httpParams = httpParams.set('active', request.active.toString());
+      if (request.artist_type_id) httpParams = httpParams.set('artist_type_id', request.artist_type_id);
     }
 
-    const request$ = this.http.get<PaginatedApiResponse<Genre>>(this.url, { 
+    const request$ = this.http.get<PaginatedApiResponse<Artist>>(this.url, { 
       params: httpParams, 
       withCredentials: true 
     }).pipe(
@@ -77,11 +76,11 @@ export class GenreService {
         if (response && response.success) {
           return response;
         }
-        throw new Error(response?.message || 'Failed to fetch genres');
+        throw new Error(response?.message || 'Failed to fetch artists');
       }),
       tap(response => {
         // Cache successful response
-        this.genreCache.set(cacheKey, { data: response, timestamp: Date.now() });
+        this.artistCache.set(cacheKey, { data: response, timestamp: Date.now() });
         // Remove from pending requests
         this.pendingRequests.delete(cacheKey);
       }),
@@ -102,46 +101,40 @@ export class GenreService {
   /**
    * 🚀 Build cache key from request parameters
    */
-  private buildCacheKey(request?: GenrePageRequest): string {
-    if (!request) return 'genres_default';
+  private buildCacheKey(request?: ArtistPageRequest): string {
+    if (!request) return 'artists_default';
     
     const parts = [
-      'genres',
+      'artists',
       request.page || 1,
       request.size || 20,
-      request.sortBy || 'name',
+      request.sortBy || 'full_name',
       request.sortDirection || 'asc',
       request.search || '',
-      request.active !== undefined ? request.active : 'all'
+      request.active !== undefined ? request.active : 'all',
+      request.artist_type_id || ''
     ];
     
     return parts.join('_');
   }
 
   /**
-   * 🚀 Invalidate cache on mutations
-   */
-  private invalidateCache() {
-    this.genreCache.clear();
-  }
-
-  /**
    * 🚀 Optimized store with cache invalidation
    */
-  storeGenre(genre: GenreRequest): Observable<GenreResponse> {
+  storeArtist(artist: ArtistRequest): Observable<ArtistResponse> {
     let url = '';
-    let httpMethod: Observable<ApiResponse<GenreResponse>>;
+    let httpMethod: Observable<ApiResponse<ArtistResponse>>;
     
-    if(genre?.id){
-      // Update existing genre - use PUT method
-      url = `${this.url}/${genre.id}`;
-      httpMethod = this.http.put<ApiResponse<GenreResponse>>(url, genre, {
+    if(artist?.id){
+      // Update existing artist - use PUT method
+      url = `${this.url}/${artist.id}`;
+      httpMethod = this.http.put<ApiResponse<ArtistResponse>>(url, artist, {
         withCredentials: true
       });
     } else {
-      // Create new genre - use POST method
+      // Create new artist - use POST method
       url = `${this.url}`;
-      httpMethod = this.http.post<ApiResponse<GenreResponse>>(url, genre, {
+      httpMethod = this.http.post<ApiResponse<ArtistResponse>>(url, artist, {
         withCredentials: true
       });
     }
@@ -149,13 +142,13 @@ export class GenreService {
     return httpMethod.pipe(
       map(response => {
         if (response && response.success && response.data) {
-          this.toastr.success('Genre saved successfully!', 'Success');
+          this.toastr.success('Artist saved successfully!', 'Success');
           // Invalidate cache after successful mutation
           this.invalidateCache();
           return response.data;
         }
         
-        throw new Error(response?.message || 'Failed to save genre');
+        throw new Error(response?.message || 'Failed to save artist');
       }),
       catchError((error: any) => {
         return this.handleError(error);
@@ -164,24 +157,24 @@ export class GenreService {
   }
 
   /**
-   * Get current genre (like Laravel Auth::user())
+   * Get current artist
    */
-  getCurrentGenre(): Genre | null {
-    return this.currentGenreSubject.value;
+  getCurrentArtist(): Artist | null {
+    return this.currentArtistSubject.value;
   }
 
-  deleteGenre(id: string): Observable<boolean> {
+  deleteArtist(id: string): Observable<boolean> {
     const url = `${this.url}/${id}`;
     return this.http.delete<ApiResponse<boolean>>(url, { withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success) {
-            this.toastr.success(response.message || 'Genre deleted successfully!', 'Success');
+            this.toastr.success(response.message || 'Artist deleted successfully!', 'Success');
             // Invalidate cache after successful deletion
             this.invalidateCache();
             return true;
           }
-          throw new Error(response?.message || 'Failed to delete genre');
+          throw new Error(response?.message || 'Failed to delete artist');
         }),
         catchError((error: any) => {
           return this.handleError(error);
@@ -189,7 +182,7 @@ export class GenreService {
       );
   }
 
-  enableGenre(ids: string[]): Observable<boolean> {
+  enableArtist(ids: string[]): Observable<boolean> {
     const url = `${this.url}/bulk-enable`;
     return this.http.post<ApiResponse<boolean>>(url, { ids }, { withCredentials: true })
       .pipe(
@@ -199,7 +192,7 @@ export class GenreService {
             this.invalidateCache();
             return true;
           }
-          throw new Error(response?.message || 'Failed to enable genres');
+          throw new Error(response?.message || 'Failed to enable artists');
         }),
         catchError((error: any) => {
           return this.handleError(error);
@@ -207,7 +200,7 @@ export class GenreService {
       );
   }
 
-  disableGenre(ids: string[]): Observable<boolean> {
+  disableArtist(ids: string[]): Observable<boolean> {
     const url = `${this.url}/bulk-disable`;
     return this.http.post<ApiResponse<boolean>>(url, { ids }, { withCredentials: true })
       .pipe(
@@ -217,12 +210,19 @@ export class GenreService {
             this.invalidateCache();
             return true;
           }
-          throw new Error(response?.message || 'Failed to disable genres');
+          throw new Error(response?.message || 'Failed to disable artists');
         }),
         catchError((error: any) => {
           return this.handleError(error);
         })
       );
+  }
+
+  /**
+   * 🚀 Invalidate cache on mutations
+   */
+  private invalidateCache() {
+    this.artistCache.clear();
   }
 
   /**
@@ -232,23 +232,20 @@ export class GenreService {
     let errorMessage = 'An unexpected error occurred';
     let errorTitle = 'Error';
     
-    console.error('API Error Details:12', error);
+    console.error('API Error Details:', error);
     
     // Check if it's an HttpErrorResponse
     if (error instanceof HttpErrorResponse) {
       
-      console.log('HTTP Error Status:', error.status);
-      
       if (error.error instanceof ErrorEvent) {
-        // Client-side/Network error (no internet, DNS issues, etc.)
+        // Client-side/Network error
         errorMessage = `Network error: ${error?.message}`;
         errorTitle = 'Network Error';
       } else {
         // Server-side error responses
         switch (error.status) {
           case 0:
-            // Server is completely unreachable (server off, CORS, network issues)
-            errorMessage = '🔌Internal Server Error.';
+            errorMessage = '🔌 Internal Server Error.';
             errorTitle = 'Server Offline';
             break;
             
@@ -313,7 +310,7 @@ export class GenreService {
         }
       }
     } else {
-      // Handle non-HTTP errors (like thrown errors from map operator)
+      // Handle non-HTTP errors
       if (error.name === 'TimeoutError') {
         errorMessage = '⏰ Request timed out. Please try again.';
         errorTitle = 'Timeout';

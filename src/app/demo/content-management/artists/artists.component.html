@@ -2,20 +2,36 @@
   <div class="col-sm-12">
     <div class="card">
       <div class="card-header">
-        <h5>👥 Artists Management</h5>
+        <div class="row align-items-center">
+          <div class="col">
+            <h5 class="mb-0">👥 Artists Management</h5>
+            <p class="text-muted small mb-0">Manage actors, directors, producers, and other talent</p>
+          </div>
+          <div class="col-auto">
+            <button 
+              class="btn btn-primary btn-sm"
+              (click)="openCreateModal()"
+              [disabled]="loading">
+              <i class="ti ti-plus me-1"></i>
+              Add Artist
+            </button>
+          </div>
+        </div>
       </div>
       <div class="card-body">
+        
+        <!-- Search Box - Positioned above table like genres -->
         <div class="row mb-3">
-          <div class="col-md-6">
-            <h6 class="mb-3">Manage Artists & Performers</h6>
-            <p class="text-muted">
-              Add and manage actors, directors, producers, and other talent.
-            </p>
-          </div>
-          <div class="col-md-6 text-end">
-            <button class="btn btn-primary">
-              <i class="ti ti-plus me-2"></i>Add New Artist
-            </button>
+          <div class="col-md-4">
+            <div class="position-relative">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Search artists..."
+                [formControl]="searchControl"
+                [disabled]="loading">
+              <i class="ti ti-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+            </div>
           </div>
         </div>
         
@@ -35,3 +51,26 @@
     </div>
   </div>
 </div>
+
+<!-- Artist Modal -->
+<app-artist-modal
+  [isVisible]="showArtistModal"
+  [artist]="selectedArtist"
+  (closed)="closeArtistModal()"
+  (artistSaved)="onArtistSaved($event)">
+</app-artist-modal>
+
+<!-- Delete Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="showConfirmModal"
+  [config]="{
+    title: 'Delete Artist',
+    message: 'Are you sure you want to delete &quot;' + (artistToDelete?.full_name || 'this artist') + '&quot;? This action cannot be undone.',
+    confirmText: 'Delete',
+    confirmButtonClass: 'btn-danger',
+    icon: 'ti ti-trash',
+    iconColor: 'danger'
+  }"
+  (confirmed)="confirmDelete()"
+  (cancelled)="closeDeleteConfirmation()">
+</app-confirmation-modal>

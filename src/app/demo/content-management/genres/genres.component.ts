@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 // project imports
 import { SharedModule } from '../../../theme/shared/shared.module';
@@ -24,9 +26,10 @@ import { GenrePageRequest, PaginatedApiResponse } from '../../../shared/interfac
   selector: 'app-genres',
   imports: [CommonModule, SharedModule, DataTableComponent, GenreModalComponent, ConfirmationModalComponent],
   templateUrl: './genres.component.html',
-  styleUrls: ['./genres.component.scss']
+  styleUrls: ['./genres.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GenresComponent implements OnInit {
+export class GenresComponent implements OnInit, OnDestroy {
   
   // Table configuration
   tableConfig: TableConfig = {
@@ -85,13 +88,13 @@ export class GenresComponent implements OnInit {
       }
     ],
     actions: [
-      {
-        label: 'View',
-        icon: 'ti ti-eye',
-        type: 'view',
-        class: 'btn-outline-primary',
-        visible: true
-      },
+      // {
+      //   label: 'View',
+      //   icon: 'ti ti-eye',
+      //   type: 'view',
+      //   class: 'btn-outline-primary',
+      //   visible: true
+      // },
       {
         label: 'Edit',
         icon: 'ti ti-edit',
@@ -145,6 +148,12 @@ export class GenresComponent implements OnInit {
   };
   genreToDelete: Genre | null = null;
 
+  // 🆕 Memory leak prevention
+  private destroy$ = new Subject<void>();
+  
+  // 🆕 Debounced search
+  private searchSubject = new Subject<string>();
+
   // 🆕 Bulk operation state
   bulkOperation: {
     type: 'enable' | 'disable' | null;
@@ -155,18 +164,51 @@ export class GenresComponent implements OnInit {
   };
 
   constructor(private toastService: ToastService,
-              private genreService: GenreService
+              private genreService: GenreService,
+              private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
+    this.setupDebouncedSearch();
+    this.loadGenres();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * 🚀 Setup debounced search to reduce API calls
+   */
+  private setupDebouncedSearch() {
+    this.searchSubject.pipe(
+      debounceTime(300), // Wait 300ms after user stops typing
+      distinctUntilChanged(), // Only search if term actually changed
+      takeUntil(this.destroy$) // Cleanup on component destroy
+    ).subscribe(searchTerm => {
+      this.performSearch(searchTerm);
+    });
+  }
+
+  /**
+   * 🚀 Optimized search with debouncing
+   */
+  private performSearch(searchTerm: string) {
+    this.currentFilters = {
+      ...this.currentFilters,
+      search: searchTerm || undefined,
+      page: 1
+    };
     this.loadGenres();
   }
 
   /**
-   * Load genres data with pagination support
+   * 🚀 Optimized load genres with change detection
    */
   loadGenres(additionalFilters?: Partial<GenrePageRequest>) {
     this.loading = true;
+    this.cdr.markForCheck(); // Trigger change detection for loading state
     
     // Merge current filters with any additional filters
     const requestParams: GenrePageRequest = {
@@ -174,29 +216,31 @@ export class GenresComponent implements OnInit {
       ...additionalFilters
     };
 
-    this.genreService.getGenres(requestParams).subscribe({
-      next: (response: PaginatedApiResponse<Genre>) => {
-        console.log('Genres loaded:', response);
-        
-        // Extract data and pagination info from response
-        this.genresData = response.data;
-        
-        // Update pagination info
-        this.pagination = {
-          currentPage: response.page,
-          totalPages: response.totalPages,
-          totalItems: response.totalElements,
-          pageSize: response.size
-        };
+    this.genreService.getGenres(requestParams)
+      .pipe(takeUntil(this.destroy$)) // Prevent memory leaks
+      .subscribe({
+        next: (response: PaginatedApiResponse<Genre>) => {
+          // Extract data and pagination info from response
+          this.genresData = response.data;
+          
+          // Update pagination info
+          this.pagination = {
+            currentPage: response.page,
+            totalPages: response.totalPages,
+            totalItems: response.totalElements,
+            pageSize: response.size
+          };
 
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Failed to load genres:', error);
-        this.genresData = [];
-        this.loading = false;
-      }
-    });
+          this.loading = false;
+          this.cdr.markForCheck(); // Trigger change detection for data update
+        },
+        error: (error) => {
+          console.error('Failed to load genres:', error);
+          this.genresData = [];
+          this.loading = false;
+          this.cdr.markForCheck(); // Trigger change detection for error state
+        }
+      });
   }
 
   /**
@@ -206,9 +250,6 @@ export class GenresComponent implements OnInit {
     const { action, item } = event;
 
     switch (action) {
-      case 'view':
-        this.viewGenre(item);
-        break;
       case 'edit':
         this.editGenre(item);
         break;
@@ -219,19 +260,10 @@ export class GenresComponent implements OnInit {
   }
 
   /**
-   * Handle search functionality
+   * 🚀 Optimized search with debouncing
    */
   onSearch(searchTerm: string) {
-    console.log('Searching for:', searchTerm);
-    
-    // Update current filters and reset to first page
-    this.currentFilters = {
-      ...this.currentFilters,
-      search: searchTerm || undefined,
-      page: 1
-    };
-    
-    this.loadGenres();
+    this.searchSubject.next(searchTerm); // Use debounced search
   }
 
   /**
@@ -262,65 +294,54 @@ export class GenresComponent implements OnInit {
   }
 
   /**
-   * Handle is_active toggle
+   * 🚀 Optimistic UI update for toggle
    */
   onToggleChange(event: {item: any, field: string, value: boolean}) {
-    console.log('Toggle changed:', event);
-    
     const genreId = event.item.id;
     const genreName = event.item.name;
     
-    this.loading = true;
+    // 1. Optimistic update - update UI immediately
+    this.updateGenreInList(genreId, { is_active: event.value });
+    this.cdr.markForCheck();
     
-    if (event.value) {
-      // Trying to enable genre
-      this.genreService.enableGenre([genreId]).subscribe({
+    // 2. Sync with server
+    const operation = event.value ? this.genreService.enableGenre : this.genreService.disableGenre;
+    
+    operation.call(this.genreService, [genreId])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (success) => {
-          console.log('Enable genre response:', success);
           if (success) {
-            this.toastService.activated(
-              `Genre "${genreName}" is now active and available.`,
-              'Genre Activated'
-            );
-            // Refresh the data to get the latest state
-            this.loadGenres();
+            const message = event.value 
+              ? `Genre "${genreName}" is now active and available.`
+              : `Genre "${genreName}" has been set to inactive.`;
+            const title = event.value ? 'Genre Activated' : 'Genre Deactivated';
+            
+            if (event.value) {
+              this.toastService.activated(message, title);
+            } else {
+              this.toastService.inactive(message, title);
+            }
           } else {
-            // Revert the UI change
-            this.revertToggleState(genreId, false);
-            this.loading = false;
+            // Revert on API failure
+            this.revertToggleState(genreId, !event.value);
           }
         },
         error: (error) => {
-          console.error('Failed to enable genre:', error);
-          this.revertToggleState(genreId, false);
-          this.loading = false;
+          console.error('Failed to update genre:', error);
+          // Revert on error
+          this.revertToggleState(genreId, !event.value);
         }
       });
-    } else {
-      // Trying to disable genre
-      this.genreService.disableGenre([genreId]).subscribe({
-        next: (success) => {
-          console.log('Disable genre response:', success);
-          if (success) {
-            this.toastService.inactive(
-              `Genre "${genreName}" has been set to inactive.`,
-              'Genre Deactivated'
-            );
-            // Refresh the data to get the latest state
-            this.loadGenres();
-          } else {
-            // Revert the UI change
-            this.revertToggleState(genreId, true);
-            this.loading = false;
-          }
-        },
-        error: (error) => {
-          console.error('Failed to disable genre:', error);
-          this.revertToggleState(genreId, true);
-          this.loading = false;
-        }
-      });
-    }
+  }
+
+  /**
+   * 🚀 Update genre in local list (optimistic update)
+   */
+  private updateGenreInList(id: string, updates: Partial<Genre>) {
+    this.genresData = this.genresData.map(genre => 
+      genre.id === id ? { ...genre, ...updates } : genre
+    );
   }
 
   // 🆕 BULK OPERATIONS
@@ -329,7 +350,6 @@ export class GenresComponent implements OnInit {
    * Handle bulk actions from data table
    */
   onBulkAction(event: BulkSelectionEvent) {
-    console.log('Bulk action triggered:', event);
     
     if (event.selectedIds.length === 0) {
       this.toastService.warning('Please select at least one genre.', 'No Selection');
@@ -391,18 +411,11 @@ export class GenresComponent implements OnInit {
   }
 
   /**
-   * Revert toggle state when API fails
+   * 🚀 Optimized revert with change detection
    */
   private revertToggleState(genreId: string, originalValue: boolean) {
-    this.genresData = this.genresData.map(genre => 
-      genre.id === genreId ? { ...genre, is_active: originalValue } : genre
-    );
-    
-    // Force change detection to update the UI
-    // This ensures the toggle switches back to original position
-    setTimeout(() => {
-      // Trigger change detection if needed
-    }, 0);
+    this.updateGenreInList(genreId, { is_active: originalValue });
+    this.cdr.markForCheck();
   }
 
   /**
@@ -482,14 +495,6 @@ export class GenresComponent implements OnInit {
     });
   }
 
-  /**
-   * View genre details
-   */
-  private viewGenre(genre: any) {
-    console.log('Viewing genre:', genre);
-    this.toastService.info(`Viewing details for "${genre.name}"`, 'Genre Details');
-    // TODO: Navigate to genre details page or open view modal
-  }
 
   /**
    * Delete genre

@@ -3,20 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BaseModalComponent } from '../base-modal/base-modal.component';
 import { ModalConfig } from '../base-modal/base-modal.component';
-
-// Artist Interface
-export interface Artist {
-  id?: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  bio?: string;
-  birth_date?: string;
-  nationality?: string;
-  status: 'active' | 'inactive';
-  created_at?: string;
-  updated_at?: string;
-}
+import { ArtistService } from '../../services/artist.service';
+import { AuthService } from '../../services/auth.service';
+import { Artist, ArtistRequest } from '../../interfaces/artist.interface';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-artist-modal',
@@ -57,7 +47,12 @@ export class ArtistModalComponent implements OnInit {
     showSecondaryButton: true
   };
   
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private artistService: ArtistService,
+    private authService: AuthService,
+    private toastr: ToastrService
+  ) {}
   
   ngOnInit(): void {
     this.initializeForm();
@@ -74,13 +69,12 @@ export class ArtistModalComponent implements OnInit {
   // Initialize Reactive Form
   private initializeForm(): void {
     this.artistForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       email: ['', [Validators.email, Validators.maxLength(100)]],
-      phone: ['', [Validators.maxLength(20)]],
       bio: ['', [Validators.maxLength(500)]],
       birth_date: [''],
       nationality: ['', [Validators.maxLength(50)]],
-      status: ['active', [Validators.required]]
+      is_active: [true, [Validators.required]]
     });
     
     // Watch form validity for button state
@@ -111,15 +105,19 @@ export class ArtistModalComponent implements OnInit {
   private populateForm(): void {
     if (this.artist && this.artistForm) {
       this.artistForm.patchValue({
-        name: this.artist.name,
+        full_name: this.artist.full_name,
         email: this.artist.email || '',
-        phone: this.artist.phone || '',
         bio: this.artist.bio || '',
         birth_date: this.artist.birth_date || '',
         nationality: this.artist.nationality || '',
-        status: this.artist.status
+        is_active: this.artist.is_active
       });
     }
+  }
+  
+  // Getters
+  get isEditMode(): boolean {
+    return !!(this.artist && this.artist.id);
   }
   
   // Modal Events
@@ -127,32 +125,57 @@ export class ArtistModalComponent implements OnInit {
     this.resetForm();
     this.closed.emit();
   }
-  
+
   onModalSave(): void {
-    if (this.artistForm.valid) {
-      const formValue = this.artistForm.value;
+    if (this.artistForm.valid && !this.isLoading) {
+      this.isLoading = true;
+      this.updateModalConfig();
       
-      const artistData: Artist = {
-        ...formValue,
+      const formValue = this.artistForm.value;
+      const artistData: ArtistRequest = {
+        full_name: formValue.full_name,
+        email: formValue.email,
+        bio: formValue.bio,
+        birth_date: formValue.birth_date,
+        nationality: formValue.nationality,
+        is_active: formValue.is_active,
         ...(this.artist?.id && { id: this.artist.id })
       };
-      
-      this.artistSaved.emit(artistData);
+
+      // Use the store method for both create and update
+      this.artistService.storeArtist(artistData).subscribe({
+        next: (result) => {
+          this.isLoading = false;
+          this.updateModalConfig();
+          
+          const message = this.isEditMode ? 'Artist updated successfully!' : 'Artist created successfully!';
+          this.toastr.success(message);
+          
+          this.artistSaved.emit(result);
+          this.resetForm();
+          this.closed.emit();
+        },
+        error: (error) => {
+          this.isLoading = false;
+          this.updateModalConfig();
+          
+          const errorMessage = error.error?.message || 'An error occurred while saving the artist';
+          this.toastr.error(errorMessage);
+          console.error('Artist save error:', error);
+        }
+      });
     } else {
       this.markFormGroupTouched();
     }
-  }
-  
-  // Form Helpers
+  }  // Form Helpers
   private resetForm(): void {
     this.artistForm.reset({
-      name: '',
+      full_name: '',
       email: '',
-      phone: '',
       bio: '',
       birth_date: '',
       nationality: '',
-      status: 'active'
+      is_active: true
     });
     this.artistForm.markAsUntouched();
   }

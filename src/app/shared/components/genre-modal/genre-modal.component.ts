@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BaseModalComponent } from '../base-modal/base-modal.component';
@@ -20,7 +20,7 @@ import { ToastrService } from 'ngx-toastr';
   templateUrl: './genre-modal.component.html',
   styleUrls: ['./genre-modal.component.scss']
 })
-export class GenreModalComponent implements OnInit {
+export class GenreModalComponent implements OnInit, OnChanges, OnDestroy {
   
   // Modal Properties
   @Input() isVisible: boolean = false;
@@ -65,6 +65,41 @@ export class GenreModalComponent implements OnInit {
       this.updateModalConfig();
       this.populateForm();
     }
+    
+    // Handle body scroll lock
+    this.handleBodyScroll();
+  }
+
+  ngOnDestroy(): void {
+    // Always restore body scroll on component destroy
+    this.enableBodyScroll();
+  }
+  
+  // Body scroll management
+  private handleBodyScroll(): void {
+    if (this.isVisible) {
+      this.disableBodyScroll();
+    } else {
+      this.enableBodyScroll();
+    }
+  }
+  
+  private disableBodyScroll(): void {
+    if (typeof document !== 'undefined') {
+      const body = document.body;
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      body.style.overflow = 'hidden';
+      body.style.paddingRight = `${scrollBarWidth}px`;
+    }
+  }
+  
+  private enableBodyScroll(): void {
+    if (typeof document !== 'undefined') {
+      const body = document.body;
+      body.style.overflow = '';
+      body.style.paddingRight = '';
+    }
   }
   
   // Initialize Reactive Form
@@ -72,7 +107,7 @@ export class GenreModalComponent implements OnInit {
     this.genreForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
       description: ['', [Validators.maxLength(200)]],
-      status: ['active', [Validators.required]]
+      is_active: [true, [Validators.required]]
     });
     
     // Watch form validity for button state
@@ -105,13 +140,14 @@ export class GenreModalComponent implements OnInit {
       this.genreForm.patchValue({
         name: this.genre.name,
         description: this.genre.description || '',
-        status: this.genre.is_active ? 'active' : 'inactive'
+        is_active: this.genre.is_active
       });
     }
   }
   
   // Modal Events
   onModalClose(): void {
+    this.enableBodyScroll();
     this.resetForm();
     this.closed.emit();
   }
@@ -138,7 +174,7 @@ export class GenreModalComponent implements OnInit {
       const genreData: Genre = {
         name: formValue.name,
         description: formValue.description,
-        is_active: formValue.status === 'active',
+        is_active: formValue.is_active,
         ...(this.genre?.id && { id: this.genre.id })
       };
       
@@ -147,6 +183,7 @@ export class GenreModalComponent implements OnInit {
           next: (savedGenre) => {
             // Success - emit the saved genre
             // The service returns response.data which should be the genre object
+            this.enableBodyScroll();
             this.genreSaved.emit(savedGenre as any);
             this.resetLoadingState();
             this.resetForm();
@@ -179,7 +216,7 @@ export class GenreModalComponent implements OnInit {
     this.genreForm.reset({
       name: '',
       description: '',
-      status: 'active'
+      is_active: true
     });
     this.genreForm.markAsUntouched();
   }
