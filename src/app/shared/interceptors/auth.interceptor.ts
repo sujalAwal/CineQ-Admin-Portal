@@ -41,16 +41,24 @@ export class AuthInterceptor implements HttpInterceptor {
    * Add cookie credentials to request (for Laravel Sanctum cookie auth)
    */
   private addCookieCredentials(request: HttpRequest<any>): HttpRequest<any> {
+    // Check if this is a FormData request (file upload)
+    const isFormData = request.body instanceof FormData;
+    
     // For cookie-based auth, just ensure withCredentials is set to true
     // This allows the browser to send HttpOnly cookies automatically
     // The server expects cookies like 'auth_token', 'refresh_token', etc.
+    const headers: any = {
+      'Accept': 'application/json'
+    };
+    
+    // Only set Content-Type for non-FormData requests
+    // FormData requests need multipart/form-data which the browser sets automatically
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
     return request.clone({
-      setHeaders: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        // Note: No Authorization header needed - cookies handle this
-        // Server will read: Cookie: auth_token=xyz; refresh_token=abc
-      },
+      setHeaders: headers,
       withCredentials: true  // This is the key for cookie-based auth
     });
   }

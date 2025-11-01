@@ -10,8 +10,8 @@ export const environment = {
   
   // API Configuration (like Laravel .env)
   api: {
-   // baseUrl: 'http://localhost:8080/api',  // Your local Laravel API
-      baseUrl: 'https://api.awal.ct.ws/api',    // Your production API
+    // baseUrl: 'http://localhost:8080/api',  // Your local Spring Boot API
+   baseUrl: 'https://api.awal.ct.ws/api',    // Your production API
     timeout: 30000,                        // Request timeout
     retryAttempts: 2                       // Number of retry attempts
   },
@@ -37,6 +37,12 @@ export const environment = {
     enableRegistration: true,
     enableRememberMe: true,
     enableForgotPassword: true
+  },
+  
+  // Supabase Configuration
+
+  supabase: {
+    storageBaseUrl: 'https://eidprwpfigaiuxcucbdh.supabase.co/storage/v1'
   }
 };
 

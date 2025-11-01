@@ -58,6 +58,14 @@ const routes: Routes = [
           {
             path: 'movies',
             loadComponent: () => import('./demo/content-management/movies/movies.component').then((c) => c.MoviesComponent)
+          },
+          {
+            path: 'media-manager',
+            loadComponent: () => import('./demo/content-management/media-manager/media-manager.component').then((c) => c.MediaManagerComponent)
+          },
+          {
+            path: 'banners',
+            loadComponent: () => import('./demo/content-management/banners/banners.component').then((c) => c.BannersComponent)
           }
         ]
       }

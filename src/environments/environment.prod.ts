@@ -32,5 +32,9 @@ export const environment = {
     enableRegistration: false,  // Disable registration in production
     enableRememberMe: true,
     enableForgotPassword: true
+  },
+  
+  supabase: {
+    storageBaseUrl: 'https://eidprwpfigaiuxcucbdh.supabase.co/storage/v1'
   }
 };

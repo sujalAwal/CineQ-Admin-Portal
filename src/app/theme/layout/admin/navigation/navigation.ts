@@ -77,6 +77,23 @@ export const NavigationItems: NavigationItem[] = [
             icon: 'ti ti-movie',
             breadcrumbs: false
           }
+        ,
+          {
+            id: 'media-manager',
+            title: 'Media Manager',
+            type: 'item',
+            url: '/content/media-manager',
+            icon: 'ti ti-photo',
+            breadcrumbs: false
+          },
+          {
+            id: 'banners',
+            title: 'Banners',
+            type: 'item',
+            url: '/content/banners',
+            icon: 'ti ti-photo-heart',
+            breadcrumbs: false
+          }
         ]
       }
     ]

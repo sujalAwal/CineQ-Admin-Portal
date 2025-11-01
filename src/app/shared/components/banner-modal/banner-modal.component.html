@@ -1,0 +1,260 @@
+<!-- Banner Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()">
+  
+  <!-- BANNER FORM CONTENT -->
+  <form [formGroup]="bannerForm" (ngSubmit)="onModalSave()" novalidate>
+    
+    <!-- Title Field -->
+    <div class="mb-3">
+      <label for="bannerTitle" class="form-label">
+        Title <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="bannerTitle"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('title')"
+        formControlName="title"
+        placeholder="Enter banner title"
+        maxlength="200">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
+        {{ getFieldError('title') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ bannerForm.get('title')?.value?.length || 0 }}/200 characters
+      </div>
+    </div>
+    
+    <!-- Description Field -->
+    <div class="mb-3">
+      <label for="bannerDescription" class="form-label">Description</label>
+      <textarea
+        id="bannerDescription"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('description')"
+        formControlName="description"
+        placeholder="Enter banner description (optional)"
+        rows="3"
+        maxlength="500">
+      </textarea>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+        {{ getFieldError('description') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ bannerForm.get('description')?.value?.length || 0 }}/500 characters
+      </div>
+    </div>
+
+    <!-- Image Selection Field -->
+    <div class="mb-3">
+      <label for="bannerImageUrl" class="form-label">
+        Banner Image <span class="text-danger">*</span>
+      </label>
+      
+      <!-- Image Preview or Placeholder -->
+      <div class="image-selection-container mb-2">
+        <div class="image-preview-wrapper" *ngIf="getSelectedImageUrl()">
+          <img 
+            [src]="getSelectedImageUrl()" 
+            alt="Banner Preview"
+            class="banner-image-preview"
+            onerror="this.style.display='none'">
+          <button
+            type="button"
+            class="btn btn-sm btn-danger remove-image-btn"
+            (click)="removeSelectedImage()"
+            title="Remove Image">
+            <i class="ti ti-x"></i>
+          </button>
+        </div>
+        
+        <!-- No Image Selected -->
+        <div class="no-image-placeholder" *ngIf="!getSelectedImageUrl()">
+          <i class="ti ti-photo" style="font-size: 3rem; color: #ccc;"></i>
+          <p class="text-muted small mb-0">No image selected</p>
+        </div>
+      </div>
+      
+      <!-- Select Image Button -->
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          (click)="openMediaManager()">
+          <i class="ti ti-photo me-2"></i>Select Image
+        </button>
+        
+        <!-- Hidden Input for Form Validation -->
+        <input
+          type="hidden"
+          id="bannerImageUrl"
+          formControlName="imageUrl"
+          [class.is-invalid]="isFieldInvalid('imageUrl')">
+      </div>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('imageUrl')">
+        {{ getFieldError('imageUrl') }}
+      </div>
+      
+      <!-- Help Text -->
+      <div class="form-text">
+        Click "Select Image" to choose an image from the media library
+      </div>
+    </div>
+
+    <!-- Target URL Field -->
+    <div class="mb-3">
+      <label for="bannerTargetUrl" class="form-label">Target URL</label>
+      <input
+        type="url"
+        id="bannerTargetUrl"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('targetUrl')"
+        formControlName="targetUrl"
+        placeholder="https://example.com/target-page">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('targetUrl')">
+        {{ getFieldError('targetUrl') }}
+      </div>
+    </div>
+
+    <!-- Banner Type and Display Order Row -->
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label for="bannerType" class="form-label">
+          Banner Type <span class="text-danger">*</span>
+        </label>
+        <select
+          id="bannerType"
+          class="form-select"
+          [class.is-invalid]="isFieldInvalid('bannerType')"
+          formControlName="bannerType">
+          <option *ngFor="let option of bannerTypeOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        
+        <!-- Error Message -->
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('bannerType')">
+          {{ getFieldError('bannerType') }}
+        </div>
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <label for="bannerDisplayOrder" class="form-label">
+          Display Order <span class="text-danger">*</span>
+        </label>
+        <input
+          type="number"
+          id="bannerDisplayOrder"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('displayOrder')"
+          formControlName="displayOrder"
+          placeholder="0"
+          min="0">
+        
+        <!-- Error Message -->
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('displayOrder')">
+          {{ getFieldError('displayOrder') }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Movie ID Field -->
+    <div class="mb-3">
+      <label for="bannerMovieId" class="form-label">Movie ID</label>
+      <input
+        type="text"
+        id="bannerMovieId"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('movieId')"
+        formControlName="movieId"
+        placeholder="Enter movie ID (optional)">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('movieId')">
+        {{ getFieldError('movieId') }}
+      </div>
+    </div>
+
+    <!-- Start Date and End Date Row -->
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label for="bannerStartDate" class="form-label">Start Date</label>
+        <input
+          type="datetime-local"
+          id="bannerStartDate"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('startDate')"
+          formControlName="startDate">
+        
+        <!-- Error Message -->
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('startDate')">
+          {{ getFieldError('startDate') }}
+        </div>
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <label for="bannerEndDate" class="form-label">End Date</label>
+        <input
+          type="datetime-local"
+          id="bannerEndDate"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('endDate')"
+          formControlName="endDate">
+        
+        <!-- Error Message -->
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('endDate')">
+          {{ getFieldError('endDate') }}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Status Field -->
+    <div class="mb-3">
+      <label for="bannerStatus" class="form-label">
+        Status <span class="text-danger">*</span>
+      </label>
+      <div class="form-check form-switch glass-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="bannerStatus"
+          formControlName="isActive">
+        <label class="form-check-label" for="bannerStatus">
+          Active Banner
+        </label>
+      </div>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('isActive')">
+        {{ getFieldError('isActive') }}
+      </div>
+    </div>
+    
+  </form>
+  
+</app-base-modal>
+
+<!-- Media Manager Modal -->
+<app-media-manager-modal
+  [isVisible]="showMediaManager"
+  [config]="mediaManagerConfig"
+  (closed)="onMediaManagerClosed()"
+  (filesSelected)="onImageSelected($event)">
+</app-media-manager-modal>
+
