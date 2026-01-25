@@ -1,0 +1,35 @@
+// User Modal Styles
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  
+  .text-danger {
+    margin-left: 2px;
+  }
+  
+  .text-muted {
+    font-weight: 400;
+    font-size: 0.875rem;
+  }
+}
+
+.form-control,
+.form-select {
+  &:focus {
+    border-color: #4680ff;
+    box-shadow: 0 0 0 0.2rem rgba(70, 128, 255, 0.25);
+  }
+}
+
+.form-text {
+  font-size: 0.813rem;
+  margin-top: 0.25rem;
+}
+
+.form-check {
+  padding-left: 2.5rem;
+  
+  .form-check-input {
+    margin-left: -2.5rem;
+  }
+}

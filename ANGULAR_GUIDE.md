@@ -105,7 +105,7 @@ const routes: Routes = [
     children: [                         // Nested routes
       {
         path: '',
-        redirectTo: '/default',         // Like redirect()->route()
+        redirectTo: '/login',         // Like redirect()->route()
         pathMatch: 'full'
       },
       {

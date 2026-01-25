@@ -1,0 +1,86 @@
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()"
+>
+  <form [formGroup]="roleForm">
+    <!-- Role Name -->
+    <div class="mb-3">
+      <label class="form-label">Role Name <span class="text-danger">*</span></label>
+      <input
+        type="text"
+        class="form-control"
+        formControlName="name"
+        placeholder="Enter role name"
+        [class.is-invalid]="isFieldInvalid('name')"
+        (input)="onNameInput($event)"
+        style="text-transform: uppercase"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+        {{ getFieldError('name') }}
+      </div>
+    </div>
+
+    <!-- Slug (Auto-generated) -->
+    <div class="mb-3">
+      <label class="form-label">Slug <span class="text-muted">(Auto-generated)</span></label>
+      <input
+        type="text"
+        class="form-control"
+        formControlName="slug"
+        placeholder="Auto-generated from name"
+        readonly
+        style="background-color: #f8f9fa; cursor: not-allowed;"
+      />
+    </div>
+
+    <!-- Status -->
+    <div class="mb-4">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" formControlName="isActive" id="roleActive" />
+        <label class="form-check-label" for="roleActive">
+          {{ roleForm.get('isActive')?.value ? 'Active' : 'Inactive' }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Permissions -->
+    <h6 class="mb-3">Permissions</h6>
+    <div *ngIf="loading" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+    </div>
+
+    <div *ngIf="!loading" class="permissions-container">
+      <div *ngFor="let module of modules" class="module-card mb-3">
+        <div class="module-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">{{ module.displayName }}</h6>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline-primary me-2" (click)="selectAllModulePermissions(module.code)">
+                Select All
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearAllModulePermissions(module.code)">
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="permissions-grid">
+          <div *ngFor="let permission of permissions" class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [id]="'perm-' + module.code + '-' + permission.code"
+              [checked]="isPermissionSelected(module.code, permission.code)"
+              (change)="togglePermission(module.code, permission.code)"
+            />
+            <label class="form-check-label" [for]="'perm-' + module.code + '-' + permission.code">
+              {{ permission.actionName }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</app-base-modal>

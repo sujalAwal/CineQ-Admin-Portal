@@ -1,0 +1,288 @@
+<!-- Form Manager Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()">
+  
+  <!-- FORM MANAGER FORM CONTENT -->
+  <form [formGroup]="formManagerForm" (ngSubmit)="onModalSave()" novalidate>
+    
+    <!-- Title Field -->
+    <div class="mb-3">
+      <label for="formTitle" class="form-label">
+        Title <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="formTitle"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('title')"
+        formControlName="title"
+        (input)="onTitleChange()"
+        placeholder="Enter form title"
+        maxlength="100">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
+        {{ getFieldError('title') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ formManagerForm.get('title')?.value?.length || 0 }}/100 characters
+      </div>
+    </div>
+    
+    <!-- Slug Field -->
+    <div class="mb-3">
+      <label for="formSlug" class="form-label">
+        Slug <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="formSlug"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('slug')"
+        formControlName="slug"
+        placeholder="form-slug"
+        maxlength="100">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('slug')">
+        {{ getFieldError('slug') }}
+      </div>
+      
+      <!-- Help Text -->
+      <div class="form-text">
+        Unique identifier (lowercase, numbers, and hyphens only)
+      </div>
+    </div>
+    
+    <!-- Description Field -->
+    <div class="mb-3">
+      <label for="formDescription" class="form-label">Description</label>
+      <textarea
+        id="formDescription"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('description')"
+        formControlName="description"
+        placeholder="Enter form description (optional)"
+        rows="2"
+        maxlength="500">
+      </textarea>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+        {{ getFieldError('description') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ formManagerForm.get('description')?.value?.length || 0 }}/500 characters
+      </div>
+    </div>
+    
+    <!-- Version Field -->
+    <div class="mb-3">
+      <label for="formVersion" class="form-label">
+        Version <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="formVersion"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('version')"
+        formControlName="version"
+        placeholder="1.0.0">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('version')">
+        {{ getFieldError('version') }}
+      </div>
+    </div>
+    
+    <!-- Status Field -->
+    <div class="mb-3">
+      <label for="formStatus" class="form-label">
+        Status <span class="text-danger">*</span>
+      </label>
+      <div class="form-check form-switch glass-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="formStatus"
+          formControlName="isActive">
+        <label class="form-check-label" for="formStatus">
+          Active Form
+        </label>
+      </div>
+    </div>
+    
+    <!-- Divider -->
+    <hr class="my-4">
+
+    <!-- Form Steps Section -->
+    <div class="form-steps-section">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0">Form Steps</h6>
+      </div>
+
+      <!-- Form Steps List -->
+      <div class="accordion" id="formStepsAccordion">
+        <div class="accordion-item" *ngFor="let step of formSteps; let i = index; trackBy: trackByStepIndex">
+          <h2 class="accordion-header">
+            <button
+              class="accordion-button {{ !step.expanded ? 'collapsed' : '' }}"
+              type="button"
+              (click)="toggleStepExpansion(step)"
+              [attr.aria-expanded]="step.expanded">
+              <div class="d-flex align-items-center w-100">
+                <span class="badge bg-primary me-2">{{ step.stepOrder }}</span>
+                <span class="flex-grow-1">{{ step.stepTitle || 'Untitled Step' }}</span>
+                <small class="text-muted me-2">{{ step.stepSlug }}</small>
+                <button
+                  type="button"
+                  class="btn btn-outline-danger btn-sm ms-2"
+                  (click)="removeStep(i); $event.stopPropagation()"
+                  [disabled]="formSteps.length <= 1"
+                  title="Remove Step">
+                  <i class="ti ti-trash"></i>
+                </button>
+              </div>
+            </button>
+          </h2>
+          <div class="accordion-collapse collapse {{ step.expanded ? 'show' : '' }}">
+            <div class="accordion-body">
+
+              <!-- Step Basic Info -->
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Step Title <span class="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="step.stepTitle"
+                    [ngModelOptions]="{standalone: true}"
+                    (input)="onStepTitleChange(step)"
+                    placeholder="Enter step title">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Step Slug <span class="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="step.stepSlug"
+                    [ngModelOptions]="{standalone: true}"
+                    placeholder="step-slug">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Order <span class="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    [(ngModel)]="step.stepOrder"
+                    [ngModelOptions]="{standalone: true}"
+                    min="1">
+                </div>
+              </div>
+
+              <!-- Step JSON Editors -->
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label class="form-label">Form Schema <span class="text-danger">*</span></label>
+                  <div class="json-editor-wrapper" [class.is-invalid]="step.jsonErrors?.formSchema">
+                    <ngx-codemirror
+                      *ngIf="step.formSchemaJson !== undefined"
+                      [(ngModel)]="step.formSchemaJson"
+                      [ngModelOptions]="{standalone: true}"
+                      [options]="codeMirrorOptions"
+                      (ngModelChange)="onStepFormSchemaChange(step, $event)">
+                    </ngx-codemirror>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="step.jsonErrors?.formSchema">
+                    Invalid JSON: {{ step.jsonErrors.formSchema }}
+                  </div>
+                </div>
+
+                <div class="col-12 mb-3">
+                  <label class="form-label">UI Schema <span class="text-danger">*</span></label>
+                  <div class="json-editor-wrapper" [class.is-invalid]="step.jsonErrors?.uiSchema">
+                    <ngx-codemirror
+                      *ngIf="step.uiSchemaJson !== undefined"
+                      [(ngModel)]="step.uiSchemaJson"
+                      [ngModelOptions]="{standalone: true}"
+                      [options]="codeMirrorOptions"
+                      (ngModelChange)="onStepUiSchemaChange(step, $event)">
+                    </ngx-codemirror>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="step.jsonErrors?.uiSchema">
+                    Invalid JSON: {{ step.jsonErrors.uiSchema }}
+                  </div>
+                </div>
+
+                <div class="col-12 mb-3">
+                  <label class="form-label">Validation Rules <span class="text-danger">*</span></label>
+                  <div class="json-editor-wrapper" [class.is-invalid]="step.jsonErrors?.validationRules">
+                    <ngx-codemirror
+                      *ngIf="step.validationRulesJson !== undefined"
+                      [(ngModel)]="step.validationRulesJson"
+                      [ngModelOptions]="{standalone: true}"
+                      [options]="codeMirrorOptions"
+                      (ngModelChange)="onStepValidationRulesChange(step, $event)">
+                    </ngx-codemirror>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="step.jsonErrors?.validationRules">
+                    Invalid JSON: {{ step.jsonErrors.validationRules }}
+                  </div>
+                </div>
+
+                <div class="col-12 mb-3">
+                  <label class="form-label">Workflow Rules <span class="text-danger">*</span></label>
+                  <div class="json-editor-wrapper" [class.is-invalid]="step.jsonErrors?.workflowRules">
+                    <ngx-codemirror
+                      *ngIf="step.workflowRulesJson !== undefined"
+                      [(ngModel)]="step.workflowRulesJson"
+                      [ngModelOptions]="{standalone: true}"
+                      [options]="codeMirrorOptions"
+                      (ngModelChange)="onStepWorkflowRulesChange(step, $event)">
+                    </ngx-codemirror>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="step.jsonErrors?.workflowRules">
+                    Invalid JSON: {{ step.jsonErrors.workflowRules }}
+                  </div>
+                </div>
+
+                <div class="col-12 mb-3">
+                  <label class="form-label">Metadata <span class="text-muted">(Optional)</span></label>
+                  <div class="json-editor-wrapper" [class.is-invalid]="step.jsonErrors?.metadata">
+                    <ngx-codemirror
+                      *ngIf="step.metadataJson !== undefined"
+                      [(ngModel)]="step.metadataJson"
+                      [ngModelOptions]="{standalone: true}"
+                      [options]="codeMirrorOptions"
+                      (ngModelChange)="onStepMetadataChange(step, $event)">
+                    </ngx-codemirror>
+                  </div>
+                  <div class="invalid-feedback d-block" *ngIf="step.jsonErrors?.metadata">
+                    Invalid JSON: {{ step.jsonErrors.metadata }}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Step Button at Bottom -->
+      <div class="d-flex justify-content-center mt-3">
+        <button type="button" class="btn btn-outline-primary" (click)="addStep()">
+          <i class="ti ti-plus me-2"></i>Add New Step
+        </button>
+      </div>
+    </div>
+    
+  </form>
+  
+</app-base-modal>

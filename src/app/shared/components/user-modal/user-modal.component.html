@@ -1,0 +1,106 @@
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()"
+>
+  <form [formGroup]="userForm">
+    <!-- Name -->
+    <div class="mb-3">
+      <label class="form-label">Name <span class="text-danger">*</span></label>
+      <input
+        type="text"
+        class="form-control"
+        formControlName="name"
+        placeholder="Enter full name"
+        [class.is-invalid]="isFieldInvalid('name')"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+        {{ getFieldError('name') }}
+      </div>
+    </div>
+
+    <!-- Email -->
+    <div class="mb-3">
+      <label class="form-label">Email <span class="text-danger">*</span></label>
+      <input
+        type="email"
+        class="form-control"
+        formControlName="email"
+        placeholder="Enter email address"
+        [class.is-invalid]="isFieldInvalid('email')"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('email')">
+        {{ getFieldError('email') }}
+      </div>
+    </div>
+
+    <!-- Phone Number -->
+    <div class="mb-3">
+      <label class="form-label">Phone Number <span class="text-danger">*</span></label>
+      <input
+        type="tel"
+        class="form-control"
+        formControlName="phoneNumber"
+        placeholder="Enter 10-digit phone number"
+        maxlength="10"
+        [class.is-invalid]="isFieldInvalid('phoneNumber')"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('phoneNumber')">
+        {{ getFieldError('phoneNumber') }}
+      </div>
+      <small class="form-text text-muted">Enter 10-digit phone number without spaces or dashes</small>
+    </div>
+
+    <!-- Password -->
+    <div class="mb-3">
+      <label class="form-label">
+        Password 
+        <span class="text-danger" *ngIf="!user">*</span>
+        <span class="text-muted" *ngIf="user">(Leave blank to keep current password)</span>
+      </label>
+      <input
+        type="password"
+        class="form-control"
+        formControlName="password"
+        [placeholder]="user ? 'Enter new password (optional)' : 'Enter password'"
+        [class.is-invalid]="isFieldInvalid('password')"
+      />
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('password')">
+        {{ getFieldError('password') }}
+      </div>
+      <small class="form-text text-muted">
+        Password must be at least 8 characters with 1 uppercase, 1 lowercase, 1 number and 1 special character
+      </small>
+    </div>
+
+    <!-- Role -->
+    <div class="mb-3">
+      <label class="form-label">Role <span class="text-danger">*</span></label>
+      <select
+        class="form-select"
+        formControlName="roleId"
+        [class.is-invalid]="isFieldInvalid('roleId')"
+      >
+        <option value="">Select a role</option>
+        <option *ngFor="let role of roles" [value]="role.id">
+          {{ role.name }}
+        </option>
+      </select>
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('roleId')">
+        {{ getFieldError('roleId') }}
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="mb-3">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" formControlName="isActive" id="userActive" />
+        <label class="form-check-label" for="userActive">
+          {{ userForm.get('isActive')?.value ? 'Active' : 'Inactive' }}
+        </label>
+      </div>
+      <small class="form-text text-muted">Inactive users cannot log in to the system</small>
+    </div>
+  </form>
+</app-base-modal>

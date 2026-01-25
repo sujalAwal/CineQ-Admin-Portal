@@ -1,0 +1,52 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>👥 Users Management</h5>
+      </div>
+      <div class="card-body">
+        <!-- Header Section -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <!-- Left side - can add title or other elements here if needed -->
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-primary" (click)="openAddUserModal()">
+              <i class="ti ti-plus me-2"></i>Add New User
+            </button>
+          </div>
+        </div>
+        
+        <!-- Data Table Component -->
+        <app-data-table
+          [config]="tableConfig"
+          [data]="usersData"
+          [loading]="loading"
+          [pagination]="pagination"
+          (search)="onSearch($event)"
+          (pageChange)="onPageChange($event)"
+          (sort)="onSort($event)"
+          (toggleChange)="onToggleChange($event)"
+          (actionClick)="onTableAction($event)">
+        </app-data-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Modal -->
+<app-user-modal
+  [isVisible]="showUserModal"
+  [user]="selectedUser"
+  [isLoading]="modalLoading"
+  (closed)="onUserModalClosed()"
+  (userSaved)="onUserSaved($event)">
+</app-user-modal>
+
+<!-- Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [config]="confirmationConfig"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()">
+</app-confirmation-modal>

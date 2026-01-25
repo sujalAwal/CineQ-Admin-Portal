@@ -68,6 +68,30 @@ const routes: Routes = [
             loadComponent: () => import('./demo/content-management/banners/banners.component').then((c) => c.BannersComponent)
           }
         ]
+      },
+      // Dynamic Form Manager Routes
+      {
+        path: 'form-manager',
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./demo/content-management/form-managers/form-managers.component').then((c) => c.FormManagersComponent)
+          }
+        ]
+      },
+      // User Management Routes
+      {
+        path: 'user-management',
+        children: [
+          {
+            path: 'roles',
+            loadComponent: () => import('./demo/user-management/roles/roles.component').then((c) => c.RolesComponent)
+          },
+          {
+            path: 'users',
+            loadComponent: () => import('./demo/user-management/users/users.component').then((c) => c.UsersComponent)
+          }
+        ]
       }
     ]
   },

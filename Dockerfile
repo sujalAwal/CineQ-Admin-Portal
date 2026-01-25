@@ -18,6 +18,11 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
+# Generate environment.prod.ts from environment variables (if production)
+RUN if [ "${BUILD_CONFIGURATION}" = "production" ]; then \
+      node scripts/generate-env.js || echo "Warning: Could not generate env file"; \
+    fi
+
 # Build the application for specified environment
 RUN npm run ng build -- --configuration=${BUILD_CONFIGURATION}
 

@@ -76,8 +76,7 @@ export const NavigationItems: NavigationItem[] = [
             url: '/content/movies',
             icon: 'ti ti-movie',
             breadcrumbs: false
-          }
-        ,
+          },
           {
             id: 'media-manager',
             title: 'Media Manager',
@@ -92,6 +91,62 @@ export const NavigationItems: NavigationItem[] = [
             type: 'item',
             url: '/content/banners',
             icon: 'ti ti-photo-heart',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'user-management',
+    title: 'User Management',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'user-management-section',
+        title: 'User Management',
+        type: 'collapse',
+        icon: 'ti ti-users-group',
+        children: [
+          {
+            id: 'roles',
+            title: 'Roles',
+            type: 'item',
+            url: '/user-management/roles',
+            icon: 'ti ti-shield-lock',
+            breadcrumbs: false
+          },
+          {
+            id: 'users',
+            title: 'Users',
+            type: 'item',
+            url: '/user-management/users',
+            icon: 'ti ti-user',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'dynamic-form-manager',
+    title: 'Dynamic Form Manager',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'form-manager',
+        title: 'Form Manager',
+        type: 'collapse',
+        icon: 'ti ti-forms',
+        children: [
+          {
+            id: 'form-managers',
+            title: 'Form Managers',
+            type: 'item',
+            url: '/form-manager',
+            icon: 'ti ti-layout-board',
             breadcrumbs: false
           }
         ]

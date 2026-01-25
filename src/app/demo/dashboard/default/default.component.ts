@@ -1,11 +1,12 @@
 // Angular Import
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 // project import
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { BajajChartComponent } from 'src/app/theme/shared/components/apexchart/bajaj-chart/bajaj-chart.component';
 import { BarChartComponent } from 'src/app/theme/shared/components/apexchart/bar-chart/bar-chart.component';
 import { ChartDataMonthComponent } from 'src/app/theme/shared/components/apexchart/chart-data-month/chart-data-month.component';
+import { MasterDataService } from 'src/app/shared/services/master-data.service';
 
 @Component({
   selector: 'app-default',
@@ -13,7 +14,21 @@ import { ChartDataMonthComponent } from 'src/app/theme/shared/components/apexcha
   templateUrl: './default.component.html',
   styleUrls: ['./default.component.scss']
 })
-export class DefaultComponent {
+export class DefaultComponent implements OnInit {
+  constructor(private masterDataService: MasterDataService) {}
+
+  ngOnInit(): void {
+    // Fetch and cache master data on dashboard initialization
+    this.masterDataService.fetchMasterData().subscribe({
+      next: (response) => {
+        console.log('Master data loaded successfully:', response);
+      },
+      error: (error) => {
+        console.error('Failed to load master data:', error);
+      }
+    });
+  }
+
   // public method
   ListGroup = [
     {

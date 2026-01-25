@@ -25,12 +25,16 @@ bootstrapApplication(AppComponent, {
     
     // Toast notifications
     provideToastr({
-      timeOut: 3000,
+      timeOut: 5000,
       positionClass: 'toast-top-right',
       preventDuplicates: true,
       progressBar: true,
       closeButton: true,
-      enableHtml: true
+      enableHtml: true,
+      newestOnTop: true,
+      tapToDismiss: true,
+      maxOpened: 5,
+      autoDismiss: false
     }),
     
     // HTTP Interceptors (like Laravel middleware)

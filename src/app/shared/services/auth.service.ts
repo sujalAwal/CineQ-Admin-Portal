@@ -52,9 +52,23 @@ export class AuthService {
         tap(loginResponse => {
           // Store authentication data (like Laravel session)
           this.setAuthData(loginResponse);
+          
+          // Call profile API after successful login
+          this.fetchProfile().subscribe();
         }),
         catchError(this.handleError)
       );
+  }
+
+  /**
+   * Fetch user profile
+   */
+  private fetchProfile(): Observable<any> {
+    const url = `${environment.api.baseUrl}/auth/profile`;
+    
+    return this.http.get(url, {
+      withCredentials: true
+    });
   }
 
   /**
