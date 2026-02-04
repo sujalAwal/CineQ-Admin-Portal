@@ -36,9 +36,9 @@ jobs:
         run: |
           echo "::group::Angular Build Process"
           echo "Building 'cine-q' for Production..."
-          npm run build -- --configuration production
+          npm build-prod
           echo "Build complete. Checking output directory..."
-          ls -R dist/cineq-app
+          ls -R dist/cineq-admin-portal
           echo "::endgroup::"
 
       - name: ☁️ Publishing to Cloudflare Pages
@@ -47,7 +47,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: 'admin-portal-cineq'
-          directory: 'dist/cineq-app'
+          directory: 'dist/cineq-admin-portal'
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
         # This action automatically logs its own progress (uploading, etc.)
 
