@@ -1,0 +1,174 @@
+<!-- Module Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  [isLoading]="isLoading || moduleForm.invalid"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()">
+
+  <!-- MODULE FORM CONTENT -->
+  <form [formGroup]="moduleForm" (ngSubmit)="onModalSave()" novalidate>
+
+    <!-- Module Name Field -->
+    <div class="mb-3">
+      <label for="moduleName" class="form-label">
+        Module Name <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="moduleName"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('name')"
+        formControlName="name"
+        placeholder="Enter module name ">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+        {{ getFieldError('name') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ moduleForm.get('name')?.value?.length || 0 }}/100 characters
+      </div>
+    </div>
+
+    <!-- Display Name Field -->
+    <div class="mb-3">
+      <label for="moduleDisplayName" class="form-label">
+        Display Name
+      </label>
+      <input
+        type="text"
+        id="moduleDisplayName"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('displayName')"
+        formControlName="displayName"
+        placeholder="Enter display name ">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('displayName')">
+        {{ getFieldError('displayName') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ moduleForm.get('displayName')?.value?.length || 0 }}/200 characters
+      </div>
+    </div>
+
+    <!-- API Path Field -->
+    <div class="mb-3">
+      <label for="moduleApi" class="form-label">
+        API Path
+      </label>
+      <input
+        type="text"
+        id="moduleApi"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('api')"
+        formControlName="api"
+        placeholder="Enter API path ">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('api')">
+        {{ getFieldError('api') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ moduleForm.get('api')?.value?.length || 0 }}/200 characters
+      </div>
+    </div>
+
+    <!-- Description Field -->
+    <div class="mb-3">
+      <label for="moduleDescription" class="form-label">
+        Description
+      </label>
+      <textarea
+        id="moduleDescription"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('description')"
+        formControlName="description"
+        placeholder="Description "
+        rows="3">
+      </textarea>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+        {{ getFieldError('description') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ moduleForm.get('description')?.value?.length || 0 }}/500 characters
+      </div>
+    </div>
+
+    <!-- Icon Field -->
+    <div class="mb-3">
+      <label for="moduleIcon" class="form-label">
+        Icon
+      </label>
+      <input
+        type="text"
+        id="moduleIcon"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('icon')"
+        formControlName="icon"
+        placeholder="Enter icon class (e.g., ti ti-home) ">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('icon')">
+        {{ getFieldError('icon') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ moduleForm.get('icon')?.value?.length || 0 }}/100 characters
+      </div>
+    </div>
+
+    <!-- Parent Module Field -->
+    <div class="mb-3">
+      <label for="moduleParentId" class="form-label">
+        Parent Module
+      </label>
+      <select
+        id="moduleParentId"
+        class="form-select"
+        [class.is-invalid]="isFieldInvalid('parentId')"
+        formControlName="parentId">
+        <option value="" disabled selected>Select parent module</option>
+        <option *ngFor="let module of parentModules" [value]="module.id">
+          {{ module.displayName || module.name }}
+        </option>
+      </select>
+      
+      <!-- Info Message -->
+      <div class="form-text">
+        Select parent module (leave as 'None' for top-level modules)
+      </div>
+    </div>
+
+    <!-- Status Field -->
+    <div class="mb-3">
+      <label for="moduleStatus" class="form-label">
+        Status <span class="text-danger">*</span>
+      </label>
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="moduleStatus"
+          formControlName="is_enabled">
+        <label class="form-check-label" for="moduleStatus">
+          {{ moduleForm.get('is_enabled')?.value ? 'Enabled Module' : 'Disabled Module' }}
+        </label>
+      </div>
+    </div>
+
+  </form>
+
+</app-base-modal>

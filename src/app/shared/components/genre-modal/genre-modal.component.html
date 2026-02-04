@@ -1,0 +1,95 @@
+<!-- Genre Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()">
+  
+  <!-- GENRE FORM CONTENT -->
+  <form [formGroup]="genreForm" (ngSubmit)="onModalSave()" novalidate>
+    
+    <!-- Genre Name Field -->
+    <div class="mb-3">
+      <label for="genreName" class="form-label">
+        Genre Name <span class="text-danger">*</span>
+      </label>
+      <input
+        type="text"
+        id="genreName"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('name')"
+        formControlName="name"
+        placeholder="Enter genre name"
+        maxlength="50">
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+        {{ getFieldError('name') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ genreForm.get('name')?.value?.length || 0 }}/50 characters
+      </div>
+    </div>
+    
+    <!-- Description Field -->
+    <div class="mb-3">
+      <label for="genreDescription" class="form-label">Description</label>
+      <textarea
+        id="genreDescription"
+        class="form-control"
+        [class.is-invalid]="isFieldInvalid('description')"
+        formControlName="description"
+        placeholder="Enter genre description (optional)"
+        rows="2"
+        maxlength="200">
+      </textarea>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+        {{ getFieldError('description') }}
+      </div>
+      
+      <!-- Character Counter -->
+      <div class="form-text">
+        {{ genreForm.get('description')?.value?.length || 0 }}/200 characters
+      </div>
+    </div>
+    
+    <!-- Status Field -->
+    <div class="mb-3">
+      <label for="genreStatus" class="form-label">
+        Status <span class="text-danger">*</span>
+      </label>
+      <div class="form-check form-switch glass-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="genreStatus"
+          formControlName="is_active">
+        <label class="form-check-label" for="genreStatus">
+          Active Genre
+        </label>
+      </div>
+      
+      <!-- Error Message -->
+      <div class="invalid-feedback" *ngIf="isFieldInvalid('is_active')">
+        {{ getFieldError('is_active') }}
+      </div>
+    </div>
+    
+    <!-- Form Summary (Debug) - Remove in production -->
+    <!-- 
+    <div class="alert alert-info mt-3" *ngIf="false">
+      <small>
+        <strong>Form Debug:</strong><br>
+        Valid: {{ genreForm.valid }}<br>
+        Value: {{ genreForm.value | json }}
+      </small>
+    </div>
+    -->
+    
+  </form>
+  
+</app-base-modal>

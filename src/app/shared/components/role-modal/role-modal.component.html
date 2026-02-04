@@ -1,0 +1,111 @@
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()"
+>
+  <form [formGroup]="roleForm">
+    <!-- Basic Information Section -->
+    <div class="row g-3">
+      <div class="col-md-6">
+        <!-- Role Name -->
+        <div class="mb-3">
+          <label class="form-label">Role Name <span class="text-danger">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="name"
+            placeholder="e.g., SUPER ADMIN"
+            [class.is-invalid]="isFieldInvalid('name')"
+            (input)="onNameInput($event)"
+            style="text-transform: uppercase"
+          />
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+            {{ getFieldError('name') }}
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6">
+        <!-- Slug (Auto-generated) -->
+        <div class="mb-3">
+          <label class="form-label">Slug <span class="text-muted">(Auto-generated)</span></label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="slug"
+            placeholder="auto-generated-slug"
+            readonly
+            style="background-color: #f8f9fa; cursor: not-allowed;"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="mb-4">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" formControlName="isActive" id="roleActive" />
+        <label class="form-check-label" for="roleActive">
+          <span class="badge" [class.bg-success]="roleForm.get('isActive')?.value" [class.bg-secondary]="!roleForm.get('isActive')?.value">
+            {{ roleForm.get('isActive')?.value ? 'Active' : 'Inactive' }}
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Permissions Section -->
+    <h6>Permissions</h6>
+    
+    <div *ngIf="loading" class="text-center py-4">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading permissions...</span>
+      </div>
+      <p class="text-muted mt-2 mb-0 small">Loading permissions...</p>
+    </div>
+
+    <div *ngIf="!loading" class="permissions-container">
+      <div *ngFor="let module of modules; let i = index" class="module-card">
+        <div class="module-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6>{{ module.displayName }}</h6>
+            <div class="d-flex gap-2">
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-primary" 
+                (click)="selectAllModulePermissions(module.code)">
+                <i class="ti ti-check me-1"></i>All
+              </button>
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-secondary" 
+                (click)="clearAllModulePermissions(module.code)">
+                <i class="ti ti-x me-1"></i>Clear
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="permissions-grid">
+          <div *ngFor="let permission of permissions" class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              [id]="'perm-' + module.code + '-' + permission.code"
+              [checked]="isPermissionSelected(module.code, permission.code)"
+              (change)="togglePermission(module.code, permission.code)"
+            />
+            <label class="form-check-label" [for]="'perm-' + module.code + '-' + permission.code">
+              {{ permission.actionName }}
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty State -->
+      <div *ngIf="modules.length === 0" class="text-center py-4">
+        <i class="ti ti-alert-circle" style="font-size: 2.5rem; color: #adb5bd;"></i>
+        <p class="text-muted mt-2 mb-0">No modules available</p>
+      </div>
+    </div>
+  </form>
+</app-base-modal>

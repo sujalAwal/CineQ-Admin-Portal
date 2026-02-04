@@ -1,0 +1,251 @@
+<!-- Media Manager Usage Examples -->
+<div class="usage-examples-container">
+  
+  <!-- Header -->
+  <div class="examples-header">
+    <h2 class="mb-0">
+      <i class="ti ti-code"></i> Media Manager Usage Examples
+    </h2>
+    <p class="text-muted mb-0">Different ways to use the Media Manager Dialog Service in your application.</p>
+  </div>
+
+  <!-- Examples Grid -->
+  <div class="examples-grid">
+    
+    <!-- Example 1: Multiple Files -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-files"></i> Multiple Files Selection
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Select multiple files of any type with full functionality.</p>
+          <button type="button" class="btn btn-primary" (click)="selectMultipleFiles()">
+            <i class="ti ti-photo-plus"></i> Select Multiple Files
+          </button>
+          <div class="selected-files mt-3" *ngIf="selectedFiles.length > 0">
+            <h6>Selected Files ({{ selectedFiles.length }}):</h6>
+            <div class="file-list">
+              <div class="file-item" *ngFor="let file of selectedFiles">
+                <i [class]="getFileTypeIcon(file)"></i>
+                <span>{{ file.name }}</span>
+                <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 2: Single File -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-file"></i> Single File Selection
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Select only one file at a time.</p>
+          <button type="button" class="btn btn-outline-primary" (click)="selectSingleFile()">
+            <i class="ti ti-file-plus"></i> Select Single File
+          </button>
+          <div class="selected-file mt-3" *ngIf="selectedSingleFile">
+            <h6>Selected File:</h6>
+            <div class="file-item">
+              <i [class]="getFileTypeIcon(selectedSingleFile)"></i>
+              <span>{{ selectedSingleFile.name }}</span>
+              <small class="text-muted">{{ formatFileSize(selectedSingleFile.size) }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 3: Images Only -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-photo"></i> Images Only
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Select multiple images with preview functionality.</p>
+          <button type="button" class="btn btn-success" (click)="selectImages()">
+            <i class="ti ti-photo"></i> Select Images
+          </button>
+          <div class="selected-files mt-3" *ngIf="selectedImages.length > 0">
+            <h6>Selected Images ({{ selectedImages.length }}):</h6>
+            <div class="file-list">
+              <div class="file-item" *ngFor="let file of selectedImages">
+                <i [class]="getFileTypeIcon(file)"></i>
+                <span>{{ file.name }}</span>
+                <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 4: Documents Only -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-file-text"></i> Documents Only
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Select multiple documents (PDF, DOC, etc.).</p>
+          <button type="button" class="btn btn-info" (click)="selectDocuments()">
+            <i class="ti ti-file-text"></i> Select Documents
+          </button>
+          <div class="selected-files mt-3" *ngIf="selectedDocuments.length > 0">
+            <h6>Selected Documents ({{ selectedDocuments.length }}):</h6>
+            <div class="file-list">
+              <div class="file-item" *ngFor="let file of selectedDocuments">
+                <i [class]="getFileTypeIcon(file)"></i>
+                <span>{{ file.name }}</span>
+                <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 5: Videos Only -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-video"></i> Videos Only
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Select multiple video files with preview.</p>
+          <button type="button" class="btn btn-danger" (click)="selectVideos()">
+            <i class="ti ti-video"></i> Select Videos
+          </button>
+          <div class="selected-files mt-3" *ngIf="selectedVideos.length > 0">
+            <h6>Selected Videos ({{ selectedVideos.length }}):</h6>
+            <div class="file-list">
+              <div class="file-item" *ngFor="let file of selectedVideos">
+                <i [class]="getFileTypeIcon(file)"></i>
+                <span>{{ file.name }}</span>
+                <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 6: Audio Only -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-music"></i> Audio Only
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Select multiple audio files.</p>
+          <button type="button" class="btn btn-warning" (click)="selectAudio()">
+            <i class="ti ti-music"></i> Select Audio
+          </button>
+          <div class="selected-files mt-3" *ngIf="selectedAudio.length > 0">
+            <h6>Selected Audio ({{ selectedAudio.length }}):</h6>
+            <div class="file-list">
+              <div class="file-item" *ngFor="let file of selectedAudio">
+                <i [class]="getFileTypeIcon(file)"></i>
+                <span>{{ file.name }}</span>
+                <small class="text-muted">{{ formatFileSize(file.size) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 7: Custom Configuration -->
+    <div class="example-card">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-settings"></i> Custom Configuration
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Custom configuration with restricted file types and size limits.</p>
+          <button type="button" class="btn btn-secondary" (click)="selectWithCustomConfig()">
+            <i class="ti ti-settings"></i> Custom Selection
+          </button>
+          <div class="config-info mt-2">
+            <small class="text-muted">
+              <strong>Restrictions:</strong> JPG, PNG, PDF only | Max 5MB
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example 8: Code Examples -->
+    <div class="example-card full-width">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="ti ti-code"></i> Code Examples
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Basic Usage:</h6>
+              <pre><code>// Inject the service
+constructor(private mediaManagerDialog: MediaManagerDialogService) {}
+
+// Select multiple files
+this.mediaManagerDialog.selectFiles().subscribe(files => {
+  console.log('Selected files:', files);
+});
+
+// Select single file
+this.mediaManagerDialog.selectSingleFile().subscribe(file => {
+  console.log('Selected file:', file);
+});</code></pre>
+            </div>
+            <div class="col-md-6">
+              <h6>Advanced Usage:</h6>
+              <pre><code>// Custom configuration
+this.mediaManagerDialog.openMediaManager({
+  title: 'Select Images',
+  config: {
+    allowedFileTypes: ['jpg', 'png'],
+    maxFileSize: 5 * 1024 * 1024,
+    multipleSelection: true
+  }
+}).subscribe(result => {
+  if (result.action === 'select') {
+    console.log('Files:', result.files);
+  }
+});</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear All Button -->
+  <div class="clear-all-section">
+    <button type="button" class="btn btn-outline-danger" (click)="clearAll()">
+      <i class="ti ti-trash"></i> Clear All Selections
+    </button>
+  </div>
+
+</div>

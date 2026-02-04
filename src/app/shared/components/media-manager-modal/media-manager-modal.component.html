@@ -1,0 +1,421 @@
+<!-- Media Manager Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()"
+  (secondaryAction)="onModalCancel()">
+
+<!-- MEDIA MANAGER CONTENT -->
+<div class="media-manager-container">
+  
+  <!-- Header with Search and Actions -->
+  <div class="media-manager-header">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <!-- Search Form -->
+        <form [formGroup]="searchForm" class="search-form">
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="ti ti-search"></i>
+            </span>
+            <input
+              type="text"
+              class="form-control"
+              formControlName="search"
+              placeholder="Search files and folders..."
+              (input)="onSearchInput($event)">
+          </div>
+        </form>
+      </div>
+      <div class="col-md-6 text-end">
+        <!-- Action Buttons -->
+        <div class="btn-group" role="group">
+          <button 
+            type="button" 
+            class="btn btn-success btn-sm me-1"
+            (click)="openCreateFolderModal()"
+            [disabled]="state.isLoading">
+            <i class="ti ti-folder-plus"></i> Create Folder
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-primary btn-sm me-1"
+            (click)="openUploadModal()"
+            [disabled]="state.isLoading">
+            <i class="ti ti-upload"></i> Upload Files
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-outline-danger btn-sm me-1"
+            (click)="deleteSelectedItems()"
+            [disabled]="state.selectedItems.totalCount === 0 || state.isLoading">
+            <i class="ti ti-trash"></i> Delete
+          </button>
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary btn-sm"
+            (click)="refreshFiles()"
+            [disabled]="state.isLoading">
+            <i class="ti ti-refresh"></i> Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="media-manager-content">
+    <div class="row h-100">
+      
+      <!-- Left Sidebar - Folder Tree (25% width) -->
+      <div class="col-md-3 sidebar">
+        <div class="sidebar-header">
+          <h6 class="mb-0">
+            <i class="ti ti-folders"></i> Folders
+          </h6>
+        </div>
+        <div class="folder-tree">
+          <div class="folder-item" 
+               [class.active]="!state.currentFolderId"
+               (click)="onRootFolderClick()">
+            <div class="folder-content">
+              <i class="ti ti-home"></i>
+              <span>Root</span>
+            </div>
+          </div>
+          
+          <!-- Recursive Folder Tree -->
+          <ng-container *ngFor="let folder of folderTree">
+            <app-folder-tree
+              [folder]="folder"
+              [selectedFolderId]="state.currentFolderId"
+              (folderSelected)="onFolderSelect($event)">
+            </app-folder-tree>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Main Content Area - Files Grid (75% width) -->
+      <div class="col-md-9 main-content">
+        
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="breadcrumb-nav">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item" 
+                *ngFor="let breadcrumb of state.breadcrumbs; let last = last"
+                [class.active]="last">
+              <a href="#" 
+                 *ngIf="breadcrumb.isClickable && !last"
+                 (click)="onBreadcrumbClick(breadcrumb); $event.preventDefault()">
+                {{ breadcrumb.name }}
+              </a>
+              <span *ngIf="!breadcrumb.isClickable || last">{{ breadcrumb.name }}</span>
+            </li>
+          </ol>
+        </nav>
+
+        <!-- Loading State -->
+        <div class="loading-state text-center py-5" *ngIf="state.isLoading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3 text-muted">Loading files...</p>
+        </div>
+
+        <!-- Select All Checkbox (above grid) -->
+        <div class="grid-header" *ngIf="!state.isLoading && files.length > 0">
+          <div class="form-check">
+            <input 
+              class="form-check-input" 
+              type="checkbox" 
+              [checked]="isAllSelected()"
+              [indeterminate]="isSomeSelected()"
+              (change)="onSelectAll($event)">
+            <label class="form-check-label">
+              Select All ({{ state.selectedItems.totalCount }} selected)
+            </label>
+          </div>
+        </div>
+
+        <!-- Files Grid - Directly after breadcrumb, matching working component structure -->
+        <div class="media-grid" *ngIf="!state.isLoading">
+          
+          <!-- File Items Only -->
+          <div class="media-item file-item" 
+               *ngFor="let file of files; trackBy: trackByFileId"
+               [class.selected]="isFileSelected(file)"
+               (dblclick)="onFileDoubleClick(file)">
+            <div class="media-checkbox">
+              <input 
+                type="checkbox" 
+                class="form-check-input"
+                [checked]="isFileSelected(file)"
+                (change)="onFileSelect(file, $event)">
+            </div>
+            
+            <div class="media-content">
+              <!-- Image Preview -->
+              <div class="media-preview" *ngIf="file.type === 'IMAGE'">
+                <img [src]="getFileUrl(file.url)" 
+                     [alt]="file.fileName"
+                     loading="lazy"
+                     (error)="onImageError($event)">
+              </div>
+              
+              <!-- File Icon for non-images -->
+              <div class="media-icon" *ngIf="file.type !== 'IMAGE'">
+                <i [class]="getFileIcon(file)" 
+                   [style.color]="getFileIconColor(file)"></i>
+              </div>
+              
+              <div class="media-info">
+                <div class="media-name" [title]="file.fileName">{{ file.fileName }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state" *ngIf="files.length === 0">
+            <i class="ti ti-folder-open"></i>
+            <h5>No files found</h5>
+            <p class="text-muted">This folder is empty or no files match your search criteria.</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Files pagination" *ngIf="!state.isLoading && pagination.totalPages > 1 && files.length > 0" class="pagination-wrapper">
+          <ul class="pagination justify-content-center">
+            <li class="page-item" [class.disabled]="isPreviousDisabled()">
+              <a class="page-link" href="#" (click)="onPreviousPage(); $event.preventDefault()">
+                Previous
+              </a>
+            </li>
+            <li class="page-item" 
+                *ngFor="let page of getPaginationPages()"
+                [class.active]="isPaginationDisabled(page)">
+              <a class="page-link" href="#" (click)="onPageClick(page); $event.preventDefault()">
+                {{ page }}
+              </a>
+            </li>
+            <li class="page-item" [class.disabled]="isNextDisabled()">
+              <a class="page-link" href="#" (click)="onNextPage(); $event.preventDefault()">
+                Next
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Selected Files Display -->
+<div class="selected-files-section" *ngIf="selectedMediaFiles.length > 0">
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="ti ti-check-circle"></i> Selected Files ({{ selectedMediaFiles.length }})
+      </h5>
+      <button 
+        type="button" 
+        class="btn btn-outline-danger btn-sm"
+        (click)="clearSelection()">
+        <i class="ti ti-trash"></i> Clear All
+      </button>
+    </div>
+    <div class="card-body">
+      <div class="selected-files-grid">
+        <div class="selected-file-item" *ngFor="let file of selectedMediaFiles; let i = index">
+          <div class="file-icon">
+            <i [class]="getFileTypeIcon(file)"></i>
+          </div>
+          <div class="file-info">
+            <div class="file-name">{{ file.fileName }}</div>
+            <div class="file-meta">
+              <span class="file-size">{{ getFileSize(file) }}</span>
+              <span class="file-type">{{ getFileExtension(file).toUpperCase() }}</span>
+            </div>
+          </div>
+          <div class="file-actions">
+            <button 
+              type="button" 
+              class="btn btn-outline-primary btn-sm"
+              [title]="'Preview: ' + file.fileName">
+              <i class="ti ti-eye"></i>
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-outline-danger btn-sm"
+              (click)="removeFile(i)"
+              [title]="'Remove: ' + file.fileName">
+              <i class="ti ti-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Files Modal -->
+<div class="modal fade" 
+     [class.show]="showUploadModal" 
+     [style.display]="showUploadModal ? 'block' : 'none'" 
+     tabindex="-1" 
+     role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="ti ti-upload"></i> Upload Files
+        </h5>
+        <button type="button" class="btn-close" (click)="closeUploadModal()"></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Upload Drop Zone -->
+        <div class="upload-dropzone" 
+             [class.drag-over]="isDragOver"
+             (dragover)="onDragOver($event); $event.preventDefault()"
+             (dragleave)="onDragLeave($event)"
+             (drop)="onDropInUploadModal($event)"
+             (click)="fileInput.click()">
+          <div class="upload-content">
+            <i class="ti ti-cloud-upload"></i>
+            <h6>Drag & Drop files here</h6>
+            <p class="text-muted">or click to browse files</p>
+            <small class="text-muted">Supports multiple file selection</small>
+          </div>
+        </div>
+        
+        <!-- Hidden File Input -->
+        <input #fileInput 
+               type="file" 
+               multiple 
+               accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+               (change)="onFileInputSelect($event)"
+               style="display: none;">
+        
+        <!-- Selected Files Preview -->
+        <div class="selected-files-preview" *ngIf="selectedFilesForUpload.length > 0">
+          <div class="preview-header">
+            <h6>Selected Files ({{ selectedFilesForUpload.length }})</h6>
+            <div class="bulk-actions">
+              <button type="button" 
+                      class="btn btn-success btn-sm me-2"
+                      (click)="uploadAllFiles()"
+                      [disabled]="isUploading">
+                <i class="ti ti-upload"></i> Upload All
+              </button>
+              <button type="button" 
+                      class="btn btn-danger btn-sm"
+                      (click)="removeAllFiles()">
+                <i class="ti ti-trash"></i> Remove All
+              </button>
+            </div>
+          </div>
+          
+          <div class="files-list">
+            <div class="file-preview-item" *ngFor="let file of selectedFilesForUpload; let i = index">
+              <div class="file-info">
+                <div class="file-icon">
+                  <i [class]="getFileIconForUpload(file)"></i>
+                </div>
+                <div class="file-details">
+                  <div class="file-name">{{ file.name }}</div>
+                  <div class="file-size">{{ formatFileSizeForDisplay(file.size) }}</div>
+                </div>
+              </div>
+              <div class="file-actions">
+                <button type="button" 
+                        class="btn btn-primary btn-sm me-2"
+                        (click)="uploadSingleFile(file, i)"
+                        [disabled]="isUploading || file.uploading">
+                  <i class="ti ti-upload"></i> Upload
+                </button>
+                <button type="button" 
+                        class="btn btn-danger btn-sm"
+                        (click)="removeFileFromUpload(i)">
+                  <i class="ti ti-trash"></i> Remove
+                </button>
+              </div>
+              <div class="upload-progress" *ngIf="file.uploading">
+                <div class="progress">
+                  <div class="progress-bar" 
+                       [style.width.%]="file.uploadProgress || 0">
+                    {{ file.uploadProgress || 0 }}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Current Folder Info -->
+        <div class="current-folder-info mt-3">
+          <small class="text-muted">
+            <i class="ti ti-folder"></i> 
+            Uploading to: <strong>{{ getCurrentFolderPath() }}</strong>
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeUploadModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Folder Modal -->
+<div class="modal fade" 
+     [class.show]="showCreateFolderModal" 
+     [style.display]="showCreateFolderModal ? 'block' : 'none'"
+     tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="ti ti-folder-plus"></i> Create New Folder
+        </h5>
+        <button type="button" class="btn-close" (click)="showCreateFolderModal = false"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="createFolderForm">
+          <div class="mb-3">
+            <label for="folderName" class="form-label">Folder Name</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="folderName"
+              formControlName="name"
+              placeholder="Enter folder name">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="showCreateFolderModal = false">
+          Cancel
+        </button>
+        <button type="button" 
+                class="btn btn-primary"
+                (click)="onCreateFolder()"
+                [disabled]="createFolderForm.invalid">
+          Create Folder
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [config]="confirmationConfig"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()">
+</app-confirmation-modal>
+
+</app-base-modal>

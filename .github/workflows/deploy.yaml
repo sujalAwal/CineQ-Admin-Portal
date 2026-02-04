@@ -1,0 +1,55 @@
+name: Cine Q Admin Portal Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - name: 🚀 Starting Deployment
+        run: echo "Starting the deployment process for Cine Q at $(date)"
+
+      - name: 📥 Checking out code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setting up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Installing Dependencies
+        run: |
+          echo "::group::npm install logs"
+          echo "Running npm install to fetch libraries..."
+          npm install
+          echo "Dependencies installed successfully."
+          echo "::endgroup::"
+
+      - name: 🏗️ Building Angular App
+        run: |
+          echo "::group::Angular Build Process"
+          echo "Building 'cine-q' for Production..."
+          npm run build -- --configuration production
+          echo "Build complete. Checking output directory..."
+          ls -R dist/cineq-app
+          echo "::endgroup::"
+
+      - name: ☁️ Publishing to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: 'admin-portal-cineq'
+          directory: 'dist/cineq-app'
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        # This action automatically logs its own progress (uploading, etc.)
+
+      - name: ✅ Deployment Finished
+        run: echo "Cine Q is now live on Cloudflare!"

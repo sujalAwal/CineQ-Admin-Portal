@@ -1,0 +1,75 @@
+// Search & Table
+.input-group {
+  .form-control { border-right: none; &:focus { border-color: #007bff; box-shadow: 0 0 0 .2rem rgba(0,123,255,.25); border-right: none; } }
+  .btn-outline-primary {
+    border-left: none; border-color: #ced4da; color: #6c757d;
+    &:hover { background: #007bff; border-color: #007bff; color: white; }
+    &:focus { box-shadow: 0 0 0 .2rem rgba(0,123,255,.25); }
+    &:disabled { opacity: .65; cursor: not-allowed; }
+  }
+}
+
+.table { 
+  th { border-top: none; font-weight: 600; font-size: .875rem; color: #495057; }
+  td { vertical-align: middle; padding: .75rem; }
+  // Center align toggle switches
+  td.text-center { text-align: center !important; }
+}
+.btn-group-sm .btn { padding: .25rem .5rem; font-size: .775rem; }
+
+// Toggle Switch - Clean iOS Style
+.form-check.form-switch .form-check-input {
+  width: 2.5rem; height: 1.25rem; border-radius: 1rem; border: 2px solid; transition: all .3s;
+  background-image: none !important; // Remove all Bootstrap defaults
+  background-size: auto !important;
+  background-repeat: no-repeat !important;
+  position: relative;
+  
+  // Remove Bootstrap's pseudo-element
+  &::before { display: none !important; }
+  
+  &:checked { 
+    background: #28a745 !important; border-color: #28a745 !important; box-shadow: 0 0 8px rgba(40,167,69,.3);
+    // Single circle positioned on the right (ON state)
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3e%3ccircle cx='30' cy='10' r='8' fill='%23fff'/%3e%3c/svg%3e") !important;
+  }
+  &:not(:checked) { 
+    background: #dc3545 !important; border-color: #dc3545 !important; box-shadow: 0 0 8px rgba(220,53,69,.3);
+    // Single circle positioned on the left (OFF state)
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3e%3ccircle cx='10' cy='10' r='8' fill='%23fff'/%3e%3c/svg%3e") !important;
+  }
+  &:focus { box-shadow: 0 0 0 .25rem rgba(40,167,69,.25) !important; border-color: #28a745 !important; }
+  &:focus:not(:checked) { box-shadow: 0 0 0 .25rem rgba(220,53,69,.25) !important; border-color: #dc3545 !important; }
+  &:disabled { opacity: .6; cursor: not-allowed; box-shadow: none !important; &, &:checked, &:not(:checked) { background: #6c757d !important; border-color: #6c757d !important; } }
+}
+
+// Bulk Selection Checkboxes
+.bulk-selection-checkbox .form-check-input {
+  width: 1.25rem !important; height: 1.25rem !important; border-radius: .25rem !important;
+  border: 2px solid #ced4da !important; background: #fff !important; transition: all .2s; transform: scale(1.1);
+  &:checked { 
+    background: #007bff !important; border-color: #007bff !important; box-shadow: 0 0 5px rgba(0,123,255,.3) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e") !important;
+    background-size: 100% !important;
+  }
+  &:focus { border-color: #007bff !important; box-shadow: 0 0 0 .2rem rgba(0,123,255,.25) !important; }
+  &:hover { border-color: #007bff !important; }
+  &:indeterminate { 
+    background: #007bff !important; border-color: #007bff !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10h8'/%3e%3c/svg%3e") !important;
+  }
+}
+
+// Form Labels
+.form-check-label { font-size: .75rem; font-weight: 600; margin-left: .5rem; cursor: pointer; text-transform: uppercase; letter-spacing: .5px; }
+.bulk-selection-checkbox .form-check-label { display: none; }
+
+// Utilities & Responsive
+.badge { font-size: .75rem; font-weight: 500; }
+.pagination-sm .page-link { padding: .375rem .75rem; font-size: .875rem; }
+.spinner-border { width: 2rem; height: 2rem; }
+
+@media (max-width: 768px) {
+  .table-responsive { font-size: .875rem; }
+  .btn-group-sm .btn { padding: .125rem .25rem; font-size: .7rem; }
+}

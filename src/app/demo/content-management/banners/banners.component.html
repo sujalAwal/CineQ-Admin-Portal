@@ -1,0 +1,54 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>🎬 Banners Management</h5>
+      </div>
+      <div class="card-body">
+        <!-- Header Section -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <!-- Left side - can add title or other elements here if needed -->
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-primary" (click)="openAddBannerModal()">
+              <i class="ti ti-plus me-2"></i>Add New Banner
+            </button>
+          </div>
+        </div>
+        
+        <!-- Data Table Component -->
+        <app-data-table
+          [config]="tableConfig"
+          [data]="bannersData"
+          [loading]="loading"
+          [pagination]="pagination"
+          (search)="onSearch($event)"
+          (pageChange)="onPageChange($event)"
+          (sort)="onSort($event)"
+          (toggleChange)="onToggleChange($event)"
+          (actionClick)="onTableAction($event)"
+          (bulkActionClick)="onBulkAction($event)">
+        </app-data-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Banner Modal -->
+<app-banner-modal
+  [isVisible]="showBannerModal"
+  [banner]="selectedBanner"
+  [isLoading]="modalLoading"
+  (closed)="onBannerModalClosed()"
+  (bannerSaved)="onBannerSaved($event)">
+</app-banner-modal>
+
+<!-- Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [config]="confirmationConfig"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()">
+</app-confirmation-modal>
+

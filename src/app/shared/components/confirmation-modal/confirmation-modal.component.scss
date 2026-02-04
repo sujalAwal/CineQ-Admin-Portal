@@ -1,0 +1,120 @@
+/* Extra small modal for confirmations */
+:host ::ng-deep .modal-dialog.modal-sm {
+  max-width: 420px !important;
+}
+
+/* Make it even smaller for xs size */
+:host ::ng-deep .confirmation-modal .modal-dialog.modal-sm {
+  max-width: 380px !important;
+}
+
+/* Compact modal content */
+:host ::ng-deep .confirmation-modal .modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Reduce header padding */
+:host ::ng-deep .confirmation-modal .modal-header {
+  padding: 1.5rem 1.5rem 0.5rem;
+  border-bottom: none;
+}
+
+/* Style the icon container */
+.modal-body {
+  padding: 1rem 1.5rem 1.5rem !important;
+  
+  // Icon container styling
+  .icon-container {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+    animation: bounce-in 0.5s ease-out;
+    
+    // Icon inside container
+    i {
+      transition: all 0.3s ease;
+    }
+  }
+  
+  // Message container
+  .message-container {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+  
+  // Message text styling
+  p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #6c757d;
+    
+    strong {
+      color: #495057;
+      font-weight: 600;
+    }
+  }
+  
+  // Style the genre names list
+  .text-muted.small {
+    background: #f8f9fa;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    font-style: italic;
+    max-height: 100px;
+    overflow-y: auto;
+    border-left: 4px solid #dee2e6;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+}
+
+/* Reduce footer padding */
+:host ::ng-deep .confirmation-modal .modal-footer {
+  padding: 0.75rem 1.5rem 1.5rem;
+  border-top: none;
+  gap: 0.75rem;
+}
+
+/* Animations for icons */
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

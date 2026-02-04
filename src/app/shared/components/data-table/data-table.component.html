@@ -1,0 +1,285 @@
+<div class="card">
+  <!-- Card Header with Title and Search -->
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <!-- Left side - Title or empty space -->
+    <div>
+      <!-- <h5 class="mb-0">{{ config.title }}</h5> -->
+    </div>
+    
+    <!-- Right side - Bulk Actions or Search -->
+    <div class="d-flex align-items-center gap-2">
+      <!-- 🆕 Bulk Actions (shown when items are selected) -->
+      <div class="d-flex align-items-center gap-2" *ngIf="config.bulkSelectable && getSelectedCount() > 0">
+        <span class="badge bg-primary">{{ getSelectedCount() }} selected</span>
+        
+        <div class="btn-group btn-group-sm" *ngIf="config.bulkActions && config.bulkActions.length > 0">
+          <button
+            *ngFor="let action of config.bulkActions"
+            type="button"
+            class="btn"
+            [class]="action.class || 'btn-outline-primary'"
+            (click)="onBulkAction(action.type)"
+            [title]="action.label"
+          >
+            <i *ngIf="action.icon" [class]="action.icon" class="me-1"></i>
+            {{ action.label }}
+          </button>
+        </div>
+        
+        <button 
+          type="button" 
+          class="btn btn-outline-secondary btn-sm" 
+          (click)="clearSelection()"
+          title="Clear Selection">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      
+      <!-- Search Box -->
+      <div class="d-flex align-items-center gap-2" *ngIf="config.searchable && getSelectedCount() === 0">
+        <div class="input-group" style="width: 350px;">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Search {{ config.entityName }}..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearchChange($event)"
+            (keyup.enter)="onManualSearch()"
+          />
+          <button 
+            class="btn btn-outline-primary" 
+            type="button"
+            (click)="onManualSearch()"
+            [disabled]="loading">
+            <i class="ti ti-search"></i>
+          </button>
+        </div>
+        <button 
+          class="btn btn-outline-secondary" 
+          type="button"
+          (click)="onRefresh()"
+          [disabled]="loading"
+          title="Refresh">
+          <i class="ti ti-refresh"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Content -->
+  <div class="card-body p-0">
+    <!-- Loading Spinner -->
+    <div *ngIf="loading" class="text-center p-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-muted">Loading {{ config.entityName }}...</p>
+    </div>
+
+    <!-- Table -->
+    <div *ngIf="!loading" class="table-responsive">
+      <table class="table table-hover mb-0">
+        <!-- Table Header -->
+        <thead class="table-light">
+          <tr>
+            <!-- 🆕 Bulk Selection Checkbox Column -->
+            <th *ngIf="config.bulkSelectable" style="width: 50px;" class="text-center">
+              <div class="form-check bulk-selection-checkbox d-flex justify-content-center">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="isAllSelected"
+                  (change)="onSelectAll($event)"
+                  id="selectAllCheckbox"
+                />
+                <label class="form-check-label visually-hidden" for="selectAllCheckbox">
+                  Select All
+                </label>
+              </div>
+            </th>
+            
+            <!-- Data Columns -->
+            <th
+              *ngFor="let column of config.columns"
+              [style.width]="column.width"
+              [class.text-center]="column.align === 'center'"
+              [class.text-end]="column.align === 'right'"
+              [class.sortable]="column.sortable"
+              (click)="onSort(column)"
+            >
+              <div class="d-flex align-items-center justify-content-between">
+                <span>{{ column.header }}</span>
+                <i
+                  *ngIf="column.sortable"
+                  [class]="getSortIcon(column)"
+                  class="ms-1"
+                ></i>
+              </div>
+            </th>
+            
+            <!-- Actions Column -->
+            <th *ngIf="config.actions && config.actions.length > 0" class="text-center" style="width: 120px;">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <!-- Table Body -->
+        <tbody>
+          <!-- Data Rows -->
+          <tr *ngFor="let item of data; let i = index; trackBy: trackByFn">
+            <!-- 🆕 Bulk Selection Checkbox -->
+            <td *ngIf="config.bulkSelectable" class="text-center">
+              <div class="form-check bulk-selection-checkbox d-flex justify-content-center">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="isItemSelected(item)"
+                  (change)="onItemSelect(item, $event)"
+                  [id]="'selectItem_' + item.id"
+                />
+                <label class="form-check-label visually-hidden" [for]="'selectItem_' + item.id">
+                  Select {{ item.name || 'item' }}
+                </label>
+              </div>
+            </td>
+            
+            <!-- Data Cells -->
+            <td
+              *ngFor="let column of config.columns"
+              [class.text-center]="column.align === 'center'"
+              [class.text-end]="column.align === 'right'"
+            >
+             <!-- SN -->
+              <span *ngIf="column.type === 'sn' ">
+                {{ i+1 }}
+              </span>
+              <!-- Text/Number/Date/Email Display -->
+              <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'">
+                {{ getColumnValue(item, column) }}
+              </span>
+             
+
+              <!-- Email with Link -->
+              <a *ngIf="column.type === 'email'" 
+                 [href]="'mailto:' + getColumnValue(item, column)"
+                 class="text-decoration-none">
+                {{ getColumnValue(item, column) }}
+              </a>
+
+              <!-- Image Display -->
+              <div *ngIf="column.type === 'image'" class="d-flex justify-content-center">
+                <img 
+                  [src]="getColumnValue(item, column)" 
+                  [alt]="item.full_name || item.name || 'Image'"
+                  class="rounded-circle border"
+                  style="width: 40px; height: 40px; object-fit: cover;"
+                  onerror="this.src='assets/images/user/avatar-1.jpg'">
+              </div>
+
+              <!-- Badge Display -->
+              <span
+                *ngIf="column.type === 'badge'"
+                class="badge"
+                [class]="getBadgeClass(getColumnValue(item, column))"
+              >
+                {{ getColumnValue(item, column) }}
+              </span>
+
+              <!-- Toggle Switch -->
+              <div *ngIf="column.type === 'toggle'" class="form-check form-switch d-flex justify-content-center">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  [checked]="getToggleValue(item, column)"
+                  [disabled]="isToggleDisabled(item, column)"
+                  (change)="onToggleChange(item, column, $event)"
+                  [id]="'toggle_' + item.id + '_' + column.field"
+                />
+              </div>
+            </td>
+
+            <!-- Action Buttons -->
+            <td *ngIf="config.actions && config.actions.length > 0" class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <ng-container *ngFor="let action of config.actions">
+                  <button
+                    type="button"
+                    class="btn"
+                    [class]="action.class || 'btn-outline-primary'"
+                    [title]="action.label"
+                    (click)="onActionClick(action, item)"
+                  >
+                    <i [class]="action.icon"></i>
+                  </button>
+                </ng-container>
+              </div>
+            </td>
+          </tr>
+
+          <!-- No Data Message -->
+          <tr *ngIf="data.length === 0">
+            <td [attr.colspan]="config.columns.length + (config.actions?.length > 0 ? 1 : 0)" class="text-center py-4">
+              <div class="text-muted">
+                <i class="ti ti-inbox fs-1 d-block mb-2"></i>
+                <p class="mb-0">No {{ config.entityName }} found</p>
+                <small *ngIf="searchTerm">Try adjusting your search criteria</small>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div
+      *ngIf="config.paginated && pagination.totalItems > 0"
+      class="card-footer d-flex justify-content-between align-items-center"
+    >
+      <!-- Pagination Info -->
+      <div class="text-muted">
+        Showing {{ (pagination.currentPage - 1) * pagination.pageSize + 1 }} to
+        {{ Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems) }}
+        of {{ pagination.totalItems }} entries
+      </div>
+
+      <!-- Pagination Controls (only show if more than 1 page) -->
+      <nav aria-label="Table pagination" *ngIf="pagination.totalPages > 1">
+        <ul class="pagination pagination-sm mb-0">
+          <!-- Previous Button -->
+          <li class="page-item" [class.disabled]="pagination.currentPage === 1">
+            <button
+              class="page-link"
+              (click)="onPageChange(pagination.currentPage - 1)"
+              [disabled]="pagination.currentPage === 1"
+            >
+              <i class="ti ti-chevron-left"></i>
+            </button>
+          </li>
+
+          <!-- Page Numbers -->
+          <li
+            *ngFor="let page of pageNumbers"
+            class="page-item"
+            [class.active]="page === pagination.currentPage"
+          >
+            <button class="page-link" (click)="onPageChange(page)">
+              {{ page }}
+            </button>
+          </li>
+
+          <!-- Next Button -->
+          <li class="page-item" [class.disabled]="pagination.currentPage === pagination.totalPages">
+            <button
+              class="page-link"
+              (click)="onPageChange(pagination.currentPage + 1)"
+              [disabled]="pagination.currentPage === pagination.totalPages"
+            >
+              <i class="ti ti-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>
