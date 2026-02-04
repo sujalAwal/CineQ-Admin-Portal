@@ -31,7 +31,7 @@ export class RoleModalComponent implements OnInit, OnChanges {
   modalConfig: ModalConfig = {
     title: 'Add Role',
     icon: 'shield-lock',
-    size: 'xl',
+    size: 'lg',
     primaryButtonText: 'Save Role',
     primaryButtonIcon: 'device-floppy',
     primaryButtonLoading: false,
@@ -202,6 +202,7 @@ export class RoleModalComponent implements OnInit, OnChanges {
       stepSlug: 'v1',
       action: this.role ? 'update' : 'create',
       formData: {
+        ...(this.role?.id && { id: this.role.id }), // Include ID in formData for update
         name: formValue.name.trim(),
         slug: formValue.slug,
         permissions: permissions,

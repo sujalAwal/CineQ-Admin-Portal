@@ -43,6 +43,7 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
   @Output() toggleChange = new EventEmitter<{item: any, field: string, value: boolean}>();
   // 🆕 Bulk selection events
   @Output() bulkActionClick = new EventEmitter<BulkSelectionEvent>();
+  @Output() refresh = new EventEmitter<void>();
 
   // Component state
   searchTerm: string = '';
@@ -368,6 +369,13 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
   clearSelection(): void {
     this.selectedItems.clear();
     this.isAllSelected = false;
+  }
+
+  /**
+   * Handle refresh button click
+   */
+  onRefresh(): void {
+    this.refresh.emit();
   }
 
   /**

@@ -14,7 +14,8 @@ import { RoleListItem, RoleDetailResponse, RolePageRequest, PaginatedApiResponse
 import {
   TableConfig,
   PaginationInfo,
-  TableActionEvent
+  TableActionEvent,
+  BulkSelectionEvent
 } from '../../../shared/interfaces/table.interface';
 
 @Component({
@@ -36,6 +37,28 @@ export class RolesComponent implements OnInit, OnDestroy {
     paginated: true,
     pageSize: 20,
     sortable: true,
+    bulkSelectable: true,
+    bulkActions: [
+      {
+        label: 'Enable Selected',
+        icon: 'ti ti-check',
+        type: 'bulk-enable',
+        class: 'btn-success'
+      },
+      {
+        label: 'Disable Selected',
+        icon: 'ti ti-x',
+        type: 'bulk-disable',
+        class: 'btn-warning'
+      },
+      {
+        label: 'Delete Selected',
+        icon: 'ti ti-trash',
+        type: 'bulk-delete',
+        class: 'btn-danger',
+        confirmationRequired: true
+      }
+    ],
     columns: [
       {
         header: 'S.N',
@@ -174,15 +197,19 @@ export class RolesComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: PaginatedApiResponse<any>) => {
-          // Map the nested formData structure to RoleListItem
-          this.rolesData = response.data.map((item: any) => ({
-            id: item.id,
-            name: item.formData?.name || 'Unnamed Role',
-            permissionCount: this.countPermissions(item.formData?.permissions || {}),
-            isActive: item.formData?.isActive ?? true,
-            createdAt: item.formData?.createdAt ? new Date(item.formData.createdAt).toISOString() : '',
-            updatedAt: item.formData?.updatedAt ? new Date(item.formData.updatedAt).toISOString() : ''
-          }));
+          // Extract and flatten roles from the nested structure
+          this.rolesData = response.data.flatMap((item: any) => {
+            // Each data item has a 'role' array
+            const roles = item.role || [];
+            return roles.map((role: any) => ({
+              id: role.id,
+              name: role.name || 'Unnamed Role',
+              permissionCount: this.countPermissions(role.permissions || {}),
+              isActive: role.isActive ?? true,
+              createdAt: role.createdAt || '',
+              updatedAt: role.updatedAt || ''
+            }));
+          });
 
           this.pagination = {
             currentPage: response.page,
@@ -246,13 +273,31 @@ export class RolesComponent implements OnInit, OnDestroy {
     this.loadRoles();
   }
 
+  onRefresh() {
+    this.loadRoles();
+  }
+
   onToggleChange(event: {item: any, field: string, value: boolean}) {
     const roleId = event.item.id;
     const roleName = event.item.name;
 
-    // TODO: Implement toggle status API
-    console.log('Toggle role status:', roleId, event.value);
-    this.toastService.info('Status toggle not implemented yet', 'Info');
+    this.roleService.updateStatus([roleId], event.value)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          // Update local data to reflect the change
+          const roleIndex = this.rolesData.findIndex(r => r.id === roleId);
+          if (roleIndex !== -1) {
+            this.rolesData[roleIndex].isActive = event.value;
+            this.cdr.markForCheck();
+          }
+        },
+        error: (error) => {
+          console.error('Failed to toggle role status:', error);
+          // Revert the toggle in UI by reloading
+          this.loadRoles();
+        }
+      });
   }
 
   openAddRoleModal() {
@@ -262,13 +307,14 @@ export class RolesComponent implements OnInit, OnDestroy {
 
   private editRole(role: any) {
     this.roleService.getRoleById(role.id).subscribe({
-      next: (roleDetail) => {
+      next: (roleDetail: RoleDetailResponse) => {
         this.selectedRole = roleDetail;
         this.showRoleModal = true;
         this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Failed to fetch role details:', error);
+        this.toastService.error('Failed to load role details', 'Error');
       }
     });
   }
@@ -323,6 +369,58 @@ export class RolesComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  onBulkAction(event: BulkSelectionEvent) {
+    const { selectedIds, action } = event;
+
+    if (selectedIds.length === 0) {
+      this.toastService.warning('Please select at least one role', 'No Selection');
+      return;
+    }
+
+    switch (action) {
+      case 'bulk-enable':
+        this.bulkEnableRoles(selectedIds);
+        break;
+      case 'bulk-disable':
+        this.bulkDisableRoles(selectedIds);
+        break;
+      case 'bulk-delete':
+        this.bulkDeleteRoles(selectedIds);
+        break;
+    }
+  }
+
+  private bulkEnableRoles(ids: string[]) {
+    this.roleService.enableRoles(ids)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadRoles();
+        },
+        error: (error) => {
+          console.error('Failed to enable roles:', error);
+        }
+      });
+  }
+
+  private bulkDisableRoles(ids: string[]) {
+    this.roleService.disableRoles(ids)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.loadRoles();
+        },
+        error: (error) => {
+          console.error('Failed to disable roles:', error);
+        }
+      });
+  }
+
+  private bulkDeleteRoles(ids: string[]) {
+    // TODO: Implement bulk delete confirmation and API call
+    this.toastService.info('Bulk delete not implemented yet', 'Info');
   }
 
   onDeleteCancelled() {

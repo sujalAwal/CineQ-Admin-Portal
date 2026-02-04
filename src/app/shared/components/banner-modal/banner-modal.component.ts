@@ -1,12 +1,12 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { BaseModalComponent } from '../base-modal/base-modal.component';
 import { ModalConfig } from '../base-modal/base-modal.component';
 import { MediaManagerModalComponent } from '../media-manager-modal/media-manager-modal.component';
 import { BannerService } from '../../services/banner.service';
 import { AuthService } from '../../services/auth.service';
-import { Banner } from '../../interfaces/banner.interface';
+import { Banner, BannerButton, BannerRequest } from '../../interfaces/banner.interface';
 import { MediaFile, MediaManagerConfig } from '../../interfaces/media.interface';
 import { ToastrService } from 'ngx-toastr';
 import { ToastService } from '../../services/toast.service';
@@ -52,17 +52,18 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
     showSecondaryButton: true
   };
 
-  // Banner type options
-  bannerTypeOptions = [
-    { value: 'MOVIE_PROMOTION', label: 'Movie Promotion' },
-    { value: 'GENERAL', label: 'General' },
-    { value: 'EVENT', label: 'Event' },
-    { value: 'NEWS', label: 'News' }
+  // Button type options
+  buttonTypeOptions = [
+    { value: 'primary', label: 'Primary' },
+    { value: 'secondary', label: 'Secondary' },
+    { value: 'tertiary', label: 'Tertiary' }
   ];
 
   // Media Manager state
   showMediaManager: boolean = false;
   selectedImage: MediaFile | null = null;
+  selectedMobileImage: MediaFile | null = null;
+  currentImageTarget: 'banner' | 'mobile' = 'banner';
   mediaManagerConfig: MediaManagerConfig = {
     title: 'Select Banner Image',
     allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
@@ -131,22 +132,48 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   // Initialize Reactive Form
   private initializeForm(): void {
     this.bannerForm = this.fb.group({
-      title: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
+      slug: ['', [Validators.required, Validators.maxLength(100), Validators.pattern(/^[a-z0-9-]+$/)]],
+      title: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
       description: ['', [Validators.maxLength(500)]],
-      imageUrl: ['', [Validators.required]],
-      targetUrl: [''],
-      bannerType: ['MOVIE_PROMOTION', [Validators.required]],
-      movieId: [''],
-      displayOrder: [0, [Validators.required, Validators.min(0)]],
+      order: [1, [Validators.required, Validators.min(1), Validators.max(9999)]],
       isActive: [true, [Validators.required]],
-      startDate: [''],
-      endDate: ['']
+      bannerImage: ['', [Validators.required, Validators.maxLength(2500)]],
+      imageAltText: ['', [Validators.required, Validators.maxLength(500)]],
+      imageMobileUrl: ['', [Validators.maxLength(255)]],
+      buttons: this.fb.array([], [Validators.maxLength(3)])
     });
     
     // Watch form validity for button state
     this.bannerForm.valueChanges.subscribe(() => {
       this.modalConfig.primaryButtonDisabled = this.bannerForm.invalid;
     });
+  }
+
+  // Get buttons FormArray
+  get buttonsArray(): FormArray {
+    return this.bannerForm.get('buttons') as FormArray;
+  }
+
+  // Create a new button form group
+  createButtonFormGroup(button?: BannerButton): FormGroup {
+    return this.fb.group({
+      title: [button?.title || '', [Validators.required, Validators.maxLength(100)]],
+      redirectLink: [button?.redirectLink || '', [Validators.required, Validators.maxLength(500)]],
+      buttonType: [button?.buttonType || 'primary', [Validators.required]],
+      openInNewTab: [button?.openInNewTab ?? true]
+    });
+  }
+
+  // Add a new button
+  addButton(): void {
+    if (this.buttonsArray.length < 3) {
+      this.buttonsArray.push(this.createButtonFormGroup());
+    }
+  }
+
+  // Remove a button
+  removeButton(index: number): void {
+    this.buttonsArray.removeAt(index);
   }
   
   // Update modal config based on mode (add/edit)
@@ -170,18 +197,32 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   // Populate form with banner data (edit mode)
   private populateForm(): void {
     if (this.banner && this.bannerForm) {
+      // Clear existing buttons
+      this.buttonsArray.clear();
+      
+      // Populate buttons
+      if (this.banner.buttons && this.banner.buttons.length > 0) {
+        this.banner.buttons.forEach(button => {
+          this.buttonsArray.push(this.createButtonFormGroup(button));
+        });
+      }
+      
       this.bannerForm.patchValue({
+        slug: this.banner.slug || '',
         title: this.banner.title,
         description: this.banner.description || '',
-        imageUrl: this.banner.imageUrl,
-        targetUrl: this.banner.targetUrl || '',
-        bannerType: this.banner.bannerType || 'MOVIE_PROMOTION',
-        movieId: this.banner.movieId || '',
-        displayOrder: this.banner.displayOrder || 0,
+        order: this.banner.order || 1,
         isActive: this.banner.isActive !== undefined ? this.banner.isActive : true,
-        startDate: this.banner.startDate || '',
-        endDate: this.banner.endDate || ''
+        bannerImage: this.banner.bannerImage || '',
+        imageAltText: this.banner.imageAltText || '',
+        imageMobileUrl: this.banner.imageMobileUrl || ''
       });
+
+      // Disable slug field in edit mode (slug is immutable)
+      this.bannerForm.get('slug')?.disable();
+    } else {
+      // Enable slug field in create mode
+      this.bannerForm.get('slug')?.enable();
     }
   }
   
@@ -209,29 +250,37 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
       this.modalConfig.primaryButtonLoading = true;
       this.modalConfig.primaryButtonDisabled = true;
       
-      const formValue = this.bannerForm.value;
+      // Get raw value to include disabled fields (slug)
+      const formValue = this.bannerForm.getRawValue();
       
-      const bannerData: Banner = {
+      // Build buttons array
+      const buttons: BannerButton[] = formValue.buttons.map((btn: any) => ({
+        title: btn.title,
+        redirectLink: btn.redirectLink,
+        buttonType: btn.buttonType,
+        openInNewTab: btn.openInNewTab
+      }));
+      
+      const bannerData: BannerRequest = {
         title: formValue.title,
         description: formValue.description || undefined,
-        imageUrl: formValue.imageUrl,
-        targetUrl: formValue.targetUrl || undefined,
-        bannerType: formValue.bannerType,
-        movieId: formValue.movieId || undefined,
-        displayOrder: formValue.displayOrder || 0,
+        order: formValue.order,
         isActive: formValue.isActive,
-        startDate: formValue.startDate || undefined,
-        endDate: formValue.endDate || undefined,
-        ...(this.banner?.id && { id: this.banner.id })
+        bannerImage: formValue.bannerImage,
+        imageAltText: formValue.imageAltText,
+        imageMobileUrl: formValue.imageMobileUrl || undefined,
+        buttons: buttons,
+        ...(this.banner?.id && { id: this.banner.id }),
+        // Only include slug for create (not update)
+        ...(!this.banner?.id && { slug: formValue.slug })
       };
       
       try {
         this.bannerService.storeBanner(bannerData).subscribe({
-          next: (savedBanner) => {
+          next: (response) => {
             // Success - emit the saved banner
-            // The service returns response.data which should be the banner object
             this.enableBodyScroll();
-            this.bannerSaved.emit(savedBanner as any);
+            this.bannerSaved.emit(response.data);
             this.resetLoadingState();
             this.resetForm();
           },
@@ -260,24 +309,44 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   
   // Form Helpers
   private resetForm(): void {
+    // Clear buttons array first
+    this.buttonsArray.clear();
+    
     this.bannerForm.reset({
+      slug: '',
       title: '',
       description: '',
-      imageUrl: '',
-      targetUrl: '',
-      bannerType: 'MOVIE_PROMOTION',
-      movieId: '',
-      displayOrder: 0,
+      order: 1,
       isActive: true,
-      startDate: '',
-      endDate: ''
+      bannerImage: '',
+      imageAltText: '',
+      imageMobileUrl: ''
     });
     this.bannerForm.markAsUntouched();
+    
+    // Enable slug field for next create
+    this.bannerForm.get('slug')?.enable();
+    
+    // Reset image selections
+    this.selectedImage = null;
+    this.selectedMobileImage = null;
   }
   
   private markFormGroupTouched(): void {
     Object.keys(this.bannerForm.controls).forEach(key => {
-      this.bannerForm.get(key)?.markAsTouched();
+      const control = this.bannerForm.get(key);
+      control?.markAsTouched();
+      
+      // Mark nested form arrays
+      if (control instanceof FormArray) {
+        control.controls.forEach(group => {
+          if (group instanceof FormGroup) {
+            Object.keys(group.controls).forEach(k => {
+              group.get(k)?.markAsTouched();
+            });
+          }
+        });
+      }
     });
   }
   
@@ -310,16 +379,14 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   
   private getFieldLabel(fieldName: string): string {
     const labels: { [key: string]: string } = {
+      slug: 'Slug',
       title: 'Title',
       description: 'Description',
-      imageUrl: 'Image URL',
-      targetUrl: 'Target URL',
-      bannerType: 'Banner Type',
-      movieId: 'Movie ID',
-      displayOrder: 'Display Order',
+      order: 'Display Order',
       isActive: 'Status',
-      startDate: 'Start Date',
-      endDate: 'End Date'
+      bannerImage: 'Banner Image',
+      imageAltText: 'Image Alt Text',
+      imageMobileUrl: 'Mobile Image URL'
     };
     return labels[fieldName] || fieldName;
   }
@@ -327,7 +394,9 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   /**
    * Open Media Manager to select image
    */
-  openMediaManager(): void {
+  openMediaManager(target: 'banner' | 'mobile' = 'banner'): void {
+    this.currentImageTarget = target;
+    this.mediaManagerConfig.title = target === 'banner' ? 'Select Banner Image' : 'Select Mobile Image';
     this.showMediaManager = true;
   }
 
@@ -340,48 +409,104 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
 
   /**
    * Handle image selection from media manager
-   * This is called when files are selected (double-click or select button)
    */
   onImageSelected(files: MediaFile[]): void {
     if (files && files.length > 0) {
-      // Since we configured single selection, take the first file
       const selectedFile = files[0];
-      this.selectedImage = selectedFile;
-      
-      // Set the imageUrl form control with the file URL
-      // Using 'url' property from MediaFile interface
       const imageUrl = selectedFile.url || selectedFile.filePath;
-      this.bannerForm.patchValue({
-        imageUrl: imageUrl
-      });
       
-      // Mark the field as touched to show it's been set
-      this.bannerForm.get('imageUrl')?.markAsTouched();
+      if (this.currentImageTarget === 'banner') {
+        this.selectedImage = selectedFile;
+        this.bannerForm.patchValue({ bannerImage: imageUrl });
+        this.bannerForm.get('bannerImage')?.markAsTouched();
+        this.toastService.success(`Banner image "${selectedFile.fileName}" selected!`, 'Image Selected');
+      } else {
+        this.selectedMobileImage = selectedFile;
+        this.bannerForm.patchValue({ imageMobileUrl: imageUrl });
+        this.bannerForm.get('imageMobileUrl')?.markAsTouched();
+        this.toastService.success(`Mobile image "${selectedFile.fileName}" selected!`, 'Image Selected');
+      }
       
-      // Close media manager
       this.showMediaManager = false;
-      
-      // Show success message
-      this.toastService.success(`Image "${selectedFile.fileName}" selected!`, 'Image Selected');
     }
   }
 
   /**
-   * Remove selected image
+   * Remove selected banner image
    */
   removeSelectedImage(): void {
     this.selectedImage = null;
-    this.bannerForm.patchValue({
-      imageUrl: ''
-    });
-    this.bannerForm.get('imageUrl')?.markAsTouched();
+    this.bannerForm.patchValue({ bannerImage: '' });
+    this.bannerForm.get('bannerImage')?.markAsTouched();
   }
 
   /**
-   * Get selected image URL for preview
+   * Remove selected mobile image
+   */
+  removeSelectedMobileImage(): void {
+    this.selectedMobileImage = null;
+    this.bannerForm.patchValue({ imageMobileUrl: '' });
+    this.bannerForm.get('imageMobileUrl')?.markAsTouched();
+  }
+
+  /**
+   * Get selected banner image URL for preview
    */
   getSelectedImageUrl(): string | null {
-    return this.bannerForm.get('imageUrl')?.value || null;
+    return this.bannerForm.get('bannerImage')?.value || null;
+  }
+
+  /**
+   * Get selected mobile image URL for preview
+   */
+  getSelectedMobileImageUrl(): string | null {
+    return this.bannerForm.get('imageMobileUrl')?.value || null;
+  }
+
+  /**
+   * Auto-generate slug from title
+   */
+  generateSlug(): void {
+    const title = this.bannerForm.get('title')?.value;
+    if (title && !this.banner) {
+      const slug = title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 100);
+      this.bannerForm.patchValue({ slug });
+    }
+  }
+
+  /**
+   * Check if button field is invalid
+   */
+  isButtonFieldInvalid(buttonIndex: number, fieldName: string): boolean {
+    const buttonsArray = this.bannerForm.get('buttons') as FormArray;
+    const buttonGroup = buttonsArray.at(buttonIndex) as FormGroup;
+    const field = buttonGroup?.get(fieldName);
+    return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  /**
+   * Get button field error message
+   */
+  getButtonFieldError(buttonIndex: number, fieldName: string): string {
+    const buttonsArray = this.bannerForm.get('buttons') as FormArray;
+    const buttonGroup = buttonsArray.at(buttonIndex) as FormGroup;
+    const field = buttonGroup?.get(fieldName);
+    
+    if (field?.errors) {
+      if (field.errors['required']) {
+        return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} is required`;
+      }
+      if (field.errors['maxlength']) {
+        return `Maximum ${field.errors['maxlength'].requiredLength} characters allowed`;
+      }
+    }
+    return '';
   }
 
 }

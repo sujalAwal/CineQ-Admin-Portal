@@ -55,6 +55,9 @@ export class AuthService {
           
           // Call profile API after successful login
           this.fetchProfile().subscribe();
+          
+          // Call my-modules API after successful login
+          this.fetchMyModules().subscribe();
         }),
         catchError(this.handleError)
       );
@@ -65,6 +68,17 @@ export class AuthService {
    */
   private fetchProfile(): Observable<any> {
     const url = `${environment.api.baseUrl}/auth/profile`;
+    
+    return this.http.get(url, {
+      withCredentials: true
+    });
+  }
+
+  /**
+   * Fetch user modules
+   */
+  private fetchMyModules(): Observable<any> {
+    const url = `${environment.api.baseUrl}/modules/my-modules`;
     
     return this.http.get(url, {
       withCredentials: true

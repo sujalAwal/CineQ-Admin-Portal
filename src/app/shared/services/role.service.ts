@@ -26,6 +26,7 @@ export class RoleService {
   private readonly roleUrl = `${environment.api.baseUrl}/v1/submit/role`;
   private readonly roleListUrl = `${environment.api.baseUrl}/v1/list/role`;
   private readonly roleViewUrl = `${environment.api.baseUrl}/v1/view/role`;
+  private readonly updateStatusUrl = `${environment.api.baseUrl}/v1/update-status`;
 
   // Cache for role list
   private roleCache = new Map<string, { data: any, timestamp: number }>();
@@ -108,14 +109,22 @@ export class RoleService {
         if (response && response.success && response.data) {
           const data = response.data;
           
-          // Map the nested formData structure to RoleDetailResponse
+          // Convert permission keys from strings to numbers
+          const permissions: { [key: number]: number[] } = {};
+          if (data.permissions) {
+            Object.entries(data.permissions).forEach(([key, value]) => {
+              permissions[Number(key)] = value as number[];
+            });
+          }
+          
+          // Map the API response to RoleDetailResponse
           return {
             id: data.id,
-            name: data.formData?.name || '',
-            permissions: data.formData?.permissions || {},
-            isActive: data.formData?.isActive ?? true,
-            createdAt: data.formData?.createdAt ? new Date(data.formData.createdAt).toISOString() : '',
-            updatedAt: data.formData?.updatedAt ? new Date(data.formData.updatedAt).toISOString() : ''
+            name: data.name || '',
+            permissions: permissions,
+            isActive: data.isActive ?? true,
+            createdAt: data.createdAt || '',
+            updatedAt: data.updatedAt || ''
           } as RoleDetailResponse;
         }
         throw new Error(response?.message || 'Failed to fetch role details');
@@ -147,19 +156,47 @@ export class RoleService {
   }
 
   /**
+   * Update role status (single or bulk)
+   */
+  updateStatus(ids: string[], isActive: boolean): Observable<boolean> {
+    const payload = {
+      formSlug: 'role',
+      ids: ids,
+      isActive: isActive
+    };
+
+    return this.http.patch<ApiResponse>(this.updateStatusUrl, payload, {
+      withCredentials: true
+    }).pipe(
+      map(response => {
+        if (response && response.success) {
+          this.invalidateCache();
+          const statusText = isActive ? 'activated' : 'deactivated';
+          const count = ids.length;
+          const message = count === 1 
+            ? `Role ${statusText} successfully!` 
+            : `${count} roles ${statusText} successfully!`;
+          this.toastr.success(message, 'Success');
+          return true;
+        }
+        throw new Error(response?.message || 'Failed to update status');
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Enable roles (bulk operation)
    */
   enableRoles(ids: string[]): Observable<boolean> {
-    // Implement based on your API
-    return of(true); // Placeholder
+    return this.updateStatus(ids, true);
   }
 
   /**
    * Disable roles (bulk operation)
    */
   disableRoles(ids: string[]): Observable<boolean> {
-    // Implement based on your API
-    return of(true); // Placeholder
+    return this.updateStatus(ids, false);
   }
 
   /**

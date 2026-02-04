@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError, of } from 'rxjs';
-import { map, catchError, tap, timeout, retry, share } from 'rxjs/operators';
+import { map, catchError, tap, share } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 
@@ -10,10 +10,13 @@ import {
   Banner, 
   BannerResponse,
   BannerRequest,
-  BannerPageRequest
+  BannerPageRequest,
+  BannerFormSubmitRequest,
+  BannerListResponse,
+  BannerBulkStatusRequest,
+  BannerBulkStatusResponse
 } from '../interfaces/banner.interface';
 import { 
-  ApiResponse,
   PaginatedApiResponse
 } from '../interfaces/genre.interface';
 
@@ -24,14 +27,17 @@ export class BannerService {
   private currentBannerSubject = new BehaviorSubject<Banner | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
 
-  private readonly url = `${environment.api.baseUrl}/banner`;
+  // API endpoints based on documentation
+  private readonly formSubmitUrl = `${environment.api.baseUrl}/v1/submit/banner`;
+  private readonly listUrl = `${environment.api.baseUrl}/v1/list/banner`;
+  private readonly bulkStatusUrl = `${environment.api.baseUrl}/v1/update-status`;
 
   // 🚀 Performance optimizations
   private bannerCache = new Map<string, { data: any, timestamp: number }>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private pendingRequests = new Map<string, Observable<any>>();
 
-  // Public observables (like Laravel's Auth::user())
+  // Public observables
   public currentBanner$ = this.currentBannerSubject.asObservable();
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
@@ -45,6 +51,7 @@ export class BannerService {
 
   /**
    * 🚀 Optimized fetch with caching and request deduplication
+   * GET /api/v1/forms/list/banner?page=1&size=10
    */
   getBanners(request?: BannerPageRequest): Observable<PaginatedApiResponse<Banner>> {
     const cacheKey = this.buildCacheKey(request);
@@ -65,19 +72,32 @@ export class BannerService {
     if (request) {
       if (request.page) httpParams = httpParams.set('page', request.page.toString());
       if (request.size) httpParams = httpParams.set('size', request.size.toString());
-      if (request.sortBy) httpParams = httpParams.set('sortBy', request.sortBy);
-      if (request.sortDirection) httpParams = httpParams.set('sortDirection', request.sortDirection);
       if (request.search) httpParams = httpParams.set('search', request.search);
-      if (request.active !== undefined) httpParams = httpParams.set('active', request.active.toString());
     }
 
-    const request$ = this.http.get<PaginatedApiResponse<Banner>>(this.url, { 
+    const request$ = this.http.get<BannerListResponse>(this.listUrl, { 
       params: httpParams, 
       withCredentials: true 
     }).pipe(
       map(response => {
         if (response && response.success) {
-          return response;
+          // Extract banners from the nested structure: data[0].banner
+          const banners = response.data?.[0]?.banner || [];
+          
+          // Transform to PaginatedApiResponse format for component compatibility
+          const paginatedResponse: PaginatedApiResponse<Banner> = {
+            success: response.success,
+            message: response.message,
+            data: banners,
+            page: response.page,
+            size: response.size,
+            totalPages: response.totalPages,
+            totalElements: response.totalElements,
+            hasNext: response.hasNext,
+            hasPrevious: response.hasPrevious
+          };
+          
+          return paginatedResponse;
         }
         throw new Error(response?.message || 'Failed to fetch banners');
       }),
@@ -111,10 +131,7 @@ export class BannerService {
       'banners',
       request.page || 1,
       request.size || 20,
-      request.sortBy || 'displayOrder',
-      request.sortDirection || 'asc',
-      request.search || '',
-      request.active !== undefined ? request.active : 'all'
+      request.search || ''
     ];
     
     return parts.join('_');
@@ -128,33 +145,29 @@ export class BannerService {
   }
 
   /**
-   * 🚀 Optimized store with cache invalidation
+   * 🚀 Create or Update Banner using form submit API
+   * POST /api/v1/forms/submit with action: CREATE or UPDATE
    */
   storeBanner(banner: BannerRequest): Observable<BannerResponse> {
-    let url = '';
-    let httpMethod: Observable<ApiResponse<BannerResponse>>;
+    const isUpdate = !!banner.id;
     
-    if(banner?.id){
-      // Update existing banner - use PUT method
-      url = `${this.url}/${banner.id}`;
-      httpMethod = this.http.put<ApiResponse<BannerResponse>>(url, banner, {
-        withCredentials: true
-      });
-    } else {
-      // Create new banner - use POST method
-      url = `${this.url}`;
-      httpMethod = this.http.post<ApiResponse<BannerResponse>>(url, banner, {
-        withCredentials: true
-      });
-    }
+    const requestPayload: BannerFormSubmitRequest = {
+      formSlug: 'banner',
+      stepSlug: 'v1',
+      action: isUpdate ? 'UPDATE' : 'CREATE',
+      formData: banner
+    };
     
-    return httpMethod.pipe(
+    return this.http.post<BannerResponse>(this.formSubmitUrl, requestPayload, {
+      withCredentials: true
+    }).pipe(
       map(response => {
         if (response && response.success && response.data) {
-          this.toastr.success('Banner saved successfully!', 'Success');
+          const action = isUpdate ? 'updated' : 'created';
+          this.toastr.success(`Banner ${action} successfully!`, 'Success');
           // Invalidate cache after successful mutation
           this.invalidateCache();
-          return response.data;
+          return response;
         }
         
         throw new Error(response?.message || 'Failed to save banner');
@@ -166,65 +179,123 @@ export class BannerService {
   }
 
   /**
-   * Get current banner (like Laravel Auth::user())
+   * Read a single banner by ID
+   * POST /api/v1/forms/submit with action: READ
+   */
+  getBannerById(id: string): Observable<Banner> {
+    const requestPayload: BannerFormSubmitRequest = {
+      formSlug: 'banner',
+      stepSlug: 'v1',
+      action: 'READ',
+      formData: { id }
+    };
+    
+    return this.http.post<BannerResponse>(this.formSubmitUrl, requestPayload, {
+      withCredentials: true
+    }).pipe(
+      map(response => {
+        if (response && response.success && response.data) {
+          return response.data;
+        }
+        throw new Error(response?.message || 'Failed to fetch banner');
+      }),
+      catchError((error: any) => {
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /**
+   * Get current banner
    */
   getCurrentBanner(): Banner | null {
     return this.currentBannerSubject.value;
   }
 
+  /**
+   * Delete banner (soft-delete)
+   * POST /api/v1/forms/submit with action: DELETE
+   */
   deleteBanner(id: string): Observable<boolean> {
-    const url = `${this.url}/${id}`;
-    return this.http.delete<ApiResponse<boolean>>(url, { withCredentials: true })
-      .pipe(
-        map(response => {
-          if (response && response.success) {
-            this.toastr.success(response.message || 'Banner deleted successfully!', 'Success');
-            // Invalidate cache after successful deletion
-            this.invalidateCache();
-            return true;
-          }
-          throw new Error(response?.message || 'Failed to delete banner');
-        }),
-        catchError((error: any) => {
-          return this.handleError(error);
-        })
-      );
+    const requestPayload: BannerFormSubmitRequest = {
+      formSlug: 'banner',
+      stepSlug: 'v1',
+      action: 'DELETE',
+      formData: { id }
+    };
+    
+    return this.http.post<BannerResponse>(this.formSubmitUrl, requestPayload, { 
+      withCredentials: true 
+    }).pipe(
+      map(response => {
+        if (response && response.success) {
+          this.toastr.success(response.message || 'Banner deleted successfully!', 'Success');
+          // Invalidate cache after successful deletion
+          this.invalidateCache();
+          return true;
+        }
+        throw new Error(response?.message || 'Failed to delete banner');
+      }),
+      catchError((error: any) => {
+        return this.handleError(error);
+      })
+    );
   }
 
+  /**
+   * Bulk enable banners
+   * PUT /api/v1/forms/bulk-status/banner
+   */
   enableBanner(ids: string[]): Observable<boolean> {
-    const url = `${this.url}/bulk-enable`;
-    return this.http.post<ApiResponse<boolean>>(url, { ids }, { withCredentials: true })
-      .pipe(
-        map(response => {
-          if (response && response.success) {
-            // Invalidate cache after successful operation
-            this.invalidateCache();
-            return true;
-          }
-          throw new Error(response?.message || 'Failed to enable banners');
-        }),
-        catchError((error: any) => {
-          return this.handleError(error);
-        })
-      );
+    const requestPayload: BannerBulkStatusRequest = {
+      ids,
+      formSlug: 'banner',
+      isActive: true
+    };
+    
+    return this.http.patch<BannerBulkStatusResponse>(this.bulkStatusUrl, requestPayload, { 
+      withCredentials: true 
+    }).pipe(
+      map(response => {
+        if (response && response.success) {
+          // Invalidate cache after successful operation
+          this.invalidateCache();
+          return true;
+        }
+        throw new Error(response?.message || 'Failed to enable banners');
+      }),
+      catchError((error: any) => {
+        return this.handleError(error);
+      })
+    );
   }
 
+  /**
+   * Bulk disable banners
+   * PUT /api/v1/forms/bulk-status/banner
+   */
   disableBanner(ids: string[]): Observable<boolean> {
-    const url = `${this.url}/bulk-disable`;
-    return this.http.post<ApiResponse<boolean>>(url, { ids }, { withCredentials: true })
-      .pipe(
-        map(response => {
-          if (response && response.success) {
-            // Invalidate cache after successful operation
-            this.invalidateCache();
-            return true;
-          }
-          throw new Error(response?.message || 'Failed to disable banners');
-        }),
-        catchError((error: any) => {
-          return this.handleError(error);
-        })
-      );
+    const requestPayload: BannerBulkStatusRequest = {
+      ids,
+      formSlug: 'banner',
+      isActive: false
+    };
+    
+    return this.http.patch<BannerBulkStatusResponse>(this.bulkStatusUrl, requestPayload, { 
+      withCredentials: true 
+    }).pipe(
+      map(response => {
+        if (response && response.success) {
+          // Invalidate cache after successful operation
+          this.invalidateCache();
+          return true;
+        }
+        throw new Error(response?.message || 'Failed to disable banners');
+      }),
+      catchError((error: any) => {
+        return this.handleError(error);
+      })
+    );
   }
 
   /**

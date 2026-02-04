@@ -19,13 +19,8 @@ const routes: Routes = [
     canActivate: [AuthGuard], // Protect admin routes
     children: [
       {
-        path: 'default',
+        path: 'dashboard',
         loadComponent: () => import('./demo/dashboard/default/default.component').then((c) => c.DefaultComponent)
-      },
-      {
-        path: 'dashboard', // Add dashboard alias
-        redirectTo: '/default',
-        pathMatch: 'full'
       },
       {
         path: 'typography',
@@ -90,6 +85,21 @@ const routes: Routes = [
           {
             path: 'users',
             loadComponent: () => import('./demo/user-management/users/users.component').then((c) => c.UsersComponent)
+          }
+        ]
+      },
+      // Main Settings Routes
+      {
+        path: 'main-settings',
+        children: [
+          {
+            path: '',
+            redirectTo: 'modulemanagement',
+            pathMatch: 'full'
+          },
+          {
+            path: 'modulemanagement',
+            loadComponent: () => import('./demo/main-settings/modulemanagement/modulemanagement.component').then((c) => c.ModulemanagementComponent)
           }
         ]
       }

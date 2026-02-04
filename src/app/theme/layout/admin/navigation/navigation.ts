@@ -130,6 +130,30 @@ export const NavigationItems: NavigationItem[] = [
     ]
   },
   {
+    id: 'main-settings',
+    title: 'Main Settings',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'main-settings-section',
+        title: 'Main Settings',
+        type: 'collapse',
+        icon: 'ti ti-settings',
+        children: [
+          {
+            id: 'modulemanagement',
+            title: 'Module Management',
+            type: 'item',
+            url: '/main-settings/modulemanagement',
+            icon: 'ti ti-packages',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'dynamic-form-manager',
     title: 'Dynamic Form Manager',
     type: 'group',

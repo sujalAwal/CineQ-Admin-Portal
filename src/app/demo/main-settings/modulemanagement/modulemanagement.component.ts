@@ -1,15 +1,16 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 // project imports
 import { SharedModule } from '../../../theme/shared/shared.module';
 import { DataTableComponent } from '../../../shared/components/data-table/data-table.component';
-import { BannerModalComponent } from '../../../shared/components/banner-modal/banner-modal.component';
+import { ModuleModalComponent } from '../../../shared/components/module-modal/module-modal.component';
 import { ConfirmationModalComponent, ConfirmationConfig } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
 import { ToastService } from '../../../shared/services/toast.service';
-import { Banner } from '../../../shared/interfaces/banner.interface';
+import { ModuleResponseDTO, ModuleRequestDTO } from '../../../shared/interfaces/module.interface';
 import { 
   TableConfig, 
   TableColumn, 
@@ -19,27 +20,26 @@ import {
   BulkSelectionEvent,
   BulkAction 
 } from '../../../shared/interfaces/table.interface';
-import { BannerService } from 'src/app/shared/services/banner.service';
-import { BannerPageRequest } from '../../../shared/interfaces/banner.interface';
-import { PaginatedApiResponse } from '../../../shared/interfaces/genre.interface';
+import { ModuleService } from 'src/app/shared/services/module.service';
+import { ModulePageRequest, PaginationResponse } from '../../../shared/interfaces/module.interface';
 
 @Component({
-  selector: 'app-banners',
-  imports: [CommonModule, SharedModule, DataTableComponent, BannerModalComponent, ConfirmationModalComponent],
-  templateUrl: './banners.component.html',
-  styleUrls: ['./banners.component.scss'],
+  selector: 'app-modulemanagement',
+  imports: [CommonModule, SharedModule, DataTableComponent, ModuleModalComponent, ConfirmationModalComponent],
+  templateUrl: './modulemanagement.component.html',
+  styleUrls: ['./modulemanagement.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BannersComponent implements OnInit, OnDestroy {
+export class ModulemanagementComponent implements OnInit, OnDestroy {
   
   // Table configuration
   tableConfig: TableConfig = {
-    title: 'Banners Management',
-    entityName: 'Banner',
-    apiEndpoint: '/api/v1/list/banner',
+    title: 'Module Management',
+    entityName: 'Module',
+    apiEndpoint: '/modules',
     searchable: true,
     paginated: true,
-    pageSize: 20,
+    pageSize: 25,
     sortable: true,
     // 🆕 Enable bulk selection
     bulkSelectable: true,
@@ -67,43 +67,35 @@ export class BannersComponent implements OnInit, OnDestroy {
         align: 'center'
       },
       {
-        header: 'Title',
-        field: 'title',
+        header: 'Name',
+        field: 'name',
         type: 'text',
         sortable: true,
         width: '200px'
       },
       {
-        header: 'Slug',
-        field: 'slug',
+        header: 'API',
+        field: 'api',
         type: 'text',
         sortable: false,
-        width: '180px'
-      },
-      {
-        header: 'Description',
-        field: 'description',
-        type: 'text',
-        sortable: false,
-        width: '250px'
-      },
-      {
-        header: 'Display Order',
-        field: 'order',
-        type: 'text',
-        sortable: true,
-        width: '120px',
-        align: 'center'
+        width: '300px'
       },
       {
         header: 'Status',
-        field: 'isActive',
+        field: 'is_enabled',
         type: 'toggle',
         width: '60px',
         align: 'center'
       }
     ],
     actions: [
+      // {
+      //   label: 'View',
+      //   icon: 'ti ti-eye',
+      //   type: 'view',
+      //   class: 'btn-outline-primary',
+      //   visible: true
+      // },
       {
         label: 'Edit',
         icon: 'ti ti-edit',
@@ -122,24 +114,29 @@ export class BannersComponent implements OnInit, OnDestroy {
   };
 
   // Component state
-  bannersData: Banner[] = [];
+  modulesData: ModuleResponseDTO[] = [];
   loading: boolean = false;
   pagination: PaginationInfo = {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    pageSize: 20
+    pageSize: 25
   };
 
+  // Parent modules for dropdown
+  parentModules: ModuleResponseDTO[] = [];
+
   // Search and filter state
-  currentFilters: BannerPageRequest = {
+  currentFilters: ModulePageRequest = {
     page: 1,
-    size: 20
+    size: 25,
+    sortBy: 'name',
+    sortDirection: 'asc'
   };
 
   // Modal state
-  showBannerModal: boolean = false;
-  selectedBanner: Banner | null = null;
+  showModuleModal: boolean = false;
+  selectedModule: ModuleRequestDTO | null = null;
   modalLoading: boolean = false;
 
   // Confirmation modal state
@@ -153,7 +150,7 @@ export class BannersComponent implements OnInit, OnDestroy {
     cancelText: 'Cancel',
     confirmButtonClass: 'btn-danger'
   };
-  bannerToDelete: Banner | null = null;
+  moduleToDelete: ModuleResponseDTO | null = null;
 
   // 🆕 Memory leak prevention
   private destroy$ = new Subject<void>();
@@ -171,13 +168,14 @@ export class BannersComponent implements OnInit, OnDestroy {
   };
 
   constructor(private toastService: ToastService,
-              private bannerService: BannerService,
+              private moduleService: ModuleService,
               private cdr: ChangeDetectorRef
   ) {}
 
+
   ngOnInit() {
     this.setupDebouncedSearch();
-    this.loadBanners();
+    this.loadModules();
   }
 
   ngOnDestroy() {
@@ -207,28 +205,28 @@ export class BannersComponent implements OnInit, OnDestroy {
       search: searchTerm || undefined,
       page: 1
     };
-    this.loadBanners();
+    this.loadModules();
   }
 
   /**
-   * 🚀 Optimized load banners with change detection
+   * 🚀 Optimized load modules with change detection
    */
-  loadBanners(additionalFilters?: Partial<BannerPageRequest>) {
+  loadModules(additionalFilters?: Partial<ModulePageRequest>) {
     this.loading = true;
     this.cdr.markForCheck(); // Trigger change detection for loading state
     
     // Merge current filters with any additional filters
-    const requestParams: BannerPageRequest = {
+    const requestParams: ModulePageRequest = {
       ...this.currentFilters,
       ...additionalFilters
     };
 
-    this.bannerService.getBanners(requestParams)
+    this.moduleService.getAllModules(requestParams)
       .pipe(takeUntil(this.destroy$)) // Prevent memory leaks
       .subscribe({
-        next: (response: PaginatedApiResponse<Banner>) => {
+        next: (response: PaginationResponse<ModuleResponseDTO>) => {
           // Extract data and pagination info from response
-          this.bannersData = response.data;
+          this.modulesData = response.data;
           
           // Update pagination info
           this.pagination = {
@@ -242,8 +240,8 @@ export class BannersComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck(); // Trigger change detection for data update
         },
         error: (error) => {
-          console.error('Failed to load banners:', error);
-          this.bannersData = [];
+          console.error('Failed to load modules:', error);
+          this.modulesData = [];
           this.loading = false;
           this.cdr.markForCheck(); // Trigger change detection for error state
         }
@@ -258,10 +256,10 @@ export class BannersComponent implements OnInit, OnDestroy {
 
     switch (action) {
       case 'edit':
-        this.editBanner(item);
+        this.editModule(item);
         break;
       case 'delete':
-        this.deleteBanner(item);
+        this.deleteModule(item);
         break;
     }
   }
@@ -280,19 +278,16 @@ export class BannersComponent implements OnInit, OnDestroy {
     console.log('Page changed to:', page);
     
     this.currentFilters.page = page;
-    this.loadBanners();
+    this.loadModules();
   }
 
   /**
    * Handle sorting
-   * Note: The current API doesn't support server-side sorting for the list endpoint
-   * This is kept for future implementation if the API adds sorting support
    */
   onSort(sortInfo: {field: string, order: 'asc' | 'desc'}) {
     console.log('Sorting by:', sortInfo);
     
-    // Client-side sorting for now since API doesn't support sortBy/sortDirection
-    // Update current filters with new sorting for future API support
+    // Update current filters with new sorting
     this.currentFilters = {
       ...this.currentFilters,
       sortBy: sortInfo.field,
@@ -300,57 +295,61 @@ export class BannersComponent implements OnInit, OnDestroy {
       page: 1 // Reset to first page when sorting
     };
     
-    this.loadBanners();
+    this.loadModules();
   }
 
   /**
    * 🚀 Optimistic UI update for toggle
    */
   onToggleChange(event: {item: any, field: string, value: boolean}) {
-    const bannerId = event.item.id;
-    const bannerTitle = event.item.title;
+    const moduleId = event.item.id;
+    const moduleName = event.item.name;
     
     // 1. Optimistic update - update UI immediately
-    this.updateBannerInList(bannerId, { isActive: event.value });
+    this.updateModuleInList(moduleId, { is_enabled: event.value });
     this.cdr.markForCheck();
     
     // 2. Sync with server
-    const operation = event.value ? this.bannerService.enableBanner : this.bannerService.disableBanner;
+    const formData: ModuleRequestDTO = {
+      name: event.item.name,
+      displayName: event.item.displayName,
+      api: event.item.api,
+      description: event.item.description,
+      icon: event.item.icon,
+      is_enabled: event.value,
+      parentId: event.item.parentId
+    };
     
-    operation.call(this.bannerService, [bannerId])
+    this.moduleService.updateModule(moduleId, formData)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (success) => {
-          if (success) {
-            const message = event.value 
-              ? `Banner "${bannerTitle}" is now active and available.`
-              : `Banner "${bannerTitle}" has been set to inactive.`;
-            const title = event.value ? 'Banner Activated' : 'Banner Deactivated';
-            
-            if (event.value) {
-              this.toastService.activated(message, title);
-            } else {
-              this.toastService.inactive(message, title);
-            }
+        next: (response) => {
+          const message = event.value 
+            ? `Module "${moduleName}" is now active and available.`
+            : `Module "${moduleName}" has been set to inactive.`;
+          const title = event.value ? 'Module Activated' : 'Module Deactivated';
+          
+          if (event.value) {
+            this.toastService.activated(message, title);
           } else {
-            // Revert on API failure
-            this.revertToggleState(bannerId, !event.value);
+            this.toastService.inactive(message, title);
           }
         },
         error: (error) => {
-          console.error('Failed to update banner:', error);
+          console.error('Failed to update module:', error);
           // Revert on error
-          this.revertToggleState(bannerId, !event.value);
+          this.revertToggleState(moduleId, !event.value);
+          this.handleApiError(error);
         }
       });
   }
 
   /**
-   * 🚀 Update banner in local list (optimistic update)
+   * 🚀 Update module in local list (optimistic update)
    */
-  private updateBannerInList(id: string, updates: Partial<Banner>) {
-    this.bannersData = this.bannersData.map(banner => 
-      banner.id === id ? { ...banner, ...updates } : banner
+  private updateModuleInList(id: string, updates: Partial<ModuleResponseDTO>) {
+    this.modulesData = this.modulesData.map(module => 
+      module.id === id ? { ...module, ...updates } : module
     );
   }
 
@@ -362,7 +361,7 @@ export class BannersComponent implements OnInit, OnDestroy {
   onBulkAction(event: BulkSelectionEvent) {
     
     if (event.selectedIds.length === 0) {
-      this.toastService.warning('Please select at least one banner.', 'No Selection');
+      this.toastService.warning('Please select at least one module.', 'No Selection');
       return;
     }
 
@@ -387,14 +386,14 @@ export class BannersComponent implements OnInit, OnDestroy {
    * Show confirmation modal for bulk operations
    */
   private showBulkConfirmation(operation: 'enable' | 'disable', selectedIds: string[]) {
-    const selectedBanners = this.bannersData.filter(banner => selectedIds.includes(banner.id));
-    const bannerTitles = selectedBanners.map(b => b.title).join(', ');
+    const selectedModules = this.modulesData.filter(module => selectedIds.includes(module.id));
+    const moduleNames = selectedModules.map(g => g.name).join(', ');
     const count = selectedIds.length;
     
     if (operation === 'enable') {
       this.confirmationConfig = {
-        title: 'Enable Banners',
-        message: `Are you sure you want to <strong>enable</strong> ${count} banner(s)?<br><br><div class="text-muted small">${bannerTitles}</div>`,
+        title: 'Enable Modules',
+        message: `Are you sure you want to <strong>enable</strong> ${count} module(s)?<br><br><div class="text-muted small">${moduleNames}</div>`,
         icon: 'ti ti-toggle-right',
         iconColor: 'success',
         confirmText: 'Enable',
@@ -405,8 +404,8 @@ export class BannersComponent implements OnInit, OnDestroy {
       };
     } else {
       this.confirmationConfig = {
-        title: 'Disable Banners',
-        message: `Are you sure you want to <strong>disable</strong> ${count} banner(s)?<br><br><div class="text-muted small">${bannerTitles}</div>`,
+        title: 'Disable Modules',
+        message: `Are you sure you want to <strong>disable</strong> ${count} module(s)?<br><br><div class="text-muted small">${moduleNames}</div>`,
         icon: 'ti ti-toggle-left',
         iconColor: 'warning',
         confirmText: 'Disable',
@@ -423,89 +422,137 @@ export class BannersComponent implements OnInit, OnDestroy {
   /**
    * 🚀 Optimized revert with change detection
    */
-  private revertToggleState(bannerId: string, originalValue: boolean) {
-    this.updateBannerInList(bannerId, { isActive: originalValue });
+  private revertToggleState(moduleId: string, originalValue: boolean) {
+    this.updateModuleInList(moduleId, { is_enabled: originalValue });
     this.cdr.markForCheck();
   }
 
   /**
-   * Open Add Banner Modal
+   * Load parent modules from the new API endpoint
    */
-  openAddBannerModal() {
-    this.selectedBanner = null;
-    this.showBannerModal = true;
+  private loadParentModules() {
+    this.moduleService.getParentModules()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.parentModules = response.data;
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          console.error('Failed to load parent modules:', error);
+          this.parentModules = [];
+        }
+      });
   }
 
   /**
-   * Edit banner
+   * Open Add Module Modal
    */
-  private editBanner(banner: any) {
-    console.log('Editing banner:', banner);
-    this.selectedBanner = {
-      id: banner.id,
-      slug: banner.slug,
-      title: banner.title,
-      description: banner.description,
-      order: banner.order,
-      isActive: banner.isActive,
-      bannerImage: banner.bannerImage,
-      imageAltText: banner.imageAltText,
-      imageMobileUrl: banner.imageMobileUrl,
-      buttons: banner.buttons || []
-    };
-    this.showBannerModal = true;
+  openAddModuleModal() {
+    this.selectedModule = null;
+    this.loadParentModules(); // Load parent modules for dropdown
+    this.showModuleModal = true;
+  }
+
+  /**
+   * Edit module
+   */
+  private editModule(module: any) {
+    console.log('Editing module:', module);
+    this.selectedModule = {
+      id: module.id,
+      name: module.name,
+      displayName: module.displayName,
+      api: module.api,
+      description: module.description,
+      icon: module.icon,
+      is_enabled: module.is_enabled,
+      parentId: module.parentId
+    } as ModuleRequestDTO;
+    this.loadParentModules(); // Load parent modules for dropdown
+    this.showModuleModal = true;
   }
 
   /**
    * Handle modal close
    */
-  onBannerModalClosed() {
-    this.showBannerModal = false;
-    this.selectedBanner = null;
+  onModuleModalClosed() {
+    this.showModuleModal = false;
+    this.selectedModule = null;
     this.modalLoading = false;
   }
 
   /**
-   * Handle banner save from modal
+   * Handle module save from modal
    */
-  onBannerSaved(bannerData: Banner) {
+  onModuleSaved(moduleData: ModuleRequestDTO) {
     this.modalLoading = true;
     
-    // Banner data is already saved by the modal component via service
-    // Just handle UI updates here
-    if (bannerData.id && this.selectedBanner?.id) {
-      // Update existing banner
-      this.toastService.success(
-        `"${bannerData.title}" has been updated successfully!`,
-        'Banner Updated'
-      );
+    // Check if we have an ID to determine if it's an update or create
+    const moduleId = this.selectedModule?.id;
+    
+    if (moduleId) {
+      // Update existing module
+      this.moduleService.updateModule(moduleId, moduleData).subscribe({
+        next: (response) => {
+          console.log('Module update response:', response);
+          
+          this.toastService.success(
+            `"${moduleData.name}" has been updated successfully!`,
+            'Module Updated'
+          );
+          
+          this.modalLoading = false;
+          this.onModuleModalClosed();
+          
+          // Refresh the module list to show the latest data
+          this.loadModules();
+        },
+        error: (error) => {
+          console.error('Failed to update module:', error);
+          this.handleApiError(error);
+          this.modalLoading = false;
+          // Don't close modal on error so user can try again
+        }
+      });
     } else {
-      // Add new banner
-      this.toastService.success(
-        `"${bannerData.title}" has been created successfully!`,
-        'Banner Created'
-      );
+      // Create new module
+      this.moduleService.createModule(moduleData).subscribe({
+        next: (response) => {
+          console.log('Module create response:', response);
+          
+          this.toastService.success(
+            `"${moduleData.name}" has been created successfully!`,
+            'Module Created'
+          );
+          
+          this.modalLoading = false;
+          this.onModuleModalClosed();
+          
+          // Refresh the module list to show the latest data
+          this.loadModules();
+        },
+        error: (error) => {
+          console.error('Failed to create module:', error);
+          this.handleApiError(error);
+          this.modalLoading = false;
+          // Don't close modal on error so user can try again
+        }
+      });
     }
-    
-    this.modalLoading = false;
-    this.onBannerModalClosed();
-    
-    // Refresh the banner list to show the latest data
-    this.loadBanners();
   }
 
-
   /**
-   * Delete banner
+   * Delete module
    */
-  private deleteBanner(banner: any) {
-    console.log('Deleting banner:', banner);
+  private deleteModule(module: any) {
+    console.log('Deleting module:', module);
     
     // Set up confirmation modal
-    this.bannerToDelete = banner;
+    this.moduleToDelete = module;
     this.confirmationConfig = {
-      title: 'Delete Banner',
-      message: `Are you sure you want to delete <strong>"${banner.title}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+      title: 'Delete Module',
+      message: `Are you sure you want to delete <strong>"${module.name}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
       icon: 'ti ti-trash-x',
       iconColor: 'danger',
       confirmText: 'Delete',
@@ -519,30 +566,30 @@ export class BannersComponent implements OnInit, OnDestroy {
    * Handle confirmation modal actions
    */
   onDeleteConfirmed() {
-    // Handle single banner deletion
-    if (this.bannerToDelete) {
+    // Handle single module deletion
+    if (this.moduleToDelete) {
       this.confirmationConfig.loading = true;
       
-      this.bannerService.deleteBanner(this.bannerToDelete.id).subscribe({
-        next: (success) => {
-          if (success) {
-            this.toastService.success(
-              `Banner "${this.bannerToDelete!.title}" has been deleted successfully!`,
-              'Banner Deleted'
-            );
-            // Refresh the data to show updated list
-            this.loadBanners();
-          }
+      this.moduleService.deleteModule(this.moduleToDelete.id).subscribe({
+        next: (response) => {
+          this.toastService.success(
+            `Module "${this.moduleToDelete!.name}" has been deleted successfully!`,
+            'Module Deleted'
+          );
+          // Refresh the data to show updated list
+          this.loadModules();
+          
           // Reset state
           this.showConfirmationModal = false;
-          this.bannerToDelete = null;
+          this.moduleToDelete = null;
           this.confirmationConfig.loading = false;
         },
         error: (error) => {
-          console.error('Failed to delete banner:', error);
+          console.error('Failed to delete module:', error);
+          this.handleApiError(error);
           // Reset state on error
           this.showConfirmationModal = false;
-          this.bannerToDelete = null;
+          this.moduleToDelete = null;
           this.confirmationConfig.loading = false;
         }
       });
@@ -557,36 +604,34 @@ export class BannersComponent implements OnInit, OnDestroy {
       const operation = this.bulkOperation.type;
       
       if (operation === 'enable') {
-        this.bannerService.enableBanner(selectedIds).subscribe({
-          next: (success) => {
-            if (success) {
-              this.toastService.activated(
-                `${selectedIds.length} banner(s) have been enabled successfully!`,
-                'Banners Enabled'
-              );
-              this.loadBanners(); // Refresh data from API
-            }
+        this.moduleService.bulkEnableModules(selectedIds).subscribe({
+          next: (response) => {
+            this.toastService.activated(
+              `${selectedIds.length} module(s) have been enabled successfully!`,
+              'Modules Enabled'
+            );
+            this.loadModules(); // Refresh data from API
             this.resetBulkOperation();
           },
           error: (error) => {
-            console.error('Failed to enable banners:', error);
+            console.error('Failed to enable modules:', error);
+            this.handleApiError(error);
             this.resetBulkOperation();
           }
         });
       } else if (operation === 'disable') {
-        this.bannerService.disableBanner(selectedIds).subscribe({
-          next: (success) => {
-            if (success) {
-              this.toastService.inactive(
-                `${selectedIds.length} banner(s) have been disabled successfully!`,
-                'Banners Disabled'
-              );
-              this.loadBanners(); // Refresh data from API
-            }
+        this.moduleService.bulkDisableModules(selectedIds).subscribe({
+          next: (response) => {
+            this.toastService.inactive(
+              `${selectedIds.length} module(s) have been disabled successfully!`,
+              'Modules Disabled'
+            );
+            this.loadModules(); // Refresh data from API
             this.resetBulkOperation();
           },
           error: (error) => {
-            console.error('Failed to disable banners:', error);
+            console.error('Failed to disable modules:', error);
+            this.handleApiError(error);
             this.resetBulkOperation();
           }
         });
@@ -596,7 +641,7 @@ export class BannersComponent implements OnInit, OnDestroy {
 
   onDeleteCancelled() {
     this.showConfirmationModal = false;
-    this.bannerToDelete = null;
+    this.moduleToDelete = null;
     this.confirmationConfig.loading = false;
     
     // 🆕 Reset bulk operation state
@@ -614,5 +659,14 @@ export class BannersComponent implements OnInit, OnDestroy {
     this.showConfirmationModal = false;
     this.confirmationConfig.loading = false;
   }
-}
 
+  private handleApiError(error: any): void {
+    if (error.error?.message) {
+      this.toastService.error(error.error.message, 'Error');
+    } else {
+      this.toastService.error('Operation failed. Please try again.', 'Error');
+    }
+  }
+
+  protected readonly Math = Math;
+}

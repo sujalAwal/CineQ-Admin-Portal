@@ -1,37 +1,99 @@
-// Banner Interface 
-export interface Banner {
-    id: string;
-    title: string;
-    description?: string;
-    imageUrl: string;
-    targetUrl?: string;
-    bannerType: string;
-    movieId?: string;
-    displayOrder: number;
-    isActive: boolean;
-    startDate?: string;
-    endDate?: string;
+// Banner Button Interface
+export interface BannerButton {
+  title: string;
+  redirectLink: string;
+  buttonType: 'primary' | 'secondary' | 'tertiary';
+  openInNewTab: boolean;
 }
 
-// Banner Request Interface
-export interface BannerRequest {
-  id?: string;
+// Banner Interface 
+export interface Banner {
+  id: string;
+  slug: string;
   title: string;
   description?: string;
-  imageUrl: string;
-  targetUrl?: string;
-  bannerType: string;
-  movieId?: string;
-  displayOrder: number;
+  order: number;
   isActive: boolean;
-  startDate?: string;
-  endDate?: string;
+  bannerImage: string;
+  imageAltText: string;
+  imageMobileUrl?: string;
+  buttons: BannerButton[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Banner Request Interface (for CREATE/UPDATE)
+export interface BannerRequest {
+  id?: string;
+  slug?: string; // Required only for CREATE
+  title: string;
+  description?: string;
+  order: number;
+  isActive: boolean;
+  bannerImage: string;
+  imageAltText: string;
+  imageMobileUrl?: string;
+  buttons: BannerButton[];
+}
+
+// Banner Form Submit Request Interface
+export interface BannerFormSubmitRequest {
+  formSlug: 'banner';
+  stepSlug: 'v1';
+  action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE';
+  formData: BannerRequest | { id: string };
 }
 
 // Banner Response Interface 
 export interface BannerResponse {
+  success: boolean;
   message: string;
-  banner: Banner;
+  data: Banner;
+  timestamp: string;
+  path: string;
+}
+
+// Banner List Response Interface (unique structure with nested banner array)
+export interface BannerListResponse {
+  success: boolean;
+  message: string;
+  data: Array<{ banner: Banner[] }>;
+
+    page: number;
+    size: number;
+    totalPages: number;
+    totalElements: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+
+  timestamp: string;
+  path: string;
+}
+
+// Bulk Status Update Request
+export interface BannerBulkStatusRequest {
+  ids: string[];
+  formSlug: string;
+  isActive: boolean;
+}
+
+// Bulk Status Update Response
+export interface BannerBulkStatusResponse {
+  success: boolean;
+  message: string;
+  data: {
+    updated: number;
+    failed: number;
+    results: Array<{
+      id: string;
+      slug: string;
+      isActive?: boolean;
+      updatedAt?: string;
+      error?: string;
+    }>;
+  };
+  timestamp: string;
+  path: string;
 }
 
 // Banner Page Request Interface

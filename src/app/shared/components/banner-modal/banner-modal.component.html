@@ -6,243 +6,311 @@
   (primaryAction)="onModalSave()">
   
   <!-- BANNER FORM CONTENT -->
-  <form [formGroup]="bannerForm" (ngSubmit)="onModalSave()" novalidate>
+  <form [formGroup]="bannerForm" (ngSubmit)="onModalSave()" novalidate class="banner-form">
     
-    <!-- Title Field -->
-    <div class="mb-3">
-      <label for="bannerTitle" class="form-label">
-        Title <span class="text-danger">*</span>
-      </label>
-      <input
-        type="text"
-        id="bannerTitle"
-        class="form-control"
-        [class.is-invalid]="isFieldInvalid('title')"
-        formControlName="title"
-        placeholder="Enter banner title"
-        maxlength="200">
+    <!-- Section: Basic Information -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-info-circle me-2"></i>Basic Information
+      </h6>
       
-      <!-- Error Message -->
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
-        {{ getFieldError('title') }}
+      <div class="row">
+        <!-- Title Field -->
+        <div class="col-md-6 mb-3">
+          <label for="bannerTitle" class="form-label">
+            Title <span class="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            id="bannerTitle"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('title')"
+            formControlName="title"
+            placeholder="Enter banner title"
+            maxlength="150"
+            (blur)="generateSlug()">
+          
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
+            {{ getFieldError('title') }}
+          </div>
+          <div class="form-text">
+            {{ bannerForm.get('title')?.value?.length || 0 }}/150 characters
+          </div>
+        </div>
+
+        <!-- Slug Field -->
+        <div class="col-md-6 mb-3">
+          <label for="bannerSlug" class="form-label">
+            Slug <span class="text-danger" *ngIf="!banner">*</span>
+            <span class="badge bg-secondary ms-2" *ngIf="banner">Read Only</span>
+          </label>
+          <div class="input-group">
+            <input
+              type="text"
+              id="bannerSlug"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('slug')"
+              formControlName="slug"
+              placeholder="e.g., summer-sale-2024"
+              maxlength="100"
+              [readonly]="banner">
+            <button 
+              type="button" 
+              class="btn btn-outline-secondary"
+              (click)="generateSlug()"
+              title="Generate from title"
+              *ngIf="!banner">
+              <i class="ti ti-refresh"></i>
+            </button>
+          </div>
+          
+          <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('slug')">
+            {{ getFieldError('slug') }}
+          </div>
+          <div class="form-text">
+            URL-friendly identifier (lowercase, numbers, hyphens)
+          </div>
+        </div>
       </div>
-      
-      <!-- Character Counter -->
-      <div class="form-text">
-        {{ bannerForm.get('title')?.value?.length || 0 }}/200 characters
-      </div>
-    </div>
-    
-    <!-- Description Field -->
-    <div class="mb-3">
-      <label for="bannerDescription" class="form-label">Description</label>
-      <textarea
-        id="bannerDescription"
-        class="form-control"
-        [class.is-invalid]="isFieldInvalid('description')"
-        formControlName="description"
-        placeholder="Enter banner description (optional)"
-        rows="3"
-        maxlength="500">
-      </textarea>
-      
-      <!-- Error Message -->
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
-        {{ getFieldError('description') }}
-      </div>
-      
-      <!-- Character Counter -->
-      <div class="form-text">
-        {{ bannerForm.get('description')?.value?.length || 0 }}/500 characters
+
+      <!-- Description Field -->
+      <div class="mb-3">
+        <label for="bannerDescription" class="form-label">Description</label>
+        <textarea
+          id="bannerDescription"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('description')"
+          formControlName="description"
+          placeholder="Enter banner description (optional)"
+          rows="2"
+          maxlength="500">
+        </textarea>
+        
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+          {{ getFieldError('description') }}
+        </div>
+        <div class="form-text">
+          {{ bannerForm.get('description')?.value?.length || 0 }}/500 characters
+        </div>
       </div>
     </div>
 
-    <!-- Image Selection Field -->
-    <div class="mb-3">
-      <label for="bannerImageUrl" class="form-label">
-        Banner Image <span class="text-danger">*</span>
-      </label>
+    <!-- Section: Images -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-photo me-2"></i>Images
+      </h6>
       
-      <!-- Image Preview or Placeholder -->
-      <div class="image-selection-container mb-2">
-        <div class="image-preview-wrapper" *ngIf="getSelectedImageUrl()">
-          <img 
-            [src]="getSelectedImageUrl()" 
-            alt="Banner Preview"
-            class="banner-image-preview"
-            onerror="this.style.display='none'">
-          <button
-            type="button"
-            class="btn btn-sm btn-danger remove-image-btn"
-            (click)="removeSelectedImage()"
-            title="Remove Image">
-            <i class="ti ti-x"></i>
-          </button>
+      <div class="row">
+        <!-- Banner Image -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            Desktop Banner <span class="text-danger">*</span>
+          </label>
+          
+          <div class="image-selection-container compact">
+            <div class="image-preview-wrapper" *ngIf="getSelectedImageUrl()">
+              <img 
+                [src]="getSelectedImageUrl()" 
+                alt="Banner Preview"
+                class="banner-image-preview">
+              <button
+                type="button"
+                class="btn btn-sm btn-danger remove-image-btn"
+                (click)="removeSelectedImage()"
+                title="Remove Image">
+                <i class="ti ti-x"></i>
+              </button>
+            </div>
+            
+            <div class="no-image-placeholder" *ngIf="!getSelectedImageUrl()" (click)="openMediaManager('banner')">
+              <i class="ti ti-photo"></i>
+              <p class="mb-1">Click to select image</p>
+              <span class="text-muted small">Required</span>
+            </div>
+          </div>
+          
+          <input type="hidden" formControlName="bannerImage">
+          <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('bannerImage')">
+            {{ getFieldError('bannerImage') }}
+          </div>
         </div>
+
+      
+      </div>
+
+      <!-- Image Alt Text -->
+      <div class="mb-0">
+        <label for="imageAltText" class="form-label">
+          Image Alt Text <span class="text-danger">*</span>
+        </label>
+        <input
+          type="text"
+          id="imageAltText"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('imageAltText')"
+          formControlName="imageAltText"
+          placeholder="Describe the banner image for accessibility"
+          maxlength="200">
         
-        <!-- No Image Selected -->
-        <div class="no-image-placeholder" *ngIf="!getSelectedImageUrl()">
-          <i class="ti ti-photo" style="font-size: 3rem; color: #ccc;"></i>
-          <p class="text-muted small mb-0">No image selected</p>
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('imageAltText')">
+          {{ getFieldError('imageAltText') }}
+        </div>
+        <div class="form-text">
+          {{ bannerForm.get('imageAltText')?.value?.length || 0 }}/200 characters
         </div>
       </div>
+    </div>
+
+    <!-- Section: Display Settings -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-settings me-2"></i>Display Settings
+      </h6>
       
-      <!-- Select Image Button -->
-      <div class="d-flex gap-2">
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="bannerOrder" class="form-label">
+            Display Order <span class="text-danger">*</span>
+          </label>
+          <input
+            type="number"
+            id="bannerOrder"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('order')"
+            formControlName="order"
+            placeholder="1"
+            min="1"
+            max="9999">
+          
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('order')">
+            {{ getFieldError('order') }}
+          </div>
+          <div class="form-text">
+            Lower numbers display first (1-9999)
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Status</label>
+          <div class="status-toggle-wrapper">
+            <div class="form-check form-switch glass-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="bannerStatus"
+                formControlName="isActive">
+              <label class="form-check-label" for="bannerStatus">
+                {{ bannerForm.get('isActive')?.value ? 'Active' : 'Inactive' }}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Action Buttons -->
+    <div class="form-section last">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="section-title mb-0">
+          <i class="ti ti-click me-2"></i>Action Buttons
+          <span class="text-muted fw-normal ms-2">(Max 3)</span>
+        </h6>
         <button
           type="button"
-          class="btn btn-outline-primary"
-          (click)="openMediaManager()">
-          <i class="ti ti-photo me-2"></i>Select Image
+          class="btn btn-sm btn-primary"
+          (click)="addButton()"
+          [disabled]="buttonsArray.length >= 3">
+          <i class="ti ti-plus me-1"></i>Add Button
         </button>
-        
-        <!-- Hidden Input for Form Validation -->
-        <input
-          type="hidden"
-          id="bannerImageUrl"
-          formControlName="imageUrl"
-          [class.is-invalid]="isFieldInvalid('imageUrl')">
       </div>
       
-      <!-- Error Message -->
-      <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('imageUrl')">
-        {{ getFieldError('imageUrl') }}
-      </div>
-      
-      <!-- Help Text -->
-      <div class="form-text">
-        Click "Select Image" to choose an image from the media library
-      </div>
-    </div>
-
-    <!-- Target URL Field -->
-    <div class="mb-3">
-      <label for="bannerTargetUrl" class="form-label">Target URL</label>
-      <input
-        type="url"
-        id="bannerTargetUrl"
-        class="form-control"
-        [class.is-invalid]="isFieldInvalid('targetUrl')"
-        formControlName="targetUrl"
-        placeholder="https://example.com/target-page">
-      
-      <!-- Error Message -->
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('targetUrl')">
-        {{ getFieldError('targetUrl') }}
-      </div>
-    </div>
-
-    <!-- Banner Type and Display Order Row -->
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label for="bannerType" class="form-label">
-          Banner Type <span class="text-danger">*</span>
-        </label>
-        <select
-          id="bannerType"
-          class="form-select"
-          [class.is-invalid]="isFieldInvalid('bannerType')"
-          formControlName="bannerType">
-          <option *ngFor="let option of bannerTypeOptions" [value]="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-        
-        <!-- Error Message -->
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('bannerType')">
-          {{ getFieldError('bannerType') }}
+      <!-- Buttons FormArray -->
+      <div formArrayName="buttons">
+        <div *ngFor="let button of buttonsArray.controls; let i = index" 
+             [formGroupName]="i"
+             class="button-card mb-3">
+          <div class="button-card-header">
+            <span class="badge bg-primary">Button {{ i + 1 }}</span>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger btn-icon"
+              (click)="removeButton(i)"
+              title="Remove Button">
+              <i class="ti ti-trash"></i>
+            </button>
+          </div>
+          
+          <div class="button-card-body">
+            <div class="row">
+              <!-- Button Title -->
+              <div class="col-md-4 mb-2">
+                <label class="form-label small">Title <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [class.is-invalid]="isButtonFieldInvalid(i, 'title')"
+                  formControlName="title"
+                  placeholder="e.g., Shop Now"
+                  maxlength="100">
+                <div class="invalid-feedback" *ngIf="isButtonFieldInvalid(i, 'title')">
+                  {{ getButtonFieldError(i, 'title') }}
+                </div>
+              </div>
+              
+              <!-- Button Type -->
+              <div class="col-md-4 mb-2">
+                <label class="form-label small">Type <span class="text-danger">*</span></label>
+                <select
+                  class="form-select form-select-sm"
+                  formControlName="buttonType">
+                  <option *ngFor="let option of buttonTypeOptions" [value]="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </div>
+              
+              <!-- Open in New Tab -->
+              <div class="col-md-4 mb-2">
+                <label class="form-label small d-block">&nbsp;</label>
+                <div class="form-check">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [id]="'openInNewTab' + i"
+                    formControlName="openInNewTab">
+                  <label class="form-check-label small" [for]="'openInNewTab' + i">
+                    Open in new tab
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Redirect Link - Full Width -->
+            <div class="row">
+              <div class="col-12">
+                <label class="form-label small">Redirect Link <span class="text-danger">*</span></label>
+                <input
+                  type="url"
+                  class="form-control form-control-sm"
+                  [class.is-invalid]="isButtonFieldInvalid(i, 'redirectLink')"
+                  formControlName="redirectLink"
+                  placeholder="https://example.com/page"
+                  maxlength="500">
+                <div class="invalid-feedback" *ngIf="isButtonFieldInvalid(i, 'redirectLink')">
+                  {{ getButtonFieldError(i, 'redirectLink') }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div class="col-md-6 mb-3">
-        <label for="bannerDisplayOrder" class="form-label">
-          Display Order <span class="text-danger">*</span>
-        </label>
-        <input
-          type="number"
-          id="bannerDisplayOrder"
-          class="form-control"
-          [class.is-invalid]="isFieldInvalid('displayOrder')"
-          formControlName="displayOrder"
-          placeholder="0"
-          min="0">
-        
-        <!-- Error Message -->
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('displayOrder')">
-          {{ getFieldError('displayOrder') }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Movie ID Field -->
-    <div class="mb-3">
-      <label for="bannerMovieId" class="form-label">Movie ID</label>
-      <input
-        type="text"
-        id="bannerMovieId"
-        class="form-control"
-        [class.is-invalid]="isFieldInvalid('movieId')"
-        formControlName="movieId"
-        placeholder="Enter movie ID (optional)">
       
-      <!-- Error Message -->
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('movieId')">
-        {{ getFieldError('movieId') }}
-      </div>
-    </div>
-
-    <!-- Start Date and End Date Row -->
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label for="bannerStartDate" class="form-label">Start Date</label>
-        <input
-          type="datetime-local"
-          id="bannerStartDate"
-          class="form-control"
-          [class.is-invalid]="isFieldInvalid('startDate')"
-          formControlName="startDate">
-        
-        <!-- Error Message -->
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('startDate')">
-          {{ getFieldError('startDate') }}
-        </div>
-      </div>
-
-      <div class="col-md-6 mb-3">
-        <label for="bannerEndDate" class="form-label">End Date</label>
-        <input
-          type="datetime-local"
-          id="bannerEndDate"
-          class="form-control"
-          [class.is-invalid]="isFieldInvalid('endDate')"
-          formControlName="endDate">
-        
-        <!-- Error Message -->
-        <div class="invalid-feedback" *ngIf="isFieldInvalid('endDate')">
-          {{ getFieldError('endDate') }}
-        </div>
-      </div>
-    </div>
-    
-    <!-- Status Field -->
-    <div class="mb-3">
-      <label for="bannerStatus" class="form-label">
-        Status <span class="text-danger">*</span>
-      </label>
-      <div class="form-check form-switch glass-switch">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          id="bannerStatus"
-          formControlName="isActive">
-        <label class="form-check-label" for="bannerStatus">
-          Active Banner
-        </label>
-      </div>
-      
-      <!-- Error Message -->
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('isActive')">
-        {{ getFieldError('isActive') }}
+      <!-- No Buttons Message -->
+      <div *ngIf="buttonsArray.length === 0" class="empty-buttons-placeholder">
+        <i class="ti ti-click"></i>
+        <p class="mb-0">No action buttons added yet</p>
+        <small class="text-muted">Click "Add Button" to add call-to-action buttons</small>
       </div>
     </div>
     

@@ -34,6 +34,8 @@ export class BaseModalComponent implements OnInit {
     size: 'lg'
   };
 
+  @Input() isLoading: boolean = false;
+
   @Output() closed = new EventEmitter<void>();
   @Output() primaryAction = new EventEmitter<void>();
   @Output() secondaryAction = new EventEmitter<void>();
