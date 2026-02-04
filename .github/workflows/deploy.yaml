@@ -43,38 +43,25 @@ jobs:
           echo "::group::Angular Build Process"
           echo "Building 'cine-q' for Production..."
           npm run build-prod
-          echo "Build complete. Checking output directory..."
+          echo "Build complete!"
           echo "::endgroup::"
 
       - name: 🔍 Verify Build Output
         run: |
           echo "::group::Build Verification"
           echo "📂 Listing dist directory structure:"
-          ls -R dist/
+          ls -la dist/cineq-admin-portal/
           echo ""
-          echo "🔍 Checking for browser directory:"
-          if [ -d "dist/cineq-admin-portal/browser" ]; then
-            echo "✅ Browser directory found!"
+          echo "🔍 Looking for index.html:"
+          if [ -f "dist/cineq-admin-portal/index.html" ]; then
+            echo "✅ index.html found!"
+            echo "📊 File size:"
+            ls -lh dist/cineq-admin-portal/index.html
             echo ""
-            echo "📄 Contents of browser directory:"
-            ls -la dist/cineq-admin-portal/browser/
-            echo ""
-            echo "🔍 Looking for index.html:"
-            if [ -f "dist/cineq-admin-portal/browser/index.html" ]; then
-              echo "✅ index.html found!"
-              echo "📊 File size:"
-              ls -lh dist/cineq-admin-portal/browser/index.html
-            else
-              echo "❌ ERROR: index.html NOT found!"
-              exit 1
-            fi
+            echo "📄 First few lines of index.html:"
+            head -n 10 dist/cineq-admin-portal/index.html
           else
-            echo "❌ ERROR: Browser directory NOT found!"
-            echo "Available directories in dist/cineq-admin-portal/:"
-            ls -la dist/cineq-admin-portal/ || echo "dist/cineq-admin-portal/ does not exist"
-            echo ""
-            echo "Available directories in dist/:"
-            ls -la dist/
+            echo "❌ ERROR: index.html NOT found!"
             exit 1
           fi
           echo "::endgroup::"
@@ -85,11 +72,12 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: 'admin-portal-cineq'
-          directory: 'dist/cineq-admin-portal/browser'
+          directory: 'dist/cineq-admin-portal'
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.ref_name }}
 
       - name: ✅ Deployment Finished
+        if: success()
         run: |
           echo "::group::Deployment Summary"
           echo "🎉 Cine Q Admin Portal is now live on Cloudflare Pages!"
@@ -98,10 +86,9 @@ jobs:
           echo "📝 Commit: ${{ github.sha }}"
           echo "::endgroup::"
 
-      - name: 🔔 Deployment Status
-        if: always()
+      - name: ❌ Deployment Failed
+        if: failure()
         run: |
-          if [ ${{ job.status }} == 'success' ]; then
-            echo "✅ Deployment completed successfully!"
-          else
-            echo "❌ Deployment failed. Check the logs above for details."
+          echo "::group::Deployment Failed"
+          echo "❌ Deployment failed. Check the logs above for details."
+          echo "::endgroup::"
