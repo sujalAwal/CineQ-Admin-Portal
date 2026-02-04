@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "::group::Angular Build Process"
           echo "Building 'cine-q' for Production..."
-          npm build-prod
+          npm run build-prod
           echo "Build complete. Checking output directory..."
           ls -R dist/cineq-admin-portal
           echo "::endgroup::"
