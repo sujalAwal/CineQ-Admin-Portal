@@ -3,7 +3,7 @@ name: Cine Q Admin Portal Deployment
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   deploy:
