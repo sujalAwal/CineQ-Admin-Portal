@@ -55,6 +55,12 @@ export class BannersComponent implements OnInit, OnDestroy {
         icon: '',
         type: 'bulk-disable',
         class: 'btn-warning'
+      },
+      {
+        label: 'Delete',
+        icon: '',
+        type: 'bulk-delete',
+        class: 'btn-danger'
       }
     ],
     columns: [
@@ -163,7 +169,7 @@ export class BannersComponent implements OnInit, OnDestroy {
 
   // 🆕 Bulk operation state
   bulkOperation: {
-    type: 'enable' | 'disable' | null;
+    type: 'enable' | 'disable' | 'delete' | null;
     selectedIds: string[];
   } = {
     type: null,
@@ -378,6 +384,10 @@ export class BannersComponent implements OnInit, OnDestroy {
         this.bulkOperation.type = 'disable';
         this.showBulkConfirmation('disable', event.selectedIds);
         break;
+      case 'bulk-delete':
+        this.bulkOperation.type = 'delete';
+        this.showBulkConfirmation('delete', event.selectedIds);
+        break;
       default:
         console.warn('Unknown bulk action:', event.action);
     }
@@ -386,7 +396,7 @@ export class BannersComponent implements OnInit, OnDestroy {
   /**
    * Show confirmation modal for bulk operations
    */
-  private showBulkConfirmation(operation: 'enable' | 'disable', selectedIds: string[]) {
+  private showBulkConfirmation(operation: 'enable' | 'disable' | 'delete', selectedIds: string[]) {
     const selectedBanners = this.bannersData.filter(banner => selectedIds.includes(banner.id));
     const bannerTitles = selectedBanners.map(b => b.title).join(', ');
     const count = selectedIds.length;
@@ -403,7 +413,7 @@ export class BannersComponent implements OnInit, OnDestroy {
         loading: false,
         size: 'sm'
       };
-    } else {
+    } else if (operation === 'disable') {
       this.confirmationConfig = {
         title: 'Disable Banners',
         message: `Are you sure you want to <strong>disable</strong> ${count} banner(s)?<br><br><div class="text-muted small">${bannerTitles}</div>`,
@@ -412,6 +422,18 @@ export class BannersComponent implements OnInit, OnDestroy {
         confirmText: 'Disable',
         cancelText: 'Cancel',
         confirmButtonClass: 'btn-warning',
+        loading: false,
+        size: 'sm'
+      };
+    } else if (operation === 'delete') {
+      this.confirmationConfig = {
+        title: 'Delete Banners',
+        message: `Are you sure you want to <strong>delete</strong> ${count} banner(s)?<br><br><div class="text-muted small">${bannerTitles}</div><br><small class="text-danger">This action cannot be undone.</small>`,
+        icon: 'ti ti-trash-x',
+        iconColor: 'danger',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        confirmButtonClass: 'btn-danger',
         loading: false,
         size: 'sm'
       };
@@ -499,7 +521,6 @@ export class BannersComponent implements OnInit, OnDestroy {
    * Delete banner
    */
   private deleteBanner(banner: any) {
-    console.log('Deleting banner:', banner);
     
     // Set up confirmation modal
     this.bannerToDelete = banner;
@@ -587,6 +608,23 @@ export class BannersComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             console.error('Failed to disable banners:', error);
+            this.resetBulkOperation();
+          }
+        });
+      } else if (operation === 'delete') {
+        this.bannerService.bulkDeleteBanners(selectedIds).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.toastService.success(
+                `${response.data.deleted} banner(s) have been deleted successfully!`,
+                'Banners Deleted'
+              );
+              this.loadBanners(); // Refresh data from API
+            }
+            this.resetBulkOperation();
+          },
+          error: (error) => {
+            console.error('Failed to delete banners:', error);
             this.resetBulkOperation();
           }
         });

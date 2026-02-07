@@ -96,6 +96,29 @@ export interface BannerBulkStatusResponse {
   path: string;
 }
 
+// Bulk Delete Request
+export interface BulkDeleteRequest {
+  formSlug: string;
+  ids: string[];
+}
+
+// Bulk Delete Response
+export interface BulkDeleteResponse {
+  success: boolean;
+  message: string;
+  data: {
+    deleted: number;
+    failed: number;
+    results: Array<{
+      id: string;
+      success: boolean;
+      message: string;
+    }>;
+  };
+  timestamp?: string;
+  path?: string;
+}
+
 // Banner Page Request Interface
 export interface BannerPageRequest {
   page?: number;

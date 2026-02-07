@@ -14,7 +14,9 @@ import {
   BannerFormSubmitRequest,
   BannerListResponse,
   BannerBulkStatusRequest,
-  BannerBulkStatusResponse
+  BannerBulkStatusResponse,
+  BulkDeleteRequest,
+  BulkDeleteResponse
 } from '../interfaces/banner.interface';
 import { 
   PaginatedApiResponse
@@ -31,6 +33,7 @@ export class BannerService {
   private readonly formSubmitUrl = `${environment.api.baseUrl}/v1/submit/banner`;
   private readonly listUrl = `${environment.api.baseUrl}/v1/list/banner`;
   private readonly bulkStatusUrl = `${environment.api.baseUrl}/v1/update-status`;
+  private readonly bulkDeleteUrl = `${environment.api.baseUrl}/v1/delete`;
 
   // 🚀 Performance optimizations
   private bannerCache = new Map<string, { data: any, timestamp: number }>();
@@ -291,6 +294,35 @@ export class BannerService {
           return true;
         }
         throw new Error(response?.message || 'Failed to disable banners');
+      }),
+      catchError((error: any) => {
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /**
+   * Bulk delete banners (soft-delete)
+   * DELETE /v1/delete
+   */
+  bulkDeleteBanners(ids: string[]): Observable<BulkDeleteResponse> {
+    const requestPayload: BulkDeleteRequest = {
+      formSlug: 'banner',
+      ids
+    };
+    
+    return this.http.delete<BulkDeleteResponse>(this.bulkDeleteUrl, { 
+      body: requestPayload,
+      withCredentials: true 
+    }).pipe(
+      map(response => {
+        if (response && response.success) {
+          this.toastr.success(response.message || 'Banners deleted successfully!', 'Success');
+          // Invalidate cache after successful deletion
+          this.invalidateCache();
+          return response;
+        }
+        throw new Error(response?.message || 'Failed to delete banners');
       }),
       catchError((error: any) => {
         return this.handleError(error);
