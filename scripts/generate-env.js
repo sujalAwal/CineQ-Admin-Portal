@@ -13,7 +13,7 @@ const packageJson = require('../package.json');
 const env = {
   // API Configuration
   API_BASE_URL: process.env.API_BASE_URL || '',
-  API_TIMEOUT: process.env.API_TIMEOUT || '30000',
+  API_TIMEOUT: process.env.API_TIMEOUT || '30',
   API_RETRY_ATTEMPTS: process.env.API_RETRY_ATTEMPTS || '1',
   
   // Auth Configuration
