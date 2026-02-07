@@ -12,14 +12,14 @@ const packageJson = require('../package.json');
 // Get environment variables from Render (or fallback to defaults for local dev)
 const env = {
   // API Configuration
-  API_BASE_URL: process.env.API_BASE_URL || 'https://api.awal.ct.ws/api',
+  API_BASE_URL: process.env.API_BASE_URL || '',
   API_TIMEOUT: process.env.API_TIMEOUT || '30000',
   API_RETRY_ATTEMPTS: process.env.API_RETRY_ATTEMPTS || '1',
   
   // Auth Configuration
   AUTH_TOKEN_KEY: process.env.AUTH_TOKEN_KEY || 'jwt-auth-token',
   AUTH_REFRESH_TOKEN_KEY: process.env.AUTH_REFRESH_TOKEN_KEY || 'jwt-refresh-token',
-  AUTH_TOKEN_EXPIRY: process.env.AUTH_TOKEN_EXPIRY || '3600000', // 1 hour in ms
+  AUTH_TOKEN_EXPIRY: process.env.AUTH_TOKEN_EXPIRY || '3', 
   
   // App Configuration
   APP_NAME: process.env.APP_NAME || 'CineQ Dashboard',
@@ -34,7 +34,7 @@ const env = {
   FEATURE_ENABLE_FORGOT_PASSWORD: process.env.FEATURE_ENABLE_FORGOT_PASSWORD || 'true',
   
   // Supabase Configuration
-  SUPABASE_STORAGE_BASE_URL: process.env.SUPABASE_STORAGE_BASE_URL || 'https://eidprwpfigaiuxcucbdh.supabase.co/storage/v1'
+  SUPABASE_STORAGE_BASE_URL: process.env.SUPABASE_STORAGE_BASE_URL || ''
 };
 
 // Generate the environment.prod.ts content
