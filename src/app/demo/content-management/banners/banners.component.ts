@@ -545,8 +545,8 @@ export class BannersComponent implements OnInit, OnDestroy {
       this.confirmationConfig.loading = true;
       
       this.bannerService.deleteBanner(this.bannerToDelete.id).subscribe({
-        next: (success) => {
-          if (success) {
+        next: (response) => {
+          if (response.success) {
             this.toastService.success(
               `Banner "${this.bannerToDelete!.title}" has been deleted successfully!`,
               'Banner Deleted'
