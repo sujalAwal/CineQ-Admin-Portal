@@ -375,6 +375,9 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
    * Handle refresh button click
    */
   onRefresh(): void {
+    // Clear search text
+    this.searchTerm = '';
+    // Emit refresh event to parent
     this.refresh.emit();
   }
 

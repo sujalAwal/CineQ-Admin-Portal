@@ -220,9 +220,21 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
 
       // Disable slug field in edit mode (slug is immutable)
       this.bannerForm.get('slug')?.disable();
+      
+      // In edit mode, make bannerImage non-required if image already exists
+      // (user can keep existing image without re-uploading)
+      if (this.banner.bannerImage) {
+        this.bannerForm.get('bannerImage')?.clearValidators();
+        this.bannerForm.get('bannerImage')?.setValidators([Validators.maxLength(2500)]);
+        this.bannerForm.get('bannerImage')?.updateValueAndValidity();
+      }
     } else {
       // Enable slug field in create mode
       this.bannerForm.get('slug')?.enable();
+      
+      // Restore required validator for bannerImage in create mode
+      this.bannerForm.get('bannerImage')?.setValidators([Validators.required, Validators.maxLength(2500)]);
+      this.bannerForm.get('bannerImage')?.updateValueAndValidity();
     }
   }
   
@@ -261,8 +273,10 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         openInNewTab: btn.openInNewTab
       }));
       
+      // Build banner data request
       const bannerData: BannerRequest = {
         title: formValue.title,
+        slug: formValue.slug, // Always include slug
         description: formValue.description || undefined,
         order: formValue.order,
         isActive: formValue.isActive,
@@ -270,9 +284,8 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         imageAltText: formValue.imageAltText,
         imageMobileUrl: formValue.imageMobileUrl || undefined,
         buttons: buttons,
-        ...(this.banner?.id && { id: this.banner.id }),
-        // Only include slug for create (not update)
-        ...(!this.banner?.id && { slug: formValue.slug })
+        // Include id for updates
+        ...(this.banner?.id && { id: this.banner.id })
       };
       
       try {
@@ -326,6 +339,10 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
     
     // Enable slug field for next create
     this.bannerForm.get('slug')?.enable();
+    
+    // Restore required validator for bannerImage (for next create operation)
+    this.bannerForm.get('bannerImage')?.setValidators([Validators.required, Validators.maxLength(2500)]);
+    this.bannerForm.get('bannerImage')?.updateValueAndValidity();
     
     // Reset image selections
     this.selectedImage = null;

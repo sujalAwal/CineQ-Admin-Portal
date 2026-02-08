@@ -105,7 +105,8 @@
         <!-- Banner Image -->
         <div class="col-md-6 mb-3">
           <label class="form-label">
-            Desktop Banner <span class="text-danger">*</span>
+            Desktop Banner <span class="text-danger" *ngIf="!banner || !banner.bannerImage">*</span>
+            <span class="badge bg-success ms-2" *ngIf="banner && getSelectedImageUrl()">Uploaded</span>
           </label>
           
           <div class="image-selection-container compact">
@@ -114,13 +115,22 @@
                 [src]="getSelectedImageUrl()" 
                 alt="Banner Preview"
                 class="banner-image-preview">
-              <button
-                type="button"
-                class="btn btn-sm btn-danger remove-image-btn"
-                (click)="removeSelectedImage()"
-                title="Remove Image">
-                <i class="ti ti-x"></i>
-              </button>
+              <div class="image-actions">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light"
+                  (click)="openMediaManager('banner')"
+                  title="Change Image">
+                  <i class="ti ti-edit"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger"
+                  (click)="removeSelectedImage()"
+                  title="Remove Image">
+                  <i class="ti ti-trash"></i>
+                </button>
+              </div>
             </div>
             
             <div class="no-image-placeholder" *ngIf="!getSelectedImageUrl()" (click)="openMediaManager('banner')">

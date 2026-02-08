@@ -1,6 +1,11 @@
 // Toast notifications
 @import 'ngx-toastr/toastr';
 
+// Toast container z-index - must be higher than modals (1060)
+.toast-container {
+  z-index: 9999 !important;
+}
+
 // Custom Status Change Toast - Clean White Design
 .toast-status-change {
   background-color: #ffffff !important; // Clean white background

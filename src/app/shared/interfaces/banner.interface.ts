@@ -38,6 +38,7 @@ export interface BannerRequest {
 
 // Banner Form Submit Request Interface
 export interface BannerFormSubmitRequest {
+  id?: string; // Required at root level for updates
   formSlug: 'banner';
   stepSlug: 'v1';
   action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE';

@@ -158,6 +158,8 @@ export class BannerService {
     const isUpdate = !!banner.id;
     
     const requestPayload: BannerFormSubmitRequest = {
+      // Include id at root level for updates (API requirement)
+      ...(isUpdate && banner.id && { id: banner.id }),
       formSlug: this.FORM_SLUG,
       stepSlug: 'v1',
       action: isUpdate ? 'UPDATE' : 'CREATE',
@@ -186,17 +188,12 @@ export class BannerService {
 
   /**
    * Read a single banner by ID
-   * POST /api/v1/forms/submit with action: READ
+   * GET /api/v1/view/banner/{id}
    */
   getBannerById(id: string): Observable<Banner> {
-    const requestPayload: BannerFormSubmitRequest = {
-      formSlug: this.FORM_SLUG,
-      stepSlug: 'v1',
-      action: 'READ',
-      formData: { id }
-    };
+    const viewUrl = `${environment.api.baseUrl}/v1/view/${this.FORM_SLUG}/${id}`;
     
-    return this.http.post<BannerResponse>(this.formSubmitUrl, requestPayload, {
+    return this.http.get<BannerResponse>(viewUrl, {
       withCredentials: true
     }).pipe(
       map(response => {

@@ -280,6 +280,21 @@ export class BannersComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle refresh button - clear search and reload data
+   */
+  onRefresh() {
+    // Clear search filters
+    this.currentFilters = {
+      page: 1,
+      size: this.currentFilters.size || 20
+    };
+    
+    // Reload data from API
+    this.loadBanners();
+    this.cdr.markForCheck();
+  }
+
+  /**
    * Handle pagination
    */
   onPageChange(page: number) {
@@ -459,23 +474,55 @@ export class BannersComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Edit banner
+   * Edit banner - fetch full data from API first
    */
   private editBanner(banner: any) {
     console.log('Editing banner:', banner);
-    this.selectedBanner = {
-      id: banner.id,
-      slug: banner.slug,
-      title: banner.title,
-      description: banner.description,
-      order: banner.order,
-      isActive: banner.isActive,
-      bannerImage: banner.bannerImage,
-      imageAltText: banner.imageAltText,
-      imageMobileUrl: banner.imageMobileUrl,
-      buttons: banner.buttons || []
-    };
-    this.showBannerModal = true;
+    
+    // Show loading state
+    this.modalLoading = true;
+    this.cdr.markForCheck();
+    
+    // Fetch full banner data from API to get complete image URLs
+    this.bannerService.getBannerById(banner.id).subscribe({
+      next: (fullBanner) => {
+        console.log('Fetched full banner data:', fullBanner);
+        this.selectedBanner = {
+          id: fullBanner.id,
+          slug: fullBanner.slug,
+          title: fullBanner.title,
+          description: fullBanner.description,
+          order: fullBanner.order,
+          isActive: fullBanner.isActive,
+          bannerImage: fullBanner.bannerImage,
+          imageAltText: fullBanner.imageAltText,
+          imageMobileUrl: fullBanner.imageMobileUrl,
+          buttons: fullBanner.buttons || []
+        };
+        this.modalLoading = false;
+        this.showBannerModal = true;
+        this.cdr.markForCheck(); // Trigger change detection for OnPush
+      },
+      error: (error) => {
+        console.error('Failed to fetch banner details:', error);
+        this.modalLoading = false;
+        // Fallback to row data if API fails
+        this.selectedBanner = {
+          id: banner.id,
+          slug: banner.slug,
+          title: banner.title,
+          description: banner.description,
+          order: banner.order,
+          isActive: banner.isActive,
+          bannerImage: banner.bannerImage,
+          imageAltText: banner.imageAltText,
+          imageMobileUrl: banner.imageMobileUrl,
+          buttons: banner.buttons || []
+        };
+        this.showBannerModal = true;
+        this.cdr.markForCheck(); // Trigger change detection for OnPush
+      }
+    });
   }
 
   /**
