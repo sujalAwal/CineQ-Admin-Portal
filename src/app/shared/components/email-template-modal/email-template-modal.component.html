@@ -1,0 +1,204 @@
+<!-- Email Template Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()">
+
+  <!-- EMAIL TEMPLATE FORM CONTENT -->
+  <form [formGroup]="templateForm" (ngSubmit)="onModalSave()" novalidate class="email-template-form">
+
+    <!-- Section: Basic Information -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-info-circle me-2"></i>Basic Information
+      </h6>
+
+      <div class="row">
+        <!-- Name Field -->
+        <div class="col-md-6 mb-3">
+          <label for="templateName" class="form-label">
+            Name <span class="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            id="templateName"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('name')"
+            formControlName="name"
+            placeholder="Enter template name"
+            maxlength="150"
+            (blur)="generateSlug()">
+
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+            {{ getFieldError('name') }}
+          </div>
+          <div class="form-text">
+            {{ templateForm.get('name')?.value?.length || 0 }}/150 characters
+          </div>
+        </div>
+
+        <!-- Slug Field -->
+        <div class="col-md-6 mb-3">
+          <label for="templateSlug" class="form-label">
+            Slug <span class="text-danger" *ngIf="!template">*</span>
+            <span class="badge bg-secondary ms-2" *ngIf="template">Read Only</span>
+          </label>
+          <div class="input-group">
+            <input
+              type="text"
+              id="templateSlug"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('slug')"
+              formControlName="slug"
+              placeholder="e.g., welcome-email"
+              maxlength="100"
+              [readonly]="template">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="generateSlug()"
+              title="Generate from name"
+              *ngIf="!template">
+              <i class="ti ti-refresh"></i>
+            </button>
+          </div>
+
+          <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('slug')">
+            {{ getFieldError('slug') }}
+          </div>
+          <div class="form-text">
+            URL-friendly identifier (lowercase, numbers, hyphens)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: User Email Content -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-mail me-2"></i>User Email Content
+      </h6>
+
+      <!-- Subject Field -->
+      <div class="mb-3">
+        <label for="templateSubject" class="form-label">
+          Subject <span class="text-danger">*</span>
+        </label>
+        <input
+          type="text"
+          id="templateSubject"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('subject')"
+          formControlName="subject"
+          [placeholder]="'Enter email subject (e.g., Welcome to CineQ, {{userName}}!)'"
+          maxlength="500">
+
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('subject')">
+          {{ getFieldError('subject') }}
+        </div>
+        <div class="form-text">
+          Use {{ '{{variableName}}' }} for dynamic content. {{ templateForm.get('subject')?.value?.length || 0 }}/500 characters
+        </div>
+      </div>
+
+      <!-- Message Field -->
+      <div class="mb-3">
+        <label for="templateMessage" class="form-label">
+          Message <span class="text-danger">*</span>
+        </label>
+        <quill-editor
+          formControlName="message"
+          [modules]="quillModules"
+          [styles]="{height: '200px'}"
+          placeholder="Enter email message content..."
+          [class.is-invalid]="isFieldInvalid('message')">
+        </quill-editor>
+
+        <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('message')">
+          {{ getFieldError('message') }}
+        </div>
+        <div class="form-text">
+          Use {{ '{{variableName}}' }} for dynamic content (e.g., {{ '{{userName}}' }}, {{ '{{userEmail}}' }})
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Admin Email Content (Optional) -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-shield me-2"></i>Admin Notification (Optional)
+      </h6>
+
+      <!-- Admin Subject Field -->
+      <div class="mb-3">
+        <label for="adminSubject" class="form-label">
+          Admin Subject
+        </label>
+        <input
+          type="text"
+          id="adminSubject"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('adminSubject')"
+          formControlName="adminSubject"
+          placeholder="Enter admin notification subject"
+          maxlength="500">
+
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('adminSubject')">
+          {{ getFieldError('adminSubject') }}
+        </div>
+        <div class="form-text">
+          Subject for admin notification email (optional)
+        </div>
+      </div>
+
+      <!-- Admin Message Field -->
+      <div class="mb-3">
+        <label for="adminMessage" class="form-label">
+          Admin Message
+        </label>
+        <quill-editor
+          formControlName="adminMessage"
+          [modules]="quillModules"
+          [styles]="{height: '150px'}"
+          placeholder="Enter admin notification message (optional)..."
+          [class.is-invalid]="isFieldInvalid('adminMessage')">
+        </quill-editor>
+
+        <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('adminMessage')">
+          {{ getFieldError('adminMessage') }}
+        </div>
+        <div class="form-text">
+          Message content for admin notification (optional)
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Status -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-toggle-right me-2"></i>Status
+      </h6>
+
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="templateStatus"
+          formControlName="isActive">
+        <label class="form-check-label" for="templateStatus">
+          <span *ngIf="templateForm.get('isActive')?.value" class="text-success">
+            <i class="ti ti-check me-1"></i>Active
+          </span>
+          <span *ngIf="!templateForm.get('isActive')?.value" class="text-muted">
+            <i class="ti ti-x me-1"></i>Inactive
+          </span>
+        </label>
+      </div>
+      <div class="form-text">
+        Active templates will be used for sending emails
+      </div>
+    </div>
+
+  </form>
+</app-base-modal>

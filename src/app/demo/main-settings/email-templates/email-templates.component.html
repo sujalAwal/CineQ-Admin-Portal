@@ -1,0 +1,54 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>📧 Email Templates Management</h5>
+      </div>
+      <div class="card-body">
+        <!-- Header Section -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <!-- Left side - can add title or other elements here if needed -->
+          </div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-primary" (click)="openAddTemplateModal()">
+              <i class="ti ti-plus me-2"></i>Add New Template
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Table Component -->
+        <app-data-table
+          [config]="tableConfig"
+          [data]="templatesData"
+          [loading]="loading"
+          [pagination]="pagination"
+          (search)="onSearch($event)"
+          (pageChange)="onPageChange($event)"
+          (sort)="onSort($event)"
+          (toggleChange)="onToggleChange($event)"
+          (actionClick)="onTableAction($event)"
+          (bulkActionClick)="onBulkAction($event)"
+          (refresh)="onRefresh()">
+        </app-data-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Email Template Modal -->
+<app-email-template-modal
+  [isVisible]="showTemplateModal"
+  [template]="selectedTemplate"
+  [isLoading]="modalLoading"
+  (closed)="onTemplateModalClosed()"
+  (templateSaved)="onTemplateSaved($event)">
+</app-email-template-modal>
+
+<!-- Confirmation Modal -->
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [config]="confirmationConfig"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()">
+</app-confirmation-modal>

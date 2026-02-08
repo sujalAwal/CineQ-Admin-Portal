@@ -87,8 +87,21 @@ export class BannerService {
     }).pipe(
       map(response => {
         if (response && response.success) {
-          // Extract banners from the nested structure: data[0].banner
-          const banners = response.data?.[0]?.banner || [];
+          // Extract banners - handle nested structure: data[0].banner or data[0]['banners']
+          let banners: Banner[] = [];
+          
+          if (Array.isArray(response.data) && response.data.length > 0) {
+            const firstItem = response.data[0] as any;
+            // Check for nested structure with various key formats
+            if (firstItem?.banner && Array.isArray(firstItem.banner)) {
+              banners = firstItem.banner;
+            } else if (firstItem?.banners && Array.isArray(firstItem.banners)) {
+              banners = firstItem.banners;
+            } else if (firstItem?.id) {
+              // Flat structure: data is directly the array of banners
+              banners = response.data as unknown as Banner[];
+            }
+          }
           
           // Transform to PaginatedApiResponse format for component compatibility
           const paginatedResponse: PaginatedApiResponse<Banner> = {
@@ -171,8 +184,6 @@ export class BannerService {
     }).pipe(
       map(response => {
         if (response && response.success && response.data) {
-          const action = isUpdate ? 'updated' : 'created';
-          this.toastr.success(`Banner ${action} successfully!`, 'Success');
           // Invalidate cache after successful mutation
           this.invalidateCache();
           return response;
@@ -295,7 +306,6 @@ export class BannerService {
     }).pipe(
       map(response => {
         if (response && response.success) {
-          this.toastr.success(response.message || 'Banners deleted successfully!', 'Success');
           // Invalidate cache after successful deletion
           this.invalidateCache();
           return response;

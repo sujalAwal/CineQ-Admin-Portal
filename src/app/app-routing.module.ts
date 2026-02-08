@@ -100,6 +100,10 @@ const routes: Routes = [
           {
             path: 'modulemanagement',
             loadComponent: () => import('./demo/main-settings/modulemanagement/modulemanagement.component').then((c) => c.ModulemanagementComponent)
+          },
+          {
+            path: 'email-templates',
+            loadComponent: () => import('./demo/main-settings/email-templates/email-templates.component').then((c) => c.EmailTemplatesComponent)
           }
         ]
       }

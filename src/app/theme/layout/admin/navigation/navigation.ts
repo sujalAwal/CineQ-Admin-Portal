@@ -148,6 +148,14 @@ export const NavigationItems: NavigationItem[] = [
             url: '/main-settings/modulemanagement',
             icon: 'ti ti-packages',
             breadcrumbs: false
+          },
+          {
+            id: 'email-templates',
+            title: 'Email Templates',
+            type: 'item',
+            url: '/main-settings/email-templates',
+            icon: 'ti ti-mail',
+            breadcrumbs: false
           }
         ]
       }

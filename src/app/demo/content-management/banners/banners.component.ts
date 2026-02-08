@@ -91,7 +91,8 @@ export class BannersComponent implements OnInit, OnDestroy {
         field: 'description',
         type: 'text',
         sortable: false,
-        width: '250px'
+        width: '250px',
+        maxLength: 35
       },
       {
         header: 'Display Order',

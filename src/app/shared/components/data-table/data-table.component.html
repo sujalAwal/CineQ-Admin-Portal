@@ -155,8 +155,11 @@
                 {{ i+1 }}
               </span>
               <!-- Text/Number/Date/Email Display -->
-              <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'">
-                {{ getColumnValue(item, column) }}
+              <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'"
+                    [attr.title]="column.maxLength && getColumnValue(item, column)?.length > column.maxLength ? getColumnValue(item, column) : null">
+                {{ column.maxLength && getColumnValue(item, column)?.length > column.maxLength 
+                   ? (getColumnValue(item, column) | slice:0:column.maxLength) + '...' 
+                   : getColumnValue(item, column) }}
               </span>
              
 

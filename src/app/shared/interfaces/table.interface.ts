@@ -6,6 +6,7 @@ export interface TableColumn {
   sortable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';
+  maxLength?: number; // Truncate text to this length and add ellipsis
 }
 
 export interface TableAction {
