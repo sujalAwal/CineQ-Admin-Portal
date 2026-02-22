@@ -220,8 +220,16 @@ export class GenresComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$)) // Prevent memory leaks
       .subscribe({
         next: (response: PaginatedApiResponse<Genre>) => {
-          // Extract data and pagination info from response
-          this.genresData = response.data;
+          // Extract and flatten genres from the nested structure
+          // API returns: { data: [{ "genre": [...] }] } - flatMap unwraps this
+          this.genresData = response.data.flatMap((item: any) => {
+            const genres = item.genre || item.genres || [];
+            if (Array.isArray(genres)) {
+              return genres;
+            }
+            // If item has 'id', it's already a flat record
+            return item.id ? [item] : [];
+          });
           
           // Update pagination info
           this.pagination = {

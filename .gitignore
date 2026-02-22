@@ -107,3 +107,6 @@ dist
 #angular catch file
 .angular
 .vscode/
+
+#Github
+.github/*.md

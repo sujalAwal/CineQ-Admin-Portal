@@ -188,8 +188,18 @@ export class ArtistsComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (response) => {
+          // Extract and flatten artists from the nested structure
+          // API returns: { data: [{ "artist": [...] }] } - flatMap unwraps this
+          const extractedData = response.data.flatMap((item: any) => {
+            const artists = item.artist || item.artists || [];
+            if (Array.isArray(artists)) {
+              return artists;
+            }
+            // If item has 'id', it's already a flat record
+            return item.id ? [item] : [];
+          });
           // Apply optimistic updates if any
-          this.artists = this.applyOptimisticUpdates(response.data);
+          this.artists = this.applyOptimisticUpdates(extractedData);
           this.totalItems = response.totalElements;
           this.totalPages = response.totalPages;
           this.currentPage = response.page;

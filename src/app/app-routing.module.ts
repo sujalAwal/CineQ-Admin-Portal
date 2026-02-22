@@ -106,6 +106,48 @@ const routes: Routes = [
             loadComponent: () => import('./demo/main-settings/email-templates/email-templates.component').then((c) => c.EmailTemplatesComponent)
           }
         ]
+      },
+      // Cinema Management Routes
+      {
+        path: 'cinema',
+        children: [
+          {
+            path: 'people',
+            loadComponent: () => import('./demo/cinema-management/people/people.component').then((c) => c.PeopleComponent)
+          },
+          {
+            path: 'crew-roles',
+            loadComponent: () => import('./demo/cinema-management/crew-roles/crew-roles.component').then((c) => c.CrewRolesComponent)
+          },
+          {
+            path: 'movies',
+            loadComponent: () => import('./demo/cinema-management/movies-cinema/movies.component').then((c) => c.MoviesCinemaComponent)
+          },
+          {
+            path: 'theatre',
+            loadComponent: () => import('./demo/cinema-management/theatre/theatre.component').then((c) => c.TheatreComponent)
+          },
+          {
+            path: 'seat-type',
+            loadComponent: () => import('./demo/cinema-management/seat-type/seat-type.component').then((c) => c.SeatTypeComponent)
+          },
+          {
+            path: 'seat-status',
+            loadComponent: () => import('./demo/cinema-management/seat-status/seat-status.component').then((c) => c.SeatStatusComponent)
+          },
+          {
+            path: 'screen',
+            loadComponent: () => import('./demo/cinema-management/screen/screen.component').then((c) => c.ScreenComponent)
+          },
+          {
+            path: 'showtime-status',
+            loadComponent: () => import('./demo/cinema-management/showtime-status/showtime-status.component').then((c) => c.ShowtimeStatusComponent)
+          },
+          {
+            path: 'showtime',
+            loadComponent: () => import('./demo/cinema-management/showtime/showtime.component').then((c) => c.ShowtimeComponent)
+          }
+        ]
       }
     ]
   },

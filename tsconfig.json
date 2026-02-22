@@ -3,6 +3,10 @@
   "compileOnSave": false,
   "compilerOptions": {
     "baseUrl": "./",
+    "paths": {
+      "@shared/*": ["src/app/shared/*"],
+      "@shared/shared.module": ["src/app/theme/shared/shared.module"]
+    },
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
     "noImplicitOverride": true,

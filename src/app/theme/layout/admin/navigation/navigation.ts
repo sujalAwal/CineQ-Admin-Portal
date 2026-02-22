@@ -162,6 +162,94 @@ export const NavigationItems: NavigationItem[] = [
     ]
   },
   {
+    id: 'cinema-management',
+    title: 'Cinema Management',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'cinema-section',
+        title: 'Cinema Management',
+        type: 'collapse',
+        icon: 'ti ti-building-theater',
+        children: [
+          {
+            id: 'people',
+            title: 'People',
+            type: 'item',
+            url: '/cinema/people',
+            icon: 'ti ti-users',
+            breadcrumbs: false
+          },
+          {
+            id: 'crew-roles',
+            title: 'Crew Roles',
+            type: 'item',
+            url: '/cinema/crew-roles',
+            icon: 'ti ti-briefcase',
+            breadcrumbs: false
+          },
+          {
+            id: 'movies-cinema',
+            title: 'Movies',
+            type: 'item',
+            url: '/cinema/movies',
+            icon: 'ti ti-movie',
+            breadcrumbs: false
+          },
+          {
+            id: 'theatre',
+            title: 'Theatres',
+            type: 'item',
+            url: '/cinema/theatre',
+            icon: 'ti ti-building',
+            breadcrumbs: false
+          },
+          {
+            id: 'seat-type',
+            title: 'Seat Types',
+            type: 'item',
+            url: '/cinema/seat-type',
+            icon: 'ti ti-chair',
+            breadcrumbs: false
+          },
+          {
+            id: 'seat-status',
+            title: 'Seat Status',
+            type: 'item',
+            url: '/cinema/seat-status',
+            icon: 'ti ti-toggle-left',
+            breadcrumbs: false
+          },
+          {
+            id: 'screen',
+            title: 'Screens',
+            type: 'item',
+            url: '/cinema/screen',
+            icon: 'ti ti-tv',
+            breadcrumbs: false
+          },
+          {
+            id: 'showtime-status',
+            title: 'Showtime Status',
+            type: 'item',
+            url: '/cinema/showtime-status',
+            icon: 'ti ti-clock',
+            breadcrumbs: false
+          },
+          {
+            id: 'showtime',
+            title: 'Showtimes',
+            type: 'item',
+            url: '/cinema/showtime',
+            icon: 'ti ti-calendar-time',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'dynamic-form-manager',
     title: 'Dynamic Form Manager',
     type: 'group',

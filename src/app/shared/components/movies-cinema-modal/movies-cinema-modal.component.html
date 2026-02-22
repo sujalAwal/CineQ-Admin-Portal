@@ -1,0 +1,114 @@
+<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (close)="onModalClose()" (save)="onModalSave()">
+  <div class="form-container">
+    <form [formGroup]="form">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('title')" formControlName="title" placeholder="Enter movie title">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">{{ getFieldError('title') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" [class.is-invalid]="isFieldInvalid('duration')" formControlName="duration" placeholder="e.g., 120">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('duration')">{{ getFieldError('duration') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Poster URL <span class="text-danger">*</span></label>
+            <input type="url" class="form-control" [class.is-invalid]="isFieldInvalid('poster')" formControlName="poster" placeholder="Enter poster URL">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('poster')">{{ getFieldError('poster') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Banner URL</label>
+            <input type="url" class="form-control" [class.is-invalid]="isFieldInvalid('banner')" formControlName="banner" placeholder="Enter banner URL">
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Release Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" [class.is-invalid]="isFieldInvalid('releaseDate')" formControlName="releaseDate">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('releaseDate')">{{ getFieldError('releaseDate') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Certification <span class="text-danger">*</span></label>
+            <select class="form-control" [class.is-invalid]="isFieldInvalid('certification')" formControlName="certification">
+              <option value="">Select Certification</option>
+              <option value="U">U</option>
+              <option value="UA">UA</option>
+              <option value="A">A</option>
+              <option value="R">R</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('certification')">{{ getFieldError('certification') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Language <span class="text-danger">*</span></label>
+            <select class="form-control" [class.is-invalid]="isFieldInvalid('language')" formControlName="language">
+              <option value="">Select Language</option>
+              <option value="ENG">English</option>
+              <option value="HIN">Hindi</option>
+              <option value="NEP">Nepali</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('language')">{{ getFieldError('language') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Format <span class="text-danger">*</span></label>
+            <select class="form-control" [class.is-invalid]="isFieldInvalid('format')" formControlName="format">
+              <option value="">Select Format</option>
+              <option value="2D">2D</option>
+              <option value="3D">3D</option>
+              <option value="IMAX">IMAX</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('format')">{{ getFieldError('format') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select class="form-control" [class.is-invalid]="isFieldInvalid('status')" formControlName="status">
+              <option value="">Select Status</option>
+              <option value="coming_soon">Coming Soon</option>
+              <option value="now_showing">Now Showing</option>
+              <option value="ended">Ended</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('status')">{{ getFieldError('status') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" [class.is-invalid]="isFieldInvalid('description')" formControlName="description" placeholder="Enter description" rows="3"></textarea>
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">{{ getFieldError('description') }}</div>
+      </div>
+
+      <div class="mb-3 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="isActive" formControlName="isActive">
+        <label class="form-check-label" for="isActive">Active</label>
+      </div>
+    </form>
+  </div>
+</app-base-modal>

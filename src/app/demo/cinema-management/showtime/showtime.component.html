@@ -1,0 +1,48 @@
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>🎬 Showtimes Management</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-6"></div>
+          <div class="col-md-6 text-end">
+            <button class="btn btn-primary" (click)="openAddModal()">
+              <i class="ti ti-plus me-2"></i>Add New Showtime
+            </button>
+          </div>
+        </div>
+
+        <app-data-table
+          [config]="tableConfig"
+          [data]="showtimeData"
+          [loading]="loading"
+          [pagination]="pagination"
+          (search)="onSearch($event)"
+          (pageChange)="onPageChange($event)"
+          (sort)="onSort($event)"
+          (toggleChange)="onToggleChange($event)"
+          (actionClick)="onTableAction($event)"
+          (bulkActionClick)="onBulkAction($event)"
+          (refresh)="onRefresh()">
+        </app-data-table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-showtime-modal
+  [isVisible]="showModal"
+  [item]="selectedItem"
+  [isLoading]="modalLoading"
+  (closed)="onModalClosed()"
+  (itemSaved)="onItemSaved($event)">
+</app-showtime-modal>
+
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [config]="confirmationConfig"
+  (confirmed)="onDeleteConfirmed()"
+  (cancelled)="onDeleteCancelled()">
+</app-confirmation-modal>
