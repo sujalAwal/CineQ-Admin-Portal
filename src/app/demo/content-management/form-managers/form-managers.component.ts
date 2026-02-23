@@ -220,16 +220,7 @@ export class FormManagersComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: PaginatedApiResponse<FormManager>) => {
-          // Extract and flatten form managers from the nested structure
-          // API returns: { data: [{ "form-manager": [...] }] } - flatMap unwraps this
-          this.formManagersData = response.data.flatMap((item: any) => {
-            const formManagers = item['form-manager'] || item['formManager'] || item['form_manager'] || item['form-managers'] || [];
-            if (Array.isArray(formManagers)) {
-              return formManagers;
-            }
-            // If item has 'id', it's already a flat record
-            return item.id ? [item] : [];
-          });
+           this.formManagersData = response.data;
           
           this.pagination = {
             currentPage: response.page,

@@ -250,6 +250,54 @@ export const NavigationItems: NavigationItem[] = [
     ]
   },
   {
+    id: 'settings',
+    title: 'Settings',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'settings-section',
+        title: 'Settings',
+        type: 'collapse',
+        icon: 'ti ti-settings-2',
+        children: [
+          {
+            id: 'setting-groups',
+            title: 'Setting Groups',
+            type: 'item',
+            url: '/settings/setting-groups',
+            icon: 'ti ti-folder-cog',
+            breadcrumbs: false
+          },
+          {
+            id: 'backend-settings',
+            title: 'Backend Settings',
+            type: 'item',
+            url: '/settings/backend-settings',
+            icon: 'ti ti-server-cog',
+            breadcrumbs: false
+          },
+          {
+            id: 'admin-portal-settings',
+            title: 'Admin Portal Settings',
+            type: 'item',
+            url: '/settings/admin-portal-settings',
+            icon: 'ti ti-layout-dashboard',
+            breadcrumbs: false
+          },
+          {
+            id: 'customer-portal-settings',
+            title: 'Customer Portal Settings',
+            type: 'item',
+            url: '/settings/customer-portal-settings',
+            icon: 'ti ti-users-group',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'dynamic-form-manager',
     title: 'Dynamic Form Manager',
     type: 'group',

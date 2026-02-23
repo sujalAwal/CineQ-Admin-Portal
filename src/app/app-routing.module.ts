@@ -107,6 +107,28 @@ const routes: Routes = [
           }
         ]
       },
+      // Settings Routes
+      {
+        path: 'settings',
+        children: [
+          {
+            path: 'setting-groups',
+            loadComponent: () => import('./demo/settings/setting-groups/setting-groups.component').then((c) => c.SettingGroupsComponent)
+          },
+          {
+            path: 'backend-settings',
+            loadComponent: () => import('./demo/settings/backend-settings/backend-settings.component').then((c) => c.BackendSettingsComponent)
+          },
+          {
+            path: 'admin-portal-settings',
+            loadComponent: () => import('./demo/settings/admin-portal-settings/admin-portal-settings.component').then((c) => c.AdminPortalSettingsComponent)
+          },
+          {
+            path: 'customer-portal-settings',
+            loadComponent: () => import('./demo/settings/customer-portal-settings/customer-portal-settings.component').then((c) => c.CustomerPortalSettingsComponent)
+          }
+        ]
+      },
       // Cinema Management Routes
       {
         path: 'cinema',

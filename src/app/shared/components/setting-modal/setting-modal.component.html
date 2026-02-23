@@ -1,0 +1,281 @@
+<!-- Setting Modal using Base Modal Component -->
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()">
+
+  <!-- SETTING FORM CONTENT -->
+  <form [formGroup]="settingForm" (ngSubmit)="onModalSave()" novalidate class="setting-form">
+
+    <!-- Section: Basic Information -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-info-circle me-2"></i>Basic Information
+      </h6>
+
+      <div class="row">
+        <!-- Title Field -->
+        <div class="col-md-6 mb-3">
+          <label for="settingTitle" class="form-label">
+            Setting Title <span class="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            id="settingTitle"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('title')"
+            formControlName="title"
+            placeholder="e.g., Site Name, Logo URL, Primary Color"
+            maxlength="150"
+            (blur)="generateSlug()">
+
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">
+            {{ getFieldError('title') }}
+          </div>
+          <div class="form-text">
+            {{ settingForm.get('title')?.value?.length || 0 }}/150 characters
+          </div>
+        </div>
+
+        <!-- Slug Field -->
+        <div class="col-md-6 mb-3">
+          <label for="settingSlug" class="form-label">
+            Setting Slug <span class="text-danger" *ngIf="!setting">*</span>
+            <span class="badge bg-secondary ms-2" *ngIf="setting">Read Only</span>
+          </label>
+          <div class="input-group">
+            <input
+              type="text"
+              id="settingSlug"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('slug')"
+              formControlName="slug"
+              placeholder="e.g., site-name, logo-url"
+              maxlength="100"
+              [readonly]="setting">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="generateSlug()"
+              title="Generate from title"
+              *ngIf="!setting">
+              <i class="ti ti-refresh"></i>
+            </button>
+          </div>
+
+          <div class="invalid-feedback d-block" *ngIf="isFieldInvalid('slug')">
+            {{ getFieldError('slug') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Type Field -->
+        <div class="col-md-6 mb-3">
+          <label for="settingType" class="form-label">
+            Setting Type <span class="text-danger">*</span>
+          </label>
+          <select
+            id="settingType"
+            class="form-select"
+            [class.is-invalid]="isFieldInvalid('type')"
+            formControlName="type">
+            <option value="" disabled>Select type...</option>
+            <option *ngFor="let t of settingTypes" [value]="t.value">{{ t.label }}</option>
+          </select>
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('type')">
+            {{ getFieldError('type') }}
+          </div>
+          <div class="form-text">
+            Determines how the value field is rendered and validated
+          </div>
+        </div>
+
+        <!-- Group Field (dropdown from settings-groups API) -->
+        <div class="col-md-6 mb-3">
+          <label for="settingGroup" class="form-label">
+            Group <span class="text-danger">*</span>
+          </label>
+          <select
+            id="settingGroup"
+            class="form-select"
+            [class.is-invalid]="isFieldInvalid('group')"
+            formControlName="group">
+            <option value="" disabled>Select group...</option>
+            <option *ngFor="let g of settingGroups" [value]="g.slug">{{ g.title }}</option>
+          </select>
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('group')">
+            {{ getFieldError('group') }}
+          </div>
+          <div class="form-text">
+            Reference to a settings group
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Value & Description -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-forms me-2"></i>Value &amp; Description
+      </h6>
+
+      <div class="row">
+        <!-- Value Field — renders differently per type -->
+        <div class="col-md-12 mb-3">
+          <label class="form-label">Value</label>
+
+          <!-- TEXT type -->
+          <ng-container *ngIf="currentType === 'text'">
+            <input
+              type="text"
+              class="form-control"
+              formControlName="value"
+              placeholder="Enter text value">
+            <div class="form-text">Plain text value</div>
+          </ng-container>
+
+          <!-- CHECKBOX type -->
+          <ng-container *ngIf="currentType === 'checkbox'">
+            <div class="form-check form-switch mt-1">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="settingValueCheckbox"
+                [checked]="settingForm.get('value')?.value === 'true'"
+                (change)="settingForm.patchValue({ value: $any($event.target).checked ? 'true' : 'false' })">
+              <label class="form-check-label" for="settingValueCheckbox">
+                <span *ngIf="settingForm.get('value')?.value === 'true'" class="text-success">
+                  <i class="ti ti-check me-1"></i>Enabled
+                </span>
+                <span *ngIf="settingForm.get('value')?.value !== 'true'" class="text-muted">
+                  <i class="ti ti-x me-1"></i>Disabled
+                </span>
+              </label>
+            </div>
+            <div class="form-text">Toggle on/off value (stored as "true"/"false")</div>
+          </ng-container>
+
+          <!-- MEDIA type -->
+          <ng-container *ngIf="currentType === 'media'">
+            <div class="media-selection-container">
+              <!-- Preview when media is selected -->
+              <div class="media-preview-wrapper" *ngIf="getSelectedMediaUrl()">
+                <img
+                  [src]="getSelectedMediaUrl()"
+                  alt="Selected media"
+                  class="media-image-preview"
+                  onerror="this.style.display='none'">
+                <div class="media-file-info">
+                  <span class="file-name text-truncate">{{ selectedMediaFile?.fileName || 'Selected file' }}</span>
+                  <span class="file-url text-muted small text-truncate d-block">{{ getSelectedMediaUrl() }}</span>
+                </div>
+                <div class="media-actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="openMediaManager()"
+                    title="Change Media">
+                    <i class="ti ti-edit"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="removeSelectedMedia()"
+                    title="Remove Media">
+                    <i class="ti ti-trash"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Placeholder when no media is selected -->
+              <div class="no-media-placeholder" *ngIf="!getSelectedMediaUrl()" (click)="openMediaManager()">
+                <i class="ti ti-photo-up"></i>
+                <p class="mb-1">Click to select media</p>
+                <span class="text-muted small">Opens the media manager</span>
+              </div>
+            </div>
+            <input type="hidden" formControlName="value">
+            <div class="form-text">Select file from the media manager</div>
+          </ng-container>
+
+          <!-- COLOR type -->
+          <ng-container *ngIf="currentType === 'color'">
+            <div class="color-field-wrapper">
+              <input
+                type="color"
+                class="form-control form-control-color"
+                id="settingValueColor"
+                formControlName="value"
+                title="Choose color">
+              <input
+                type="text"
+                class="form-control ms-2"
+                formControlName="value"
+                placeholder="#000000"
+                maxlength="25">
+            </div>
+            <div class="form-text">Select a color or enter a hex code</div>
+          </ng-container>
+
+          <!-- DATE type -->
+          <ng-container *ngIf="currentType === 'date'">
+            <input
+              type="date"
+              class="form-control"
+              formControlName="value">
+            <div class="form-text">Select a date value</div>
+          </ng-container>
+
+          <!-- JSON type -->
+          <ng-container *ngIf="currentType === 'json'">
+            <textarea
+              class="form-control font-monospace"
+              formControlName="value"
+              placeholder='{ "key": "value" }'
+              rows="5"></textarea>
+            <div class="form-text">Enter valid JSON data</div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Status -->
+    <div class="form-section">
+      <h6 class="section-title">
+        <i class="ti ti-adjustments me-2"></i>Status
+      </h6>
+
+      <div class="row">
+        <div class="col-md-4 mb-3">
+          <label class="form-label d-block">Status</label>
+          <div class="form-check form-switch mt-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="settingStatus"
+              formControlName="isActive">
+            <label class="form-check-label" for="settingStatus">
+              <span *ngIf="settingForm.get('isActive')?.value" class="text-success">
+                <i class="ti ti-check me-1"></i>Active
+              </span>
+              <span *ngIf="!settingForm.get('isActive')?.value" class="text-muted">
+                <i class="ti ti-x me-1"></i>Inactive
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</app-base-modal>
+
+<!-- Media Manager Modal (for 'media' type settings) -->
+<app-media-manager-modal
+  [isVisible]="showMediaManager"
+  [config]="mediaManagerConfig"
+  (closed)="onMediaManagerClosed()"
+  (filesSelected)="onMediaFileSelected($event)">
+</app-media-manager-modal>
