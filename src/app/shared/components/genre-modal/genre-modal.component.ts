@@ -189,9 +189,8 @@ export class GenreModalComponent implements OnInit, OnChanges, OnDestroy {
             this.resetForm();
           },
           error: (error) => {
-            console.log('Failed to save genre:', error);
+            this.handleSaveError(error);
             this.resetLoadingState();
-            // Modal stays open so user can try again
           }
         });
       } catch (error) {
@@ -203,6 +202,20 @@ export class GenreModalComponent implements OnInit, OnChanges, OnDestroy {
       // Form is invalid
       this.markFormGroupTouched();
     }
+  }
+  
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
   
   // Reset loading states

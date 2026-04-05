@@ -5,9 +5,9 @@ import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
-export class TheatreService {
+export class SeatLayoutService {
   private readonly baseUrl = `${environment.api.baseUrl}/v1`;
-  private readonly SLUG = 'theatres';
+  private readonly SLUG = 'seat-layouts';
 
   constructor(private http: HttpClient) {}
 
@@ -54,7 +54,7 @@ export class TheatreService {
   }
 
   bulkDelete(ids: string[]): Observable<boolean> {
-    return this.http.delete<any>(`${this.baseUrl}/delete`, { body: { ids, formSlug: this.SLUG, collectionName: 'theatres' }, withCredentials: true })
+    return this.http.delete<any>(`${this.baseUrl}/delete`, { body: { ids, formSlug: this.SLUG, collectionName: 'seat_layouts' }, withCredentials: true })
       .pipe(map(r => r.success ? true : (() => { throw new Error(r?.message || 'Failed'); })()),
         catchError(e => this.handleError(e)));
   }

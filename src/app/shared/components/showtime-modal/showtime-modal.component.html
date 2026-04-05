@@ -1,1 +1,114 @@
-<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (close)="onModalClose()" (save)="onModalSave()"><div class="form-container"><form [formGroup]="form"><div class="row"><div class="col-md-6"><div class="mb-3"><label class="form-label">Movie <span class="text-danger">*</span></label><input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('movieId')" formControlName="movieId" placeholder="Enter movie ID"><div class="invalid-feedback" *ngIf="isFieldInvalid('movieId')">{{ getFieldError('movieId') }}</div></div></div><div class="col-md-6"><div class="mb-3"><label class="form-label">Screen <span class="text-danger">*</span></label><input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('screenId')" formControlName="screenId" placeholder="Enter screen ID"><div class="invalid-feedback" *ngIf="isFieldInvalid('screenId')">{{ getFieldError('screenId') }}</div></div></div></div><div class="row"><div class="col-md-4"><div class="mb-3"><label class="form-label">Theatre <span class="text-danger">*</span></label><input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('theatreId')" formControlName="theatreId" placeholder="Enter theatre ID"><div class="invalid-feedback" *ngIf="isFieldInvalid('theatreId')">{{ getFieldError('theatreId') }}</div></div></div><div class="col-md-4"><div class="mb-3"><label class="form-label">Show Date <span class="text-danger">*</span></label><input type="date" class="form-control" [class.is-invalid]="isFieldInvalid('showDate')" formControlName="showDate"><div class="invalid-feedback" *ngIf="isFieldInvalid('showDate')">{{ getFieldError('showDate') }}</div></div></div><div class="col-md-4"><div class="mb-3"><label class="form-label">Show Time <span class="text-danger">*</span></label><input type="time" class="form-control" [class.is-invalid]="isFieldInvalid('showTime')" formControlName="showTime" placeholder="HH:MM"><div class="invalid-feedback" *ngIf="isFieldInvalid('showTime')">{{ getFieldError('showTime') }}</div></div></div></div><div class="row"><div class="col-md-4"><div class="mb-3"><label class="form-label">Language <span class="text-danger">*</span></label><input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('language')" formControlName="language" placeholder="e.g., English"><div class="invalid-feedback" *ngIf="isFieldInvalid('language')">{{ getFieldError('language') }}</div></div></div><div class="col-md-4"><div class="mb-3"><label class="form-label">Format <span class="text-danger">*</span></label><input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('format')" formControlName="format" placeholder="e.g., 2D"><div class="invalid-feedback" *ngIf="isFieldInvalid('format')">{{ getFieldError('format') }}</div></div></div><div class="col-md-4"><div class="mb-3"><label class="form-label">Status Code <span class="text-danger">*</span></label><input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('statusCode')" formControlName="statusCode" placeholder="e.g., AV"><div class="invalid-feedback" *ngIf="isFieldInvalid('statusCode')">{{ getFieldError('statusCode') }}</div></div></div></div><div class="row"><div class="col-md-12"><div class="mb-3"><label class="form-label">Base Price <span class="text-danger">*</span></label><input type="number" class="form-control" [class.is-invalid]="isFieldInvalid('basePrice')" formControlName="basePrice" placeholder="Enter base price" min="0" step="0.01"><div class="invalid-feedback" *ngIf="isFieldInvalid('basePrice')">{{ getFieldError('basePrice') }}</div></div></div></div><div class="mb-3 form-check form-switch"><input class="form-check-input" type="checkbox" id="isActive" formControlName="isActive"><label class="form-check-label" for="isActive">Active</label></div></form></div></app-base-modal>
+<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (closed)="onModalClose()" (primaryAction)="onModalSave()" (secondaryAction)="onModalClose()">
+  <div class="form-container">
+    <form [formGroup]="form">
+
+      <!-- Hidden fields for theatre and screen names (auto-populated, sent with payload) -->
+      <input type="hidden" formControlName="theatreName">
+      <input type="hidden" formControlName="screenName">
+
+      <!-- Movie & Theatre -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Movie <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('movieId')" formControlName="movieId">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Movie' }}</option>
+              <option *ngFor="let m of movies" [value]="m.id">{{ m.title }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('movieId')">{{ getFieldError('movieId') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Theatre <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('theatreId')" formControlName="theatreId">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Theatre' }}</option>
+              <option *ngFor="let t of theatres" [value]="t.id">{{ t.name }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('theatreId')">{{ getFieldError('theatreId') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen & Date & Time -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Screen <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('screenId')" formControlName="screenId">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Screen' }}</option>
+              <option *ngFor="let s of screens" [value]="s.id">{{ s.screenName }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('screenId')">{{ getFieldError('screenId') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Show Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" [class.is-invalid]="isFieldInvalid('showDate')" formControlName="showDate">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('showDate')">{{ getFieldError('showDate') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Show Time (HH:MM) <span class="text-danger">*</span></label>
+            <input type="time" class="form-control" [class.is-invalid]="isFieldInvalid('showTime')" formControlName="showTime">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('showTime')">{{ getFieldError('showTime') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Language, Format, Status -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Language <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('language')" formControlName="language">
+              <option value="">Select Language</option>
+              <option *ngFor="let l of LANGUAGE_OPTIONS" [value]="l.value">{{ l.label }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('language')">{{ getFieldError('language') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Format <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('format')" formControlName="format">
+              <option value="">Select Format</option>
+              <option *ngFor="let f of FORMAT_OPTIONS" [value]="f.value">{{ f.label }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('format')">{{ getFieldError('format') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('statusCode')" formControlName="statusCode">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Status' }}</option>
+              <option *ngFor="let st of showtimeStatuses" [value]="st.code">{{ st.name }} ({{ st.code }})</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('statusCode')">{{ getFieldError('statusCode') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Base Price & Active -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Base Price <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" [class.is-invalid]="isFieldInvalid('basePrice')" formControlName="basePrice" placeholder="Enter base ticket price" min="0" step="0.01">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('basePrice')">{{ getFieldError('basePrice') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6 d-flex align-items-end pb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showtimeIsActive" formControlName="isActive">
+            <label class="form-check-label" for="showtimeIsActive">Active</label>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</app-base-modal>

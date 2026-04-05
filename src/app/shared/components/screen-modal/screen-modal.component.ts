@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
 import { ScreenService } from '../../services/screen.service';
+import { TheatreService } from '../../services/theatre.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -22,6 +23,8 @@ export class ScreenModalComponent implements OnInit, OnChanges {
   @Output() itemSaved = new EventEmitter<any>();
 
   form!: FormGroup;
+  theatres: any[] = [];
+  theatresLoading = false;
 
   modalConfig: ModalConfig = {
     title: 'Add Screen',
@@ -36,16 +39,43 @@ export class ScreenModalComponent implements OnInit, OnChanges {
     showSecondaryButton: true
   };
 
-  constructor(private fb: FormBuilder, private service: ScreenService, private toastr: ToastrService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private fb: FormBuilder,
+    private service: ScreenService,
+    private theatreService: TheatreService,
+    private toastr: ToastrService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void { this.initializeForm(); }
 
-  ngOnChanges(): void {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isVisible'] && this.isVisible) {
+      this.loadTheatres();
+    }
     if (this.form) {
       this.updateModalConfig();
       this.populateForm();
       setTimeout(() => this.updateButtonState(), 0);
     }
+  }
+
+  private loadTheatres(): void {
+    if (this.theatres.length) return;
+    this.theatresLoading = true;
+    this.theatreService.getList({ page: 1, size: 200 }).subscribe({
+      next: (response) => {
+        // Extract from nested structure: { data: [{ "theatre": [...] }] }
+        this.theatres = response.data.flatMap((item: any) => {
+          const records = item['theatre'] || item['theatres'] || [];
+          if (Array.isArray(records)) return records;
+          return item.id ? [item] : [];
+        });
+        this.theatresLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.theatresLoading = false; }
+    });
   }
 
   private initializeForm(): void {
@@ -112,6 +142,7 @@ export class ScreenModalComponent implements OnInit, OnChanges {
       action: this.item?.id ? 'UPDATE' : 'CREATE',
       ...(this.item?.id && { id: this.item.id }),
       formData: {
+        ...(this.item?.id && { id: this.item.id }),
         screenName: formValue.screenName.trim(),
         theatreId: formValue.theatreId,
         rows: formValue.rows,
@@ -126,12 +157,24 @@ export class ScreenModalComponent implements OnInit, OnChanges {
     this.service.save(itemData).subscribe({
       next: (savedItem) => { this.itemSaved.emit(savedItem); this.resetLoadingState(); this.resetForm(); },
       error: (error) => {
-        console.error('Failed to save:', error);
-        const errorMessage = error?.error?.message || 'Failed to save. Please try again.';
-        this.toastr.error(errorMessage, 'Save Error');
+        this.handleSaveError(error);
         this.resetLoadingState();
       }
     });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetLoadingState(): void { this.modalConfig.primaryButtonLoading = false; this.updateButtonState(); }

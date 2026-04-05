@@ -22,11 +22,9 @@ import {
   providedIn: 'root'
 })
 export class RoleService {
+  private readonly baseUrl = `${environment.api.baseUrl}/v1`;
+  private readonly SLUG = 'role';
   private readonly moduleUrl = `${environment.api.baseUrl}/modules`;
-  private readonly roleUrl = `${environment.api.baseUrl}/v1/submit/role`;
-  private readonly roleListUrl = `${environment.api.baseUrl}/v1/list/role`;
-  private readonly roleViewUrl = `${environment.api.baseUrl}/v1/view/role`;
-  private readonly updateStatusUrl = `${environment.api.baseUrl}/v1/update-status`;
 
   // Cache for role list
   private roleCache = new Map<string, { data: any, timestamp: number }>();
@@ -61,7 +59,7 @@ export class RoleService {
       if (request.active !== undefined) httpParams = httpParams.set('active', request.active.toString());
     }
 
-    return this.http.get<PaginatedApiResponse<RoleListItem>>(this.roleListUrl, {
+    return this.http.get<PaginatedApiResponse<RoleListItem>>(`${this.baseUrl}/list/${this.SLUG}`, {
       params: httpParams,
       withCredentials: true
     }).pipe(
@@ -82,7 +80,7 @@ export class RoleService {
    * Uses api/v1/list/role and extracts name field
    */
   getRoleOptions(): Observable<Array<{id: string, name: string}>> {
-    return this.http.get<any>(this.roleListUrl, {
+    return this.http.get<any>(`${this.baseUrl}/list/${this.SLUG}`, {
       withCredentials: true
     }).pipe(
       map(response => {
@@ -103,7 +101,7 @@ export class RoleService {
    * Get role by ID (for view/edit)
    */
   getRoleById(id: string): Observable<RoleDetailResponse> {
-    const url = `${this.roleViewUrl}/${id}`;
+    const url = `${this.baseUrl}/view/${this.SLUG}/${id}`;
     return this.http.get<ApiResponse<any>>(url, { withCredentials: true }).pipe(
       map(response => {
         if (response && response.success && response.data) {
@@ -137,19 +135,17 @@ export class RoleService {
    * Delete role
    */
   deleteRole(id: string): Observable<boolean> {
-    return this.submitRole({
-      stepSlug: 'v1',
-      action: 'delete',
-      formData: {
-        name: '', // Not needed for delete
-        permissions: {},
-        isActive: true
-      }
-    } as any).pipe(
-      map(() => {
-        this.invalidateCache();
-        this.toastr.success('Role deleted successfully!', 'Success');
-        return true;
+    return this.http.post<ApiResponse>(`${this.baseUrl}/submit/${this.SLUG}`,
+      { stepSlug: 'v1', action: 'DELETE', id, formData: { id } },
+      { withCredentials: true }
+    ).pipe(
+      map(response => {
+        if (response && response.success) {
+          this.invalidateCache();
+          this.toastr.success('Role deleted successfully!', 'Success');
+          return true;
+        }
+        throw new Error(response?.message || 'Failed to delete role');
       }),
       catchError(this.handleError)
     );
@@ -160,12 +156,11 @@ export class RoleService {
    */
   updateStatus(ids: string[], isActive: boolean): Observable<boolean> {
     const payload = {
-      formSlug: 'role',
-      ids: ids,
+      documentIds: ids,
       isActive: isActive
     };
 
-    return this.http.patch<ApiResponse>(this.updateStatusUrl, payload, {
+    return this.http.patch<ApiResponse>(`${this.baseUrl}/update-status`, payload, {
       withCredentials: true
     }).pipe(
       map(response => {
@@ -255,7 +250,7 @@ export class RoleService {
    * Submit role data (create/update)
    */
   submitRole(roleData: RoleRequest): Observable<RoleResponse> {
-    return this.http.post<ApiResponse<RoleResponse>>(this.roleUrl, roleData, {
+    return this.http.post<ApiResponse<RoleResponse>>(`${this.baseUrl}/submit/${this.SLUG}`, roleData, {
       withCredentials: true
     }).pipe(
       map(response => {

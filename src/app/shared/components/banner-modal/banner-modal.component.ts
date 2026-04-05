@@ -298,7 +298,7 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
             this.resetForm();
           },
           error: (error) => {
-            console.log('Failed to save banner:', error);
+            this.handleSaveError(error);
             this.resetLoadingState();
             // Modal stays open so user can try again
           }
@@ -314,6 +314,20 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
   
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
+  }
+
   // Reset loading states
   private resetLoadingState(): void {
     this.modalConfig.primaryButtonLoading = false;

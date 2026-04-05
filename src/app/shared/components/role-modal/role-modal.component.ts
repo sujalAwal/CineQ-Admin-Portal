@@ -1,10 +1,12 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
 
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
 import { RoleService } from '../../services/role.service';
 import { MasterDataService } from '../../services/master-data.service';
+import { ToastService } from '../../services/toast.service';
 import { Module, Permission, Role, RoleDetailResponse } from '../../interfaces/role.interface';
 
 @Component({
@@ -14,7 +16,7 @@ import { Module, Permission, Role, RoleDetailResponse } from '../../interfaces/r
   templateUrl: './role-modal.component.html',
   styleUrls: ['./role-modal.component.scss']
 })
-export class RoleModalComponent implements OnInit, OnChanges {
+export class RoleModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isVisible: boolean = false;
   @Input() role: RoleDetailResponse | null = null;
   @Input() isLoading: boolean = false;
@@ -27,6 +29,7 @@ export class RoleModalComponent implements OnInit, OnChanges {
   permissions: Permission[] = [];
   selectedPermissions: { [moduleCode: number]: number[] } = {};
   loading: boolean = false;
+  private destroy$ = new Subject<void>();
 
   modalConfig: ModalConfig = {
     title: 'Add Role',
@@ -45,7 +48,8 @@ export class RoleModalComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private roleService: RoleService,
     private masterDataService: MasterDataService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toastr: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -218,10 +222,30 @@ export class RoleModalComponent implements OnInit, OnChanges {
         this.resetForm();
         this.modalConfig.primaryButtonLoading = false;
       },
-      error: () => {
+      error: (error) => {
+        this.handleSaveError(error);
         this.modalConfig.primaryButtonLoading = false;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetForm(): void {

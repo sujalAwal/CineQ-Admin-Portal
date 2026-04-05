@@ -1,8 +1,9 @@
 <app-base-modal
   [isVisible]="isVisible"
   [config]="modalConfig"
-  (close)="onModalClose()"
-  (save)="onModalSave()">
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()"
+  (secondaryAction)="onModalClose()">
 
   <div class="form-container">
     <form [formGroup]="form">

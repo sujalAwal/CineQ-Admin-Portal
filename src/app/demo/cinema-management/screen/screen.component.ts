@@ -107,7 +107,7 @@ export class ScreenComponent implements OnInit, OnDestroy {
 
     const requestParams = { ...this.currentFilters, ...additionalFilters };
 
-    this.service.getScreens(requestParams).pipe(takeUntil(this.destroy$)).subscribe({
+    this.service.getList(requestParams).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: PaginatedApiResponse<any>) => {
         // Extract and flatten from nested structure: { data: [{ "screen": [...] }] }
         this.screenData = response.data.flatMap((item: any) => {
@@ -269,7 +269,7 @@ export class ScreenComponent implements OnInit, OnDestroy {
     this.modalLoading = true;
     this.cdr.markForCheck();
 
-    this.service.getScreenById(item.id).subscribe({
+    this.service.getById(item.id).subscribe({
       next: (fullItem) => {
         this.selectedItem = fullItem;
         this.modalLoading = false;

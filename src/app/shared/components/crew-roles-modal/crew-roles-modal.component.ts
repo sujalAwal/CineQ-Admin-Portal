@@ -116,6 +116,7 @@ export class CrewRolesModalComponent implements OnInit, OnChanges {
       action: this.item?.id ? 'UPDATE' : 'CREATE',
       ...(this.item?.id && { id: this.item.id }),
       formData: {
+        ...(this.item?.id && { id: this.item.id }),
         name: formValue.name.trim(),
         slug: formValue.slug.trim(),
         description: formValue.description?.trim() || '',
@@ -130,12 +131,24 @@ export class CrewRolesModalComponent implements OnInit, OnChanges {
         this.resetForm();
       },
       error: (error) => {
-        console.error('Failed to save item:', error);
-        const errorMessage = error?.error?.message || error?.message || 'Failed to save. Please try again.';
-        this.toastr.error(errorMessage, 'Save Error');
+        this.handleSaveError(error);
         this.resetLoadingState();
       }
     });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetLoadingState(): void {

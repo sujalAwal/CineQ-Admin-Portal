@@ -124,6 +124,7 @@ export class PeopleModalComponent implements OnInit, OnChanges {
       action: this.person?.id ? 'UPDATE' : 'CREATE',
       ...(this.person?.id && { id: this.person.id }),
       formData: {
+        ...(this.person?.id && { id: this.person.id }),
         name: formValue.name.trim(),
         image: formValue.image.trim(),
         description: formValue.description?.trim() || '',
@@ -131,19 +132,31 @@ export class PeopleModalComponent implements OnInit, OnChanges {
       }
     };
 
-    this.peopleService.savePerson(personData).subscribe({
+    this.peopleService.save(personData).subscribe({
       next: (savedPerson) => {
         this.personSaved.emit(savedPerson);
         this.resetLoadingState();
         this.resetForm();
       },
       error: (error) => {
-        console.error('Failed to save person:', error);
-        const errorMessage = error?.error?.message || error?.message || 'Failed to save person. Please try again.';
-        this.toastr.error(errorMessage, 'Save Error');
+        this.handleSaveError(error);
         this.resetLoadingState();
       }
     });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetLoadingState(): void {

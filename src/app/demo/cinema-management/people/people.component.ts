@@ -208,7 +208,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
       ...additionalFilters
     };
 
-    this.peopleService.getPeople(requestParams)
+    this.peopleService.getList(requestParams)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: PaginatedApiResponse<any>) => {
@@ -290,7 +290,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
     this.updatePersonInList(personId, { isActive: event.value });
     this.cdr.markForCheck();
 
-    const operation = event.value ? this.peopleService.enablePerson : this.peopleService.disablePerson;
+    const operation = event.value ? this.peopleService.enable : this.peopleService.disable;
 
     operation.call(this.peopleService, [personId])
       .pipe(takeUntil(this.destroy$))
@@ -409,7 +409,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
     this.modalLoading = true;
     this.cdr.markForCheck();
 
-    this.peopleService.getPersonById(person.id).subscribe({
+    this.peopleService.getById(person.id).subscribe({
       next: (fullPerson) => {
         this.selectedPerson = fullPerson;
         this.modalLoading = false;
@@ -467,7 +467,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
     if (this.personToDelete) {
       this.confirmationConfig.loading = true;
 
-      this.peopleService.deletePerson(this.personToDelete.id).subscribe({
+      this.peopleService.delete(this.personToDelete.id).subscribe({
         next: (success) => {
           if (success) {
             this.toastService.success(
@@ -497,7 +497,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
       const operation = this.bulkOperation.type;
 
       if (operation === 'enable') {
-        this.peopleService.enablePerson(selectedIds).subscribe({
+        this.peopleService.enable(selectedIds).subscribe({
           next: (success) => {
             if (success) {
               this.toastService.activated(
@@ -514,7 +514,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
           }
         });
       } else if (operation === 'disable') {
-        this.peopleService.disablePerson(selectedIds).subscribe({
+        this.peopleService.disable(selectedIds).subscribe({
           next: (success) => {
             if (success) {
               this.toastService.inactive(
@@ -531,7 +531,7 @@ export class PeopleComponent implements OnInit, OnDestroy {
           }
         });
       } else if (operation === 'delete') {
-        this.peopleService.bulkDeletePeople(selectedIds).subscribe({
+        this.peopleService.bulkDelete(selectedIds).subscribe({
           next: (success) => {
             if (success) {
               this.toastService.success(

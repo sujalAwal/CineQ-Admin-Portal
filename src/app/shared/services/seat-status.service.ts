@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class SeatStatusService {
   private readonly baseUrl = `${environment.api.baseUrl}/v1`;
+  private readonly SLUG = 'seat-statuses';
 
   constructor(private http: HttpClient) {}
 
@@ -19,7 +20,7 @@ export class SeatStatusService {
       if (params.sortBy) httpParams = httpParams.set('sortBy', params.sortBy);
       if (params.sortDirection) httpParams = httpParams.set('sortDirection', params.sortDirection);
     }
-    return this.http.get<any>(`${this.baseUrl}/list/seat-status`, { params: httpParams, withCredentials: true })
+    return this.http.get<any>(`${this.baseUrl}/list/${this.SLUG}`, { params: httpParams, withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success) return response;
@@ -30,7 +31,7 @@ export class SeatStatusService {
   }
 
   getById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/view/seat-status/${id}`, { withCredentials: true })
+    return this.http.get<any>(`${this.baseUrl}/view/${this.SLUG}/${id}`, { withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success && response.data) return response.data;
@@ -41,31 +42,29 @@ export class SeatStatusService {
   }
 
   save(itemData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/submit/seat-status`, itemData, { withCredentials: true })
+    return this.http.post<any>(`${this.baseUrl}/submit/${this.SLUG}`, itemData, { withCredentials: true })
       .pipe(map(r => r.success && r.data ? r.data : (() => { throw new Error(r?.message || 'Failed'); })()),
         catchError(e => this.handleError(e)));
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.post<any>(`${this.baseUrl}/submit/seat-status`, { stepSlug: 'v1', action: 'DELETE', id, formData: {} }, { withCredentials: true })
-      .pipe(map(r => r.success ? true : (() => { throw new Error(r?.message || 'Failed'); })()),
-        catchError(e => this.handleError(e)));
+    return this.bulkDelete([id]);
   }
 
   enable(ids: string[]): Observable<boolean> {
-    return this.http.patch<any>(`${this.baseUrl}/update-status`, { documentIds: ids, isActive: true }, { withCredentials: true })
+    return this.http.patch<any>(`${this.baseUrl}/update-status`, { ids, formSlug: this.SLUG, isActive: true }, { withCredentials: true })
       .pipe(map(r => r.success ? true : (() => { throw new Error(r?.message || 'Failed'); })()),
         catchError(e => this.handleError(e)));
   }
 
   disable(ids: string[]): Observable<boolean> {
-    return this.http.patch<any>(`${this.baseUrl}/update-status`, { documentIds: ids, isActive: false }, { withCredentials: true })
+    return this.http.patch<any>(`${this.baseUrl}/update-status`, { ids, formSlug: this.SLUG, isActive: false }, { withCredentials: true })
       .pipe(map(r => r.success ? true : (() => { throw new Error(r?.message || 'Failed'); })()),
         catchError(e => this.handleError(e)));
   }
 
   bulkDelete(ids: string[]): Observable<boolean> {
-    return this.http.post<any>(`${this.baseUrl}/delete`, { documentIds: ids, collectionName: 'seat_statuses' }, { withCredentials: true })
+    return this.http.delete<any>(`${this.baseUrl}/delete`, { body: { ids, formSlug: this.SLUG, collectionName: 'seat_statuses' }, withCredentials: true })
       .pipe(map(r => r.success ? true : (() => { throw new Error(r?.message || 'Failed'); })()),
         catchError(e => this.handleError(e)));
   }

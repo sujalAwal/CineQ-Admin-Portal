@@ -35,9 +35,11 @@ export interface Role {
 
 // Role Request Interface for API submission
 export interface RoleRequest {
+  id?: string;
   stepSlug: string;
   action: string;
   formData: {
+    id?: string;
     name: string;
     permissions: {
       [moduleCode: number]: number[];

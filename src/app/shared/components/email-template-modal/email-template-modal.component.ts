@@ -263,11 +263,25 @@ export class EmailTemplateModalComponent implements OnInit, OnChanges, OnDestroy
         this.modalConfig.primaryButtonDisabled = false;
       },
       error: (error) => {
-        console.error('Failed to save email template:', error);
+        this.handleSaveError(error);
         this.modalConfig.primaryButtonLoading = false;
         this.modalConfig.primaryButtonDisabled = false;
       }
     });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastService.error(errorMessage, 'Save Error');
   }
 
   private markFormAsTouched(): void {

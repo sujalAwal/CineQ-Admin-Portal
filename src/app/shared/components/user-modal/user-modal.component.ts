@@ -1,10 +1,12 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
 
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
 import { UserService } from '../../services/user.service';
 import { RoleService } from '../../services/role.service';
+import { ToastService } from '../../services/toast.service';
 import { UserDetailResponse, UserRegisterRequest, UserUpdateRequest } from '../../interfaces/user.interface';
 
 @Component({
@@ -14,7 +16,7 @@ import { UserDetailResponse, UserRegisterRequest, UserUpdateRequest } from '../.
   templateUrl: './user-modal.component.html',
   styleUrls: ['./user-modal.component.scss']
 })
-export class UserModalComponent implements OnInit, OnChanges {
+export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isVisible: boolean = false;
   @Input() user: UserDetailResponse | null = null;
   @Input() isLoading: boolean = false;
@@ -25,6 +27,7 @@ export class UserModalComponent implements OnInit, OnChanges {
   userForm!: FormGroup;
   roles: Array<{id: string, name: string}> = [];
   loading: boolean = false;
+  private destroy$ = new Subject<void>();
 
   modalConfig: ModalConfig = {
     title: 'Add User',
@@ -43,7 +46,8 @@ export class UserModalComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private userService: UserService,
     private roleService: RoleService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private toastr: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -56,6 +60,11 @@ export class UserModalComponent implements OnInit, OnChanges {
       this.updateModalConfig();
       this.populateForm();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private initializeForm(): void {
@@ -167,7 +176,8 @@ export class UserModalComponent implements OnInit, OnChanges {
           this.resetForm();
           this.modalConfig.primaryButtonLoading = false;
         },
-        error: () => {
+        error: (error) => {
+          this.handleSaveError(error);
           this.modalConfig.primaryButtonLoading = false;
         }
       });
@@ -187,11 +197,26 @@ export class UserModalComponent implements OnInit, OnChanges {
           this.resetForm();
           this.modalConfig.primaryButtonLoading = false;
         },
-        error: () => {
+        error: (error) => {
+          this.handleSaveError(error);
           this.modalConfig.primaryButtonLoading = false;
         }
       });
     }
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetForm(): void {

@@ -168,6 +168,10 @@ const routes: Routes = [
           {
             path: 'showtime',
             loadComponent: () => import('./demo/cinema-management/showtime/showtime.component').then((c) => c.ShowtimeComponent)
+          },
+          {
+            path: 'seat-layout',
+            loadComponent: () => import('./demo/cinema-management/seat-layout/seat-layout.component').then((c) => c.SeatLayoutComponent)
           }
         ]
       }

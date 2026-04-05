@@ -158,16 +158,29 @@ export class ArtistModalComponent implements OnInit {
         error: (error) => {
           this.isLoading = false;
           this.updateModalConfig();
-          
-          const errorMessage = error.error?.message || 'An error occurred while saving the artist';
-          this.toastr.error(errorMessage);
-          console.error('Artist save error:', error);
+          this.handleSaveError(error);
         }
       });
     } else {
       this.markFormGroupTouched();
     }
-  }  // Form Helpers
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
+  }
+
+  // Form Helpers
   private resetForm(): void {
     this.artistForm.reset({
       full_name: '',

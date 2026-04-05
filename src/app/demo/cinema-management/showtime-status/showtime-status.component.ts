@@ -38,7 +38,7 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
     ],
     columns: [
       { header: 'S.N', field: 'sn', type: 'sn', sortable: false, width: '60px', align: 'center' },
-      { header: 'Status Name', field: 'statusName', type: 'text', sortable: true, width: '200px' },
+      { header: 'Status Name', field: 'name', type: 'text', sortable: true, width: '200px' },
       { header: 'Description', field: 'description', type: 'text', sortable: false, width: '300px', maxLength: 50 },
       { header: 'Status', field: 'isActive', type: 'toggle', width: '60px', align: 'center' }
     ],
@@ -110,11 +110,11 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
 
     const requestParams = { ...this.currentFilters, ...additionalFilters };
 
-    this.service.getShowtimeStatuses(requestParams).pipe(takeUntil(this.destroy$)).subscribe({
+    this.service.getList(requestParams).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: PaginatedApiResponse<any>) => {
-        // Extract and flatten from nested structure: { data: [{ "showtime-status": [...] }] }
+        // Extract and flatten from nested structure: { data: [{ "showtime-statuses": [...] }] }
         this.showtimeStatusData = response.data.flatMap((item: any) => {
-          const records = item['showtime-status'] || item['showtime_status'] || item['showtimeStatus'] || [];
+          const records = item['showtime-statuses'] || item['showtime-status'] || item['showtimeStatuses'] || [];
           if (Array.isArray(records)) return records;
           return item.id ? [item] : [];
         });
@@ -175,7 +175,7 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
     operation([event.item.id]).pipe(takeUntil(this.destroy$)).subscribe({
       next: (success) => {
         if (success) {
-          const message = event.value ? `"${event.item.statusName}" is now active.` : `"${event.item.statusName}" has been deactivated.`;
+          const message = event.value ? `"${event.item.name}" is now active.` : `"${event.item.name}" has been deactivated.`;
           event.value ? this.toastService.activated(message, 'Activated') : this.toastService.inactive(message, 'Deactivated');
         } else {
           this.revertToggle(event.item.id, !event.value);
@@ -272,7 +272,7 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
     this.modalLoading = true;
     this.cdr.markForCheck();
 
-    this.service.getShowtimeStatusById(item.id).subscribe({
+    this.service.getById(item.id).subscribe({
       next: (fullItem) => {
         this.selectedItem = fullItem;
         this.modalLoading = false;
@@ -296,9 +296,9 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
 
   onItemSaved(itemData: any): void {
     if (itemData.id) {
-      this.toastService.success(`"${itemData.statusName}" has been updated successfully!`, 'Updated');
+      this.toastService.success(`"${itemData.name}" has been updated successfully!`, 'Updated');
     } else {
-      this.toastService.success(`"${itemData.statusName}" has been created successfully!`, 'Created');
+      this.toastService.success(`"${itemData.name}" has been created successfully!`, 'Created');
     }
 
     this.onModalClosed();
@@ -309,7 +309,7 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
     this.itemToDelete = item;
     this.confirmationConfig = {
       title: 'Delete Item',
-      message: `Are you sure you want to delete <strong>"${item.statusName}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+      message: `Are you sure you want to delete <strong>"${item.name}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
       icon: 'ti ti-trash-x',
       iconColor: 'danger',
       confirmText: 'Delete',
@@ -325,7 +325,7 @@ export class ShowtimeStatusComponent implements OnInit, OnDestroy {
 
       this.service.delete(this.itemToDelete.id).subscribe({
         next: () => {
-          this.toastService.success(`Item "${this.itemToDelete!.statusName}" has been deleted successfully!`, 'Deleted');
+          this.toastService.success(`Item "${this.itemToDelete!.name}" has been deleted successfully!`, 'Deleted');
           this.loadData();
           this.showConfirmationModal = false;
           this.itemToDelete = null;

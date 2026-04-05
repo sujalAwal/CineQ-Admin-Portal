@@ -244,6 +244,14 @@ export const NavigationItems: NavigationItem[] = [
             url: '/cinema/showtime',
             icon: 'ti ti-calendar-time',
             breadcrumbs: false
+          },
+          {
+            id: 'seat-layout',
+            title: 'Seat Layouts',
+            type: 'item',
+            url: '/cinema/seat-layout',
+            icon: 'ti ti-layout-grid',
+            breadcrumbs: false
           }
         ]
       }

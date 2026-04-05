@@ -104,6 +104,7 @@ export class SeatTypeModalComponent implements OnInit, OnChanges {
       action: this.item?.id ? 'UPDATE' : 'CREATE',
       ...(this.item?.id && { id: this.item.id }),
       formData: {
+        ...(this.item?.id && { id: this.item.id }),
         code: formValue.code.trim().toUpperCase(),
         name: formValue.name.trim(),
         description: formValue.description?.trim() || '',
@@ -114,12 +115,24 @@ export class SeatTypeModalComponent implements OnInit, OnChanges {
     this.service.save(itemData).subscribe({
       next: (savedItem) => { this.itemSaved.emit(savedItem); this.resetLoadingState(); this.resetForm(); },
       error: (error) => {
-        console.error('Failed to save:', error);
-        const errorMessage = error?.error?.message || 'Failed to save. Please try again.';
-        this.toastr.error(errorMessage, 'Save Error');
+        this.handleSaveError(error);
         this.resetLoadingState();
       }
     });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetLoadingState(): void { this.modalConfig.primaryButtonLoading = false; this.updateButtonState(); }

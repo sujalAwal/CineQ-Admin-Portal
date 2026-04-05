@@ -5,26 +5,26 @@ import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 import { SharedModule } from '../../../theme/shared/shared.module';
 import { DataTableComponent } from '../../../shared/components/data-table/data-table.component';
-import { ShowtimeModalComponent } from '../../../shared/components/showtime-modal/showtime-modal.component';
+import { SeatLayoutModalComponent } from '../../../shared/components/seat-layout-modal/seat-layout-modal.component';
 import { ConfirmationModalComponent, ConfirmationConfig } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
+import { SeatLayoutService } from '../../../shared/services/seat-layout.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { TableConfig, PaginationInfo, TableActionEvent, BulkSelectionEvent } from '../../../shared/interfaces/table.interface';
-import { ShowtimeService } from '../../../shared/services/showtime.service';
 import { PaginatedApiResponse } from '../../../shared/interfaces/genre.interface';
 
 @Component({
-  selector: 'app-showtime',
-  imports: [CommonModule, SharedModule, DataTableComponent, ShowtimeModalComponent, ConfirmationModalComponent],
-  templateUrl: './showtime.component.html',
-  styleUrls: ['./showtime.component.scss'],
+  selector: 'app-seat-layout',
+  imports: [CommonModule, SharedModule, DataTableComponent, SeatLayoutModalComponent, ConfirmationModalComponent],
+  templateUrl: './seat-layout.component.html',
+  styleUrls: ['./seat-layout.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ShowtimeComponent implements OnInit, OnDestroy {
+export class SeatLayoutComponent implements OnInit, OnDestroy {
 
   tableConfig: TableConfig = {
-    title: 'Showtimes Management',
-    entityName: 'Showtime',
-    apiEndpoint: '/api/v1/list/showtime',
+    title: 'Seat Layout Management',
+    entityName: 'Seat Layout',
+    apiEndpoint: '/api/v1/list/seat-layouts',
     searchable: true,
     paginated: true,
     pageSize: 20,
@@ -37,12 +37,9 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     ],
     columns: [
       { header: 'S.N', field: 'sn', type: 'sn', sortable: false, width: '60px', align: 'center' },
-      { header: 'Movie', field: 'movieId', type: 'text', sortable: true, width: '200px' },
-      { header: 'Theatre', field: 'theatreName', type: 'text', sortable: true, width: '150px' },
-      { header: 'Screen', field: 'screenName', type: 'text', sortable: true, width: '150px' },
-      { header: 'Show Date', field: 'showDate', type: 'date', sortable: true, width: '120px' },
-      { header: 'Show Time', field: 'showTime', type: 'text', sortable: false, width: '100px' },
-      { header: 'Price', field: 'basePrice', type: 'number', sortable: true, width: '100px' },
+      { header: 'Layout Name', field: 'name', type: 'text', sortable: true, width: '200px' },
+      { header: 'Type', field: 'isDefault', type: 'badge', sortable: false, width: '100px', align: 'center' },
+      { header: 'Screen', field: 'screenName', type: 'text', sortable: false, width: '150px' },
       { header: 'Status', field: 'isActive', type: 'toggle', width: '60px', align: 'center' }
     ],
     actions: [
@@ -51,7 +48,7 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     ]
   };
 
-  showtimeData: any[] = [];
+  seatLayoutData: any[] = [];
   loading: boolean = false;
   pagination: PaginationInfo = { currentPage: 1, totalPages: 1, totalItems: 0, pageSize: 20 };
   currentFilters: any = { page: 1, size: 20 };
@@ -80,19 +77,23 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     selectedIds: []
   };
 
-  constructor(private toastService: ToastService, private service: ShowtimeService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private service: SeatLayoutService,
+    private toastService: ToastService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.setupDebouncedSearch();
     this.loadData();
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  private setupDebouncedSearch() {
+  private setupDebouncedSearch(): void {
     this.searchSubject.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -103,7 +104,7 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadData(additionalFilters?: Partial<any>) {
+  loadData(additionalFilters?: Partial<any>): void {
     this.loading = true;
     this.cdr.markForCheck();
 
@@ -111,12 +112,22 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
 
     this.service.getList(requestParams).pipe(takeUntil(this.destroy$)).subscribe({
       next: (response: PaginatedApiResponse<any>) => {
-        // Extract and flatten from nested structure: { data: [{ "showtime": [...] }] }
-        this.showtimeData = response.data.flatMap((item: any) => {
-          const records = item['showtime'] || item['showtimes'] || [];
-          if (Array.isArray(records)) return records;
-          return item.id ? [item] : [];
-        });
+        const raw = response.data;
+        this.seatLayoutData = Array.isArray(raw)
+          ? raw.flatMap((item: any) => {
+              const records = item['seat-layouts'] || item['seat-layout'] || item['seatLayouts'] || [];
+              if (Array.isArray(records)) return records;
+              return item.id ? [item] : [];
+            })
+          : [];
+
+        // Flatten isDefault to a display-friendly badge value
+        this.seatLayoutData = this.seatLayoutData.map(item => ({
+          ...item,
+          isDefault: item.isDefault,
+          screenName: item.screenId ? (item.screenName || item.screenId) : '—'
+        }));
+
         this.pagination = {
           currentPage: response.page,
           totalPages: response.totalPages,
@@ -127,46 +138,39 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
       error: (error) => {
-        console.error('Failed to load data:', error);
-        this.showtimeData = [];
+        console.error('Failed to load seat layouts:', error);
+        this.seatLayoutData = [];
         this.loading = false;
         this.cdr.markForCheck();
       }
     });
   }
 
-  onTableAction(event: TableActionEvent) {
+  onTableAction(event: TableActionEvent): void {
     switch (event.action) {
-      case 'edit':
-        this.editItem(event.item);
-        break;
-      case 'delete':
-        this.deleteItem(event.item);
-        break;
+      case 'edit': this.editItem(event.item); break;
+      case 'delete': this.deleteItem(event.item); break;
     }
   }
 
-  onSearch(searchTerm: string) {
-    this.searchSubject.next(searchTerm);
-  }
+  onSearch(searchTerm: string): void { this.searchSubject.next(searchTerm); }
 
-  onRefresh() {
+  onRefresh(): void {
     this.currentFilters = { page: 1, size: this.currentFilters.size || 20 };
     this.loadData();
-    this.cdr.markForCheck();
   }
 
-  onPageChange(page: number) {
+  onPageChange(page: number): void {
     this.currentFilters.page = page;
     this.loadData();
   }
 
-  onSort(sortInfo: { field: string, order: 'asc' | 'desc' }) {
+  onSort(sortInfo: { field: string, order: 'asc' | 'desc' }): void {
     this.currentFilters = { ...this.currentFilters, sortBy: sortInfo.field, sortDirection: sortInfo.order, page: 1 };
     this.loadData();
   }
 
-  onToggleChange(event: { item: any, field: string, value: boolean }) {
+  onToggleChange(event: { item: any, field: string, value: boolean }): void {
     this.updateInList(event.item.id, { isActive: event.value });
     this.cdr.markForCheck();
 
@@ -174,7 +178,7 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     operation([event.item.id]).pipe(takeUntil(this.destroy$)).subscribe({
       next: (success) => {
         if (success) {
-          const message = event.value ? `Showtime is now active.` : `Showtime has been deactivated.`;
+          const message = event.value ? `"${event.item.name}" is now active.` : `"${event.item.name}" has been deactivated.`;
           event.value ? this.toastService.activated(message, 'Activated') : this.toastService.inactive(message, 'Deactivated');
         } else {
           this.revertToggle(event.item.id, !event.value);
@@ -184,16 +188,16 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private updateInList(id: string, updates: Partial<any>) {
-    this.showtimeData = this.showtimeData.map(item => item.id === id ? { ...item, ...updates } : item);
+  private updateInList(id: string, updates: Partial<any>): void {
+    this.seatLayoutData = this.seatLayoutData.map(item => item.id === id ? { ...item, ...updates } : item);
   }
 
-  private revertToggle(id: string, value: boolean) {
+  private revertToggle(id: string, value: boolean): void {
     this.updateInList(id, { isActive: value });
     this.cdr.markForCheck();
   }
 
-  onBulkAction(event: BulkSelectionEvent) {
+  onBulkAction(event: BulkSelectionEvent): void {
     if (event.selectedIds.length === 0) {
       this.toastService.warning('Please select at least one item.', 'No Selection');
       return;
@@ -217,60 +221,27 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private showBulkConfirmation(operation: 'enable' | 'disable' | 'delete', selectedIds: string[]) {
+  private showBulkConfirmation(operation: 'enable' | 'disable' | 'delete', selectedIds: string[]): void {
     const count = selectedIds.length;
-
     if (operation === 'enable') {
-      this.confirmationConfig = {
-        title: 'Enable Items',
-        message: `Are you sure you want to <strong>enable</strong> ${count} item(s)?`,
-        icon: 'ti ti-toggle-right',
-        iconColor: 'success',
-        confirmText: 'Enable',
-        cancelText: 'Cancel',
-        confirmButtonClass: 'btn-success',
-        loading: false,
-        size: 'sm'
-      };
+      this.confirmationConfig = { title: 'Enable Items', message: `Are you sure you want to <strong>enable</strong> ${count} item(s)?`, icon: 'ti ti-toggle-right', iconColor: 'success', confirmText: 'Enable', cancelText: 'Cancel', confirmButtonClass: 'btn-success', loading: false, size: 'sm' };
     } else if (operation === 'disable') {
-      this.confirmationConfig = {
-        title: 'Disable Items',
-        message: `Are you sure you want to <strong>disable</strong> ${count} item(s)?`,
-        icon: 'ti ti-toggle-left',
-        iconColor: 'warning',
-        confirmText: 'Disable',
-        cancelText: 'Cancel',
-        confirmButtonClass: 'btn-warning',
-        loading: false,
-        size: 'sm'
-      };
+      this.confirmationConfig = { title: 'Disable Items', message: `Are you sure you want to <strong>disable</strong> ${count} item(s)?`, icon: 'ti ti-toggle-left', iconColor: 'warning', confirmText: 'Disable', cancelText: 'Cancel', confirmButtonClass: 'btn-warning', loading: false, size: 'sm' };
     } else {
-      this.confirmationConfig = {
-        title: 'Delete Items',
-        message: `Are you sure you want to <strong>delete</strong> ${count} item(s)?<br><small class="text-danger">This action cannot be undone.</small>`,
-        icon: 'ti ti-trash-x',
-        iconColor: 'danger',
-        confirmText: 'Delete',
-        cancelText: 'Cancel',
-        confirmButtonClass: 'btn-danger',
-        loading: false,
-        size: 'sm'
-      };
+      this.confirmationConfig = { title: 'Delete Items', message: `Are you sure you want to <strong>delete</strong> ${count} item(s)?<br><small class="text-danger">This action cannot be undone.</small>`, icon: 'ti ti-trash-x', iconColor: 'danger', confirmText: 'Delete', cancelText: 'Cancel', confirmButtonClass: 'btn-danger', loading: false, size: 'sm' };
     }
-
     this.showConfirmationModal = true;
   }
 
-  openAddModal() {
+  openAddModal(): void {
     this.selectedItem = null;
     this.showModal = true;
     this.cdr.markForCheck();
   }
 
-  private editItem(item: any) {
+  private editItem(item: any): void {
     this.modalLoading = true;
     this.cdr.markForCheck();
-
     this.service.getById(item.id).subscribe({
       next: (fullItem) => {
         this.selectedItem = fullItem;
@@ -287,44 +258,31 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     });
   }
 
-  onModalClosed() {
-    this.showModal = false;
-    this.selectedItem = null;
-    this.modalLoading = false;
-  }
+  onModalClosed(): void { this.showModal = false; this.selectedItem = null; this.modalLoading = false; }
 
-  onItemSaved(itemData: any) {
-    if (itemData.id) {
-      this.toastService.success(`Showtime has been updated successfully!`, 'Updated');
-    } else {
-      this.toastService.success(`Showtime has been created successfully!`, 'Created');
-    }
-
+  onItemSaved(itemData: any): void {
+    const msg = itemData.id ? `"${itemData.name}" has been updated successfully!` : `"${itemData.name}" has been created successfully!`;
+    this.toastService.success(msg, itemData.id ? 'Updated' : 'Created');
     this.onModalClosed();
     this.loadData();
   }
 
-  private deleteItem(item: any) {
+  private deleteItem(item: any): void {
     this.itemToDelete = item;
     this.confirmationConfig = {
-      title: 'Delete Item',
-      message: `Are you sure you want to delete this showtime?<br><small class="text-muted">This action cannot be undone.</small>`,
-      icon: 'ti ti-trash-x',
-      iconColor: 'danger',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-      loading: false
+      title: 'Delete Seat Layout',
+      message: `Are you sure you want to delete <strong>"${item.name}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+      icon: 'ti ti-trash-x', iconColor: 'danger', confirmText: 'Delete', cancelText: 'Cancel', loading: false
     };
     this.showConfirmationModal = true;
   }
 
-  onDeleteConfirmed() {
+  onDeleteConfirmed(): void {
     if (this.itemToDelete) {
       this.confirmationConfig.loading = true;
-
       this.service.delete(this.itemToDelete.id).subscribe({
         next: () => {
-          this.toastService.success(`Showtime has been deleted successfully!`, 'Deleted');
+          this.toastService.success(`"${this.itemToDelete!.name}" has been deleted.`, 'Deleted');
           this.loadData();
           this.showConfirmationModal = false;
           this.itemToDelete = null;
@@ -345,44 +303,23 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
       const operation = this.bulkOperation.type;
 
       if (operation === 'enable') {
-        this.service.enable(selectedIds).subscribe({
-          next: () => {
-            this.toastService.activated(`${selectedIds.length} item(s) have been enabled successfully!`, 'Enabled');
-            this.loadData();
-            this.resetBulkOperation();
-          },
-          error: () => this.resetBulkOperation()
-        });
+        this.service.enable(selectedIds).subscribe({ next: () => { this.toastService.activated(`${selectedIds.length} item(s) enabled.`, 'Enabled'); this.loadData(); this.resetBulkOperation(); }, error: () => this.resetBulkOperation() });
       } else if (operation === 'disable') {
-        this.service.disable(selectedIds).subscribe({
-          next: () => {
-            this.toastService.inactive(`${selectedIds.length} item(s) have been disabled successfully!`, 'Disabled');
-            this.loadData();
-            this.resetBulkOperation();
-          },
-          error: () => this.resetBulkOperation()
-        });
+        this.service.disable(selectedIds).subscribe({ next: () => { this.toastService.inactive(`${selectedIds.length} item(s) disabled.`, 'Disabled'); this.loadData(); this.resetBulkOperation(); }, error: () => this.resetBulkOperation() });
       } else if (operation === 'delete') {
-        this.service.bulkDelete(selectedIds).subscribe({
-          next: () => {
-            this.toastService.success(`${selectedIds.length} item(s) have been deleted successfully!`, 'Deleted');
-            this.loadData();
-            this.resetBulkOperation();
-          },
-          error: () => this.resetBulkOperation()
-        });
+        this.service.bulkDelete(selectedIds).subscribe({ next: () => { this.toastService.success(`${selectedIds.length} item(s) deleted.`, 'Deleted'); this.loadData(); this.resetBulkOperation(); }, error: () => this.resetBulkOperation() });
       }
     }
   }
 
-  onDeleteCancelled() {
+  onDeleteCancelled(): void {
     this.showConfirmationModal = false;
     this.itemToDelete = null;
     this.confirmationConfig.loading = false;
     this.resetBulkOperation();
   }
 
-  private resetBulkOperation() {
+  private resetBulkOperation(): void {
     this.bulkOperation = { type: null, selectedIds: [] };
     this.showConfirmationModal = false;
     this.confirmationConfig.loading = false;

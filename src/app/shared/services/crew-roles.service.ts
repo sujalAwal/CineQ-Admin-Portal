@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 export class CrewRolesService {
 
   private readonly baseUrl = `${environment.api.baseUrl}/v1`;
+  private readonly SLUG = 'crew-roles';
 
   constructor(private http: HttpClient) {}
 
@@ -23,7 +24,7 @@ export class CrewRolesService {
       if (params.sortDirection) httpParams = httpParams.set('sortDirection', params.sortDirection);
     }
 
-    return this.http.get<any>(`${this.baseUrl}/list/crew-roles`, { params: httpParams, withCredentials: true })
+    return this.http.get<any>(`${this.baseUrl}/list/${this.SLUG}`, { params: httpParams, withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success) return response;
@@ -34,7 +35,7 @@ export class CrewRolesService {
   }
 
   getById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/view/crew-roles/${id}`, { withCredentials: true })
+    return this.http.get<any>(`${this.baseUrl}/view/${this.SLUG}/${id}`, { withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success && response.data) return response.data;
@@ -45,7 +46,7 @@ export class CrewRolesService {
   }
 
   save(itemData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/submit/crew-roles`, itemData, { withCredentials: true })
+    return this.http.post<any>(`${this.baseUrl}/submit/${this.SLUG}`, itemData, { withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success && response.data) return response.data;
@@ -56,25 +57,11 @@ export class CrewRolesService {
   }
 
   delete(id: string): Observable<boolean> {
-    const deleteRequest = {
-      stepSlug: 'v1',
-      action: 'DELETE',
-      id: id,
-      formData: {}
-    };
-
-    return this.http.post<any>(`${this.baseUrl}/submit/crew-roles`, deleteRequest, { withCredentials: true })
-      .pipe(
-        map(response => {
-          if (response && response.success) return true;
-          throw new Error(response?.message || 'Failed to delete');
-        }),
-        catchError(error => this.handleError(error))
-      );
+    return this.bulkDelete([id]);
   }
 
   enable(ids: string[]): Observable<boolean> {
-    const request = { documentIds: ids, isActive: true };
+    const request = { ids, formSlug: this.SLUG, isActive: true };
     return this.http.patch<any>(`${this.baseUrl}/update-status`, request, { withCredentials: true })
       .pipe(
         map(response => {
@@ -86,7 +73,7 @@ export class CrewRolesService {
   }
 
   disable(ids: string[]): Observable<boolean> {
-    const request = { documentIds: ids, isActive: false };
+    const request = { ids, formSlug: this.SLUG, isActive: false };
     return this.http.patch<any>(`${this.baseUrl}/update-status`, request, { withCredentials: true })
       .pipe(
         map(response => {
@@ -98,8 +85,8 @@ export class CrewRolesService {
   }
 
   bulkDelete(ids: string[]): Observable<boolean> {
-    const request = { documentIds: ids, collectionName: 'crew_roles' };
-    return this.http.post<any>(`${this.baseUrl}/delete`, request, { withCredentials: true })
+    const request = { ids, formSlug: this.SLUG, collectionName: 'crew_roles' };
+    return this.http.delete<any>(`${this.baseUrl}/delete`, { body: request, withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success) return true;

@@ -1,9 +1,11 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
 import { SeatStatusService } from '../../services/seat-status.service';
-import { ToastrService } from 'ngx-toastr';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-seat-status-modal',
@@ -12,7 +14,7 @@ import { ToastrService } from 'ngx-toastr';
   templateUrl: './seat-status-modal.component.html',
   styleUrls: ['./seat-status-modal.component.scss']
 })
-export class SeatStatusModalComponent implements OnInit, OnChanges {
+export class SeatStatusModalComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() isVisible: boolean = false;
   @Input() item: any = null;
@@ -22,6 +24,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges {
   @Output() itemSaved = new EventEmitter<any>();
 
   form!: FormGroup;
+  private destroy$ = new Subject<void>();
 
   modalConfig: ModalConfig = {
     title: 'Add Seat Status',
@@ -36,7 +39,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges {
     showSecondaryButton: true
   };
 
-  constructor(private fb: FormBuilder, private service: SeatStatusService, private toastr: ToastrService, private cdr: ChangeDetectorRef) {}
+  constructor(private fb: FormBuilder, private service: SeatStatusService, private toastr: ToastService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void { this.initializeForm(); }
 
@@ -46,6 +49,11 @@ export class SeatStatusModalComponent implements OnInit, OnChanges {
       this.populateForm();
       setTimeout(() => this.updateButtonState(), 0);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private initializeForm(): void {
@@ -104,6 +112,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges {
       action: this.item?.id ? 'UPDATE' : 'CREATE',
       ...(this.item?.id && { id: this.item.id }),
       formData: {
+        ...(this.item?.id && { id: this.item.id }),
         code: formValue.code,
         name: formValue.name.trim(),
         description: formValue.description?.trim() || '',
@@ -114,12 +123,24 @@ export class SeatStatusModalComponent implements OnInit, OnChanges {
     this.service.save(itemData).subscribe({
       next: (savedItem) => { this.itemSaved.emit(savedItem); this.resetLoadingState(); this.resetForm(); },
       error: (error) => {
-        console.error('Failed to save:', error);
-        const errorMessage = error?.error?.message || 'Failed to save. Please try again.';
-        this.toastr.error(errorMessage, 'Save Error');
+        this.handleSaveError(error);
         this.resetLoadingState();
       }
     });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
   }
 
   private resetLoadingState(): void { this.modalConfig.primaryButtonLoading = false; this.updateButtonState(); }

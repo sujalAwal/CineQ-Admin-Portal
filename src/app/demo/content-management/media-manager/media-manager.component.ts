@@ -160,6 +160,27 @@ export class MediaManagerComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Delete Selected Files from server
+   */
+  deleteSelectedFiles(): void {
+    if (this.selectedFiles.length === 0) return;
+    const ids = this.selectedFiles.map(f => f.id);
+    this.mediaService.deleteMultiple({ mediaIds: ids })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastService.success(`${ids.length} file(s) deleted successfully`);
+          this.selectedFiles = [];
+          this.loadFiles();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.toastService.error('Failed to delete selected files');
+        }
+      });
+  }
+
+  /**
    * Clear All Selected Files
    */
   clearSelection(): void {

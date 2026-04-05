@@ -11,10 +11,11 @@ import { throwError } from 'rxjs';
 export class PeopleService {
 
   private readonly baseUrl = `${environment.api.baseUrl}/v1`;
+  private readonly SLUG = 'people';
 
   constructor(private http: HttpClient) {}
 
-  getPeople(params?: any): Observable<any> {
+  getList(params?: any): Observable<any> {
     let httpParams = new HttpParams();
 
     if (params) {
@@ -25,7 +26,7 @@ export class PeopleService {
       if (params.sortDirection) httpParams = httpParams.set('sortDirection', params.sortDirection);
     }
 
-    return this.http.get<any>(`${this.baseUrl}/list/people`, { params: httpParams, withCredentials: true })
+    return this.http.get<any>(`${this.baseUrl}/list/${this.SLUG}`, { params: httpParams, withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success) {
@@ -37,8 +38,8 @@ export class PeopleService {
       );
   }
 
-  getPersonById(id: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/view/people/${id}`, { withCredentials: true })
+  getById(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/view/${this.SLUG}/${id}`, { withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success && response.data) {
@@ -50,8 +51,8 @@ export class PeopleService {
       );
   }
 
-  savePerson(personData: any): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/submit/people`, personData, { withCredentials: true })
+  save(personData: any): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/submit/${this.SLUG}`, personData, { withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success && response.data) {
@@ -63,29 +64,14 @@ export class PeopleService {
       );
   }
 
-  deletePerson(id: string): Observable<boolean> {
-    const deleteRequest = {
-      stepSlug: 'v1',
-      action: 'DELETE',
-      id: id,
-      formData: {}
-    };
-
-    return this.http.post<any>(`${this.baseUrl}/submit/people`, deleteRequest, { withCredentials: true })
-      .pipe(
-        map(response => {
-          if (response && response.success) {
-            return true;
-          }
-          throw new Error(response?.message || 'Failed to delete person');
-        }),
-        catchError(error => this.handleError(error))
-      );
+  delete(id: string): Observable<boolean> {
+    return this.bulkDelete([id]);
   }
 
-  enablePerson(ids: string[]): Observable<boolean> {
+  enable(ids: string[]): Observable<boolean> {
     const request = {
-      documentIds: ids,
+      ids: ids,
+      formSlug: this.SLUG,
       isActive: true
     };
 
@@ -101,9 +87,10 @@ export class PeopleService {
       );
   }
 
-  disablePerson(ids: string[]): Observable<boolean> {
+  disable(ids: string[]): Observable<boolean> {
     const request = {
-      documentIds: ids,
+      ids: ids,
+      formSlug: this.SLUG,
       isActive: false
     };
 
@@ -119,13 +106,14 @@ export class PeopleService {
       );
   }
 
-  bulkDeletePeople(ids: string[]): Observable<boolean> {
+  bulkDelete(ids: string[]): Observable<boolean> {
     const request = {
-      documentIds: ids,
+      ids: ids,
+      formSlug:  this.SLUG,
       collectionName: 'people'
     };
 
-    return this.http.post<any>(`${this.baseUrl}/delete`, request, { withCredentials: true })
+    return this.http.delete<any>(`${this.baseUrl}/delete`, { body: request, withCredentials: true })
       .pipe(
         map(response => {
           if (response && response.success) {
