@@ -24,9 +24,6 @@ export class GenreService {
 
   private readonly url = `${environment.api.baseUrl}/genre`;
 
-  // 🚀 Performance optimizations
-  private genreCache = new Map<string, { data: any, timestamp: number }>();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   private pendingRequests = new Map<string, Observable<any>>();
 
   // Public observables (like Laravel's Auth::user())
@@ -47,16 +44,6 @@ export class GenreService {
   getGenres(request?: GenrePageRequest): Observable<PaginatedApiResponse<Genre>> {
     const cacheKey = this.buildCacheKey(request);
     
-    // Check cache first
-    const cached = this.genreCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < this.CACHE_DURATION) {
-      return of(cached.data);
-    }
-    
-    // Check for pending request to avoid duplicates
-    if (this.pendingRequests.has(cacheKey)) {
-      return this.pendingRequests.get(cacheKey)!;
-    }
 
     let httpParams = new HttpParams();
     
@@ -80,15 +67,11 @@ export class GenreService {
         throw new Error(response?.message || 'Failed to fetch genres');
       }),
       tap(response => {
-        // Cache successful response
-        this.genreCache.set(cacheKey, { data: response, timestamp: Date.now() });
-        // Remove from pending requests
-        this.pendingRequests.delete(cacheKey);
+      
+   
       }),
       catchError(error => {
-        // Remove from pending requests on error
-        this.pendingRequests.delete(cacheKey);
-        return this.handleError(error);
+        return throwError(() => new Error('Failed to fetch genres'));
       }),
       share() // Share the observable among multiple subscribers
     );
@@ -118,12 +101,6 @@ export class GenreService {
     return parts.join('_');
   }
 
-  /**
-   * 🚀 Invalidate cache on mutations
-   */
-  private invalidateCache() {
-    this.genreCache.clear();
-  }
 
   /**
    * 🚀 Optimized store with cache invalidation
@@ -150,8 +127,7 @@ export class GenreService {
       map(response => {
         if (response && response.success && response.data) {
           this.toastr.success('Genre saved successfully!', 'Success');
-          // Invalidate cache after successful mutation
-          this.invalidateCache();
+         
           return response.data;
         }
         
@@ -177,8 +153,7 @@ export class GenreService {
         map(response => {
           if (response && response.success) {
             this.toastr.success(response.message || 'Genre deleted successfully!', 'Success');
-            // Invalidate cache after successful deletion
-            this.invalidateCache();
+            
             return true;
           }
           throw new Error(response?.message || 'Failed to delete genre');
@@ -195,8 +170,7 @@ export class GenreService {
       .pipe(
         map(response => {
           if (response && response.success) {
-            // Invalidate cache after successful operation
-            this.invalidateCache();
+         
             return true;
           }
           throw new Error(response?.message || 'Failed to enable genres');
@@ -213,8 +187,7 @@ export class GenreService {
       .pipe(
         map(response => {
           if (response && response.success) {
-            // Invalidate cache after successful operation
-            this.invalidateCache();
+          
             return true;
           }
           throw new Error(response?.message || 'Failed to disable genres');
@@ -232,17 +205,15 @@ export class GenreService {
     let errorMessage = 'An unexpected error occurred';
     let errorTitle = 'Error';
     
-    console.error('API Error Details:12', error);
     
     // Check if it's an HttpErrorResponse
     if (error instanceof HttpErrorResponse) {
       
-      console.log('HTTP Error Status:', error.status);
       
       if (error.error instanceof ErrorEvent) {
         // Client-side/Network error (no internet, DNS issues, etc.)
-        errorMessage = `Network error: ${error?.message}`;
-        errorTitle = 'Network Error';
+        errorMessage = ` ${error?.message}`;
+        errorTitle = 'Error';
       } else {
         // Server-side error responses
         switch (error.status) {

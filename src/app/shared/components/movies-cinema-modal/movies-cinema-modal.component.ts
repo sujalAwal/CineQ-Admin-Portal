@@ -3,10 +3,12 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
 import { MediaManagerModalComponent } from '../media-manager-modal/media-manager-modal.component';
+import { MultiSelectDropdownComponent } from '../multi-select-dropdown/multi-select-dropdown.component';
 import { MoviesCinemaService } from '../../services/movies-cinema.service';
 import { GenreService } from '../../services/genre.service';
-import { PeopleService } from '../../services/people.service';
-import { CrewRolesService } from '../../services/crew-roles.service';
+import { ArtistService } from '../../services/artist.service';
+import { ArtistTypesService } from '../../services/artist-types.service';
+import { MasterDataService } from '../../services/master-data.service';
 import { MediaFile, MediaManagerConfig } from '../../interfaces/media.interface';
 import { ToastrService } from 'ngx-toastr';
 import { Subject } from 'rxjs';
@@ -15,7 +17,7 @@ import { takeUntil } from 'rxjs/operators';
 @Component({
   selector: 'app-movies-cinema-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, BaseModalComponent, MediaManagerModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, BaseModalComponent, MediaManagerModalComponent, MultiSelectDropdownComponent],
   templateUrl: './movies-cinema-modal.component.html',
   styleUrls: ['./movies-cinema-modal.component.scss']
 })
@@ -32,8 +34,10 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
 
   // Dropdown data
   genres: any[] = [];
-  people: any[] = [];
-  crewRoles: any[] = [];
+  artists: any[] = [];
+  artistTypes: any[] = [];
+  certifications: any[] = [];
+  releaseStatuses: any[] = [];
   loadingDropdowns = false;
 
   private destroy$ = new Subject<void>();
@@ -57,26 +61,20 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
   };
 
   readonly LANGUAGE_OPTIONS = [
-    { value: 'ENG', label: 'English' },
-    { value: 'HIN', label: 'Hindi' },
-    { value: 'NEP', label: 'Nepali' },
-    { value: 'MAL', label: 'Malayalam' },
-    { value: 'MARA', label: 'Marathi' }
+    { _id: 'ENG', name: 'English', value: 'ENG' },
+    { _id: 'HIN', name: 'Hindi', value: 'HIN' },
+    { _id: 'NEP', name: 'Nepali', value: 'NEP' },
+    { _id: 'MAL', name: 'Malayalam', value: 'MAL' },
+    { _id: 'MARA', name: 'Marathi', value: 'MARA' }
   ];
 
   readonly FORMAT_OPTIONS = [
-    { value: '2D', label: '2D' },
-    { value: '3D', label: '3D' },
-    { value: 'IMAX', label: 'IMAX' },
-    { value: '4DX', label: '4DX' }
+    { _id: '2D', name: '2D', value: '2D' },
+    { _id: '3D', name: '3D', value: '3D' },
+    { _id: 'IMAX', name: 'IMAX', value: 'IMAX' },
+    { _id: '4DX', name: '4DX', value: '4DX' }
   ];
 
-  readonly CERTIFICATION_OPTIONS = ['U', 'UA', 'A', 'R'];
-  readonly STATUS_OPTIONS = [
-    { value: 'coming_soon', label: 'Coming Soon' },
-    { value: 'now_showing', label: 'Now Showing' },
-    { value: 'ended', label: 'Ended' }
-  ];
 
   modalConfig: ModalConfig = {
     title: 'Add Movie',
@@ -95,11 +93,12 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
     private fb: FormBuilder,
     private service: MoviesCinemaService,
     private genreService: GenreService,
-    private peopleService: PeopleService,
-    private crewRolesService: CrewRolesService,
+    private masterDataService: MasterDataService,
+    private artistService: ArtistService,
+    private artistTypesService: ArtistTypesService,
     private toastr: ToastrService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void { this.initializeForm(); }
 
@@ -138,58 +137,80 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
 
   private loadDropdownData(): void {
     // Skip if already loaded
-    if (this.genres.length && this.people.length && this.crewRoles.length) return;
-    
+    if (this.genres.length && this.artists.length && this.artistTypes.length && this.certifications.length && this.releaseStatuses.length) return;
+
     this.loadingDropdowns = true;
-    let pending = 3;
-    const done = () => { 
-      if (--pending === 0) { 
-        this.loadingDropdowns = false; 
-        this.cdr.markForCheck(); 
-      } 
+    let pending = 5;
+    const done = () => {
+      if (--pending === 0) {
+        this.loadingDropdowns = false;
+        this.cdr.markForCheck();
+      }
     };
 
     // Load genres (direct array - not nested!)
-    this.genreService.getGenres({ page: 1, size: 500, active: true })
+    this.genreService.getGenres({ page: 1, size: 99, active: true })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => { 
+        next: (response) => {
           // Genre API returns direct array (not form-manager based)
-          this.genres = response?.data || []; 
-          done(); 
+          this.genres = response?.data || [];
+          done();
         },
         error: () => done()
       });
 
-    // Load people (cast members)
-    this.peopleService.getList({ page: 1, size: 500 })
+    // Load artists
+    this.artistService.getList({ page: 1, size: 500 })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          // Extract from nested structure: { data: [{ "people": [...] }] }
-          this.people = response.data.flatMap((item: any) => {
-            const records = item.people || item.person || [];
+          // Extract from nested structure: { data: [{ "artists": [...] }] }
+          this.artists = response.data?.flatMap((item: any) => {
+            const records = item.artists || item.artist || [];
             if (Array.isArray(records)) return records;
             return item.id ? [item] : [];
-          });
-          done(); 
+          }) || [];
+          done();
         },
         error: () => done()
       });
 
-    // Load crew roles
-    this.crewRolesService.getList({ page: 1, size: 500 })
+    // Load artist types
+    this.artistTypesService.getList({ page: 1, size: 500 })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
-          // Extract from nested structure: { data: [{ "crew-roles": [...] }] }
-          this.crewRoles = response.data.flatMap((item: any) => {
-            const records = item['crew-roles'] || item['crew_roles'] 
-                          || item['crewRoles'] || item['crew-role'] || [];
+          // Extract from nested structure: { data: [{ "artist-types": [...] }] }
+          this.artistTypes = response.data?.flatMap((item: any) => {
+            const records = item['artist-types'] || item['artist_types']
+              || item['artistTypes'] || item['artist-type'] || [];
             if (Array.isArray(records)) return records;
             return item.id ? [item] : [];
-          });
-          done(); 
+          }) || [];
+          done();
+        },
+        error: () => done()
+      });
+
+    // Load certifications from master data
+    this.masterDataService.getCertifications$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (certs: any) => {
+          this.certifications = (Array.isArray(certs) ? certs : []).filter((c: any) => c?.isActive) || [];
+          done();
+        },
+        error: () => done()
+      });
+
+    // Load movie release statuses from master data
+    this.masterDataService.getMovieReleaseStatuses$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (statuses: any) => {
+          this.releaseStatuses = (Array.isArray(statuses) ? statuses : []).filter((s: any) => s?.isActive) || [];
+          done();
         },
         error: () => done()
       });
@@ -216,8 +237,8 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
         duration: this.item.duration || '',
         releaseDate: this.item.releaseDate || '',
         country: this.item.country || '',
-        certification: this.item.certification || '',
-        status: this.item.status || '',
+        certification: this.item.certification || '', // This is the code (U, UA, A, R)
+        status: this.item.status || '', // This is the code (DRAFT, ANNOUNCED, etc.)
         isActive: this.item.isActive !== undefined ? this.item.isActive : true
       }, { emitEvent: false });
 
@@ -226,11 +247,18 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
       this.selectedFormats = Array.isArray(this.item.formats) ? [...this.item.formats] : (this.item.formats ? [this.item.formats] : []);
       this.selectedGenreIds = Array.isArray(this.item.genres) ? [...this.item.genres] : [];
 
-      // Populate starcast FormArray
+      // Populate starcast FormArray - handle both old and new structures
       const starcastArray = this.form.get('starcast') as FormArray;
       starcastArray.clear();
       if (Array.isArray(this.item.starcast)) {
-        this.item.starcast.forEach((member: any) => starcastArray.push(this.createStarcastGroup(member)));
+        this.item.starcast.forEach((member: any) => {
+          // Handle both old structure (personId, crewRoleId) and new structure (artistId, artistTypeId)
+          starcastArray.push(this.createStarcastGroup({
+            artistId: member.artistId || member.personId || '',
+            artistTypeId: member.artistTypeId || member.crewRoleId || '',
+            characterName: member.characterName || ''
+          }));
+        });
       }
 
       setTimeout(() => this.updateButtonState(), 200);
@@ -245,8 +273,8 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
 
   private createStarcastGroup(data?: any): FormGroup {
     return this.fb.group({
-      personId: [data?.personId || '', [Validators.required]],
-      crewRoleId: [data?.crewRoleId || '', [Validators.required]],
+      artistId: [data?.artistId || '', [Validators.required]],
+      artistTypeId: [data?.artistTypeId || '', [Validators.required]],
       characterName: [data?.characterName || '']
     });
   }
@@ -262,21 +290,21 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
   }
 
   /**
-   * Get person's display name by ID (for showing selected cast member names).
+   * Get artist's display name by ID (for showing selected artist names).
    */
-  getPersonName(personId: string): string {
-    if (!personId) return '';
-    const person = this.people.find(p => p._id === personId);
-    return person?.name || '';
+  getArtistName(artistId: string): string {
+    if (!artistId) return '';
+    const artist = this.artists.find(a => a?.id === artistId);
+    return artist?.full_name || '';
   }
 
   /**
-   * Get crew role's display name by ID (for showing selected role names).
+   * Get artist type's display name by ID (for showing selected type names).
    */
-  getCrewRoleName(crewRoleId: string): string {
-    if (!crewRoleId) return '';
-    const role = this.crewRoles.find(r => r._id === crewRoleId);
-    return role?.name || '';
+  getArtistTypeName(artistTypeId: string): string {
+    if (!artistTypeId) return '';
+    const type = this.artistTypes.find(t => t?.id === artistTypeId);
+    return type?.name || '';
   }
 
   toggleLanguage(value: string): void {
@@ -291,15 +319,28 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
     else this.selectedFormats.push(value);
   }
 
-  toggleGenre(genreId: string): void {
-    const idx = this.selectedGenreIds.indexOf(genreId);
-    if (idx >= 0) this.selectedGenreIds.splice(idx, 1);
-    else this.selectedGenreIds.push(genreId);
+  isLanguageSelected(value: string): boolean {
+    return this.selectedLanguages.includes(value);
   }
 
-  isLanguageSelected(value: string): boolean { return this.selectedLanguages.includes(value); }
-  isFormatSelected(value: string): boolean { return this.selectedFormats.includes(value); }
-  isGenreSelected(id: string): boolean { return this.selectedGenreIds.includes(id); }
+  isFormatSelected(value: string): boolean {
+    return this.selectedFormats.includes(value);
+  }
+
+  onGenreSelectionChange(selectedIds: string[]): void {
+    this.selectedGenreIds = selectedIds;
+    this.cdr.markForCheck();
+  }
+
+  onLanguageSelectionChange(selectedIds: string[]): void {
+    this.selectedLanguages = selectedIds;
+    this.cdr.markForCheck();
+  }
+
+  onFormatSelectionChange(selectedIds: string[]): void {
+    this.selectedFormats = selectedIds;
+    this.cdr.markForCheck();
+  }
 
   // Media Manager methods
   openMediaManager(field: 'poster' | 'banner'): void {
@@ -363,25 +404,25 @@ export class MoviesCinemaModalComponent implements OnInit, OnChanges, OnDestroy 
       ...(this.item?.id && { id: this.item.id }),
       formData: {
         ...(this.item?.id && { id: this.item.id }),
-        title: formValue.title.trim(),
-        description: formValue.description.trim(),
-        poster: formValue.poster.trim(),
-        banner: formValue.banner.trim(),
+        title: formValue.title?.trim() || '',
+        description: formValue.description?.trim() || '',
+        poster: formValue.poster?.trim() || '',
+        banner: formValue.banner?.trim() || '',
         trailerUrl: formValue.trailerUrl?.trim() || '',
-        duration: Number(formValue.duration),
-        releaseDate: formValue.releaseDate,
-        country: formValue.country.trim(),
-        certification: formValue.certification,
-        language: this.selectedLanguages,
-        formats: this.selectedFormats,
-        genres: this.selectedGenreIds,
-        status: formValue.status,
-        starcast: formValue.starcast.map((m: any) => ({
-          personId: m.personId,
-          crewRoleId: m.crewRoleId,
+        duration: Number(formValue.duration) || 0,
+        releaseDate: formValue.releaseDate || '',
+        country: formValue.country?.trim() || '',
+        certification: formValue.certification || '',
+        language: this.selectedLanguages && Array.isArray(this.selectedLanguages) ? this.selectedLanguages : [],
+        formats: this.selectedFormats && Array.isArray(this.selectedFormats) ? this.selectedFormats : [],
+        genres: this.selectedGenreIds && Array.isArray(this.selectedGenreIds) ? this.selectedGenreIds : [],
+        status: formValue.status || '',
+        starcast: (formValue.starcast || []).map((m: any) => ({
+          artistId: m.artistId || '',
+          artistTypeId: m.artistTypeId || '',
           characterName: m.characterName?.trim() || ''
-        })),
-        isActive: formValue.isActive
+        })).filter((m: any) => m.artistId && m.artistTypeId),
+        isActive: formValue.isActive || false
       }
     };
 

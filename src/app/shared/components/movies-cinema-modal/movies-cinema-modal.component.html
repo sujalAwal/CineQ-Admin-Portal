@@ -82,86 +82,83 @@
 
       <!-- Meta -->
       <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-6">
           <div class="mb-3">
             <label class="form-label">Country <span class="text-danger">*</span></label>
             <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('country')" formControlName="country" placeholder="e.g., India, USA">
             <div class="invalid-feedback" *ngIf="isFieldInvalid('country')">{{ getFieldError('country') }}</div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <div class="mb-3">
             <label class="form-label">Certification <span class="text-danger">*</span></label>
-            <select class="form-select" [class.is-invalid]="isFieldInvalid('certification')" formControlName="certification">
+            <select class="form-select form-select-modern" [class.is-invalid]="isFieldInvalid('certification')" formControlName="certification">
               <option value="">Select Certification</option>
-              <option *ngFor="let c of CERTIFICATION_OPTIONS" [value]="c">{{ c }}</option>
+              <option *ngFor="let c of certifications" [value]="c.code">{{ c.name }}</option>
             </select>
             <div class="invalid-feedback" *ngIf="isFieldInvalid('certification')">{{ getFieldError('certification') }}</div>
           </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <div class="mb-3">
             <label class="form-label">Status <span class="text-danger">*</span></label>
-            <select class="form-select" [class.is-invalid]="isFieldInvalid('status')" formControlName="status">
+            <select class="form-select form-select-modern" [class.is-invalid]="isFieldInvalid('status')" formControlName="status">
               <option value="">Select Status</option>
-              <option *ngFor="let s of STATUS_OPTIONS" [value]="s.value">{{ s.label }}</option>
+              <option *ngFor="let s of releaseStatuses" [value]="s.code">{{ s.name }}</option>
             </select>
             <div class="invalid-feedback" *ngIf="isFieldInvalid('status')">{{ getFieldError('status') }}</div>
           </div>
         </div>
       </div>
 
-      <!-- Languages (multi-select checkboxes) -->
-      <div class="mb-3">
-        <label class="form-label">Languages <span class="text-danger">*</span></label>
-        <div class="d-flex flex-wrap gap-2">
-          <div *ngFor="let lang of LANGUAGE_OPTIONS" class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" [id]="'lang_' + lang.value"
-              [checked]="isLanguageSelected(lang.value)" (change)="toggleLanguage(lang.value)">
-            <label class="form-check-label" [for]="'lang_' + lang.value">{{ lang.label }}</label>
+      <!-- Languages & Formats (side by side) -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Languages <span class="text-danger">*</span></label>
+            <app-multi-select-dropdown
+              [options]="LANGUAGE_OPTIONS"
+              [selectedIds]="selectedLanguages"
+              [placeholder]="'Select languages...'"
+              [searchPlaceholder]="'Search languages...'"
+              [errorMessage]="multiSelectTouched && selectedLanguages.length === 0 ? 'At least one language is required' : null"
+              (selectionChange)="onLanguageSelectionChange($event)">
+            </app-multi-select-dropdown>
           </div>
         </div>
-        <div class="text-danger small mt-1" *ngIf="multiSelectTouched && selectedLanguages.length === 0">
-          At least one language is required
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Formats <span class="text-danger">*</span></label>
+            <app-multi-select-dropdown
+              [options]="FORMAT_OPTIONS"
+              [selectedIds]="selectedFormats"
+              [placeholder]="'Select formats...'"
+              [searchPlaceholder]="'Search formats...'"
+              [errorMessage]="multiSelectTouched && selectedFormats.length === 0 ? 'At least one format is required' : null"
+              (selectionChange)="onFormatSelectionChange($event)">
+            </app-multi-select-dropdown>
+          </div>
         </div>
       </div>
 
-      <!-- Formats (multi-select checkboxes) -->
-      <div class="mb-3">
-        <label class="form-label">Formats <span class="text-danger">*</span></label>
-        <div class="d-flex flex-wrap gap-2">
-          <div *ngFor="let fmt of FORMAT_OPTIONS" class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" [id]="'fmt_' + fmt.value"
-              [checked]="isFormatSelected(fmt.value)" (change)="toggleFormat(fmt.value)">
-            <label class="form-check-label" [for]="'fmt_' + fmt.value">{{ fmt.label }}</label>
-          </div>
-        </div>
-        <div class="text-danger small mt-1" *ngIf="multiSelectTouched && selectedFormats.length === 0">
-          At least one format is required
-        </div>
-      </div>
-
-      <!-- Genres (multi-select from API) -->
+      <!-- Genres (multi-select dropdown with search) -->
       <div class="mb-3">
         <label class="form-label">Genres <span class="text-danger">*</span></label>
-        <div *ngIf="loadingDropdowns" class="text-muted small">Loading genres...</div>
-        <div *ngIf="!loadingDropdowns" class="d-flex flex-wrap gap-2">
-          <div *ngFor="let genre of genres" class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" [id]="'genre_' + genre._id"
-              [checked]="isGenreSelected(genre._id)" (change)="toggleGenre(genre._id)">
-            <label class="form-check-label" [for]="'genre_' + genre._id">{{ genre.name }}</label>
-          </div>
-          <span *ngIf="genres.length === 0" class="text-muted small">No genres available</span>
-        </div>
-        <div class="text-danger small mt-1" *ngIf="multiSelectTouched && selectedGenreIds.length === 0">
-          At least one genre is required
-        </div>
+        <app-multi-select-dropdown
+          [options]="genres"
+          [selectedIds]="selectedGenreIds"
+          [placeholder]="'Select genres...'"
+          [searchPlaceholder]="'Search genres...'"
+          [isLoading]="loadingDropdowns"
+          [errorMessage]="multiSelectTouched && selectedGenreIds.length === 0 ? 'At least one genre is required' : null"
+          (selectionChange)="onGenreSelectionChange($event)">
+        </app-multi-select-dropdown>
       </div>
 
       <!-- Star Cast & Crew -->
       <div class="mb-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <label class="form-label mb-0">Star Cast & Crew <span class="text-danger">*</span> <small class="text-muted">(min 2)</small></label>
+          <label class="form-label mb-0">Star Cast & Crew <span class="text-danger">*</span> <small class="text-muted">(Min 2)</small></label>
           <button type="button" class="btn btn-sm btn-outline-primary" (click)="addStarcast()">
             <i class="ti ti-plus me-1"></i>Add Member
           </button>
@@ -171,34 +168,20 @@
           No cast members added. Click "Add Member" to begin.
         </div>
 
-        <!-- Summary of added cast members (compact view of stored data) -->
-        <div *ngIf="starcastArray.length > 0" class="alert alert-light border mb-2 p-2">
-          <div class="small text-muted"><strong>Added Members:</strong></div>
-          <div class="d-flex flex-wrap gap-2 mt-1">
-            <span *ngFor="let member of starcastArray.value" class="badge bg-light text-dark">
-              <i class="ti ti-movie me-1"></i>
-              {{ getPersonName(member.personId) }} 
-              <span class="text-muted mx-1">as</span>
-              {{ getCrewRoleName(member.crewRoleId) }}
-              <span *ngIf="member.characterName" class="text-muted small">({{ member.characterName }})</span>
-            </span>
-          </div>
-        </div>
-
         <div *ngFor="let member of starcastArray.controls; let i = index" class="border rounded p-2 mb-2" [formArrayName]="'starcast'">
           <div class="row align-items-end" [formGroupName]="i">
             <div class="col-md-4">
-              <label class="form-label small">Person <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" [class.is-invalid]="isStarcastFieldInvalid(i, 'personId')" formControlName="personId">
-                <option value="">Select Person</option>
-                <option *ngFor="let p of people" [value]="p._id">{{ p.name }}</option>
+              <label class="form-label small">Artist <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" [class.is-invalid]="isStarcastFieldInvalid(i, 'artistId')" formControlName="artistId">
+                <option value="">Select Artist</option>
+                <option *ngFor="let a of artists" [value]="a.id">{{ a.full_name }}</option>
               </select>
             </div>
             <div class="col-md-4">
               <label class="form-label small">Role <span class="text-danger">*</span></label>
-              <select class="form-select form-select-sm" [class.is-invalid]="isStarcastFieldInvalid(i, 'crewRoleId')" formControlName="crewRoleId">
+              <select class="form-select form-select-sm" [class.is-invalid]="isStarcastFieldInvalid(i, 'artistTypeId')" formControlName="artistTypeId">
                 <option value="">Select Role</option>
-                <option *ngFor="let r of crewRoles" [value]="r._id">{{ r.name }}</option>
+                <option *ngFor="let at of artistTypes" [value]="at.id">{{ at.name }}</option>
               </select>
             </div>
             <div class="col-md-3">

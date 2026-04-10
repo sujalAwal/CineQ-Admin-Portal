@@ -134,14 +134,6 @@ const routes: Routes = [
         path: 'cinema',
         children: [
           {
-            path: 'people',
-            loadComponent: () => import('./demo/cinema-management/people/people.component').then((c) => c.PeopleComponent)
-          },
-          {
-            path: 'crew-roles',
-            loadComponent: () => import('./demo/cinema-management/crew-roles/crew-roles.component').then((c) => c.CrewRolesComponent)
-          },
-          {
             path: 'movies',
             loadComponent: () => import('./demo/cinema-management/movies-cinema/movies.component').then((c) => c.MoviesCinemaComponent)
           },

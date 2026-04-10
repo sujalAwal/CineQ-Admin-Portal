@@ -1,150 +1,177 @@
-<!-- Artist Modal using Base Modal Component -->
 <app-base-modal
   [isVisible]="isVisible"
   [config]="modalConfig"
   (closed)="onModalClose()"
-  (primaryAction)="onModalSave()">
-  
-  <!-- ARTIST FORM CONTENT -->
-  <form [formGroup]="artistForm" (ngSubmit)="onModalSave()" novalidate>
-    
-    <div class="row">
-      
-      <!-- Left Column -->
-      <div class="col-md-6">
-        
-        <!-- Artist Name Field -->
-        <div class="mb-3">
-          <label for="artistName" class="form-label">
-            Artist Name <span class="text-danger">*</span>
-          </label>
-          <input
-            type="text"
-            id="artistName"
-            class="form-control"
-            [class.is-invalid]="isFieldInvalid('full_name')"
-            formControlName="full_name"
-            placeholder="Enter artist name"
-            maxlength="100">
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('full_name')">
-            {{ getFieldError('full_name') }}
+  (primaryAction)="onModalSave()"
+  (secondaryAction)="onModalClose()">
+
+  <div class="form-container">
+    <form [formGroup]="form">
+
+      <div class="row">
+
+        <!-- Left Column -->
+        <div class="col-md-6">
+
+          <div class="mb-3">
+            <label class="form-label">Artist Name <span class="text-danger">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('fullName')"
+              formControlName="fullName"
+              placeholder="Enter artist full name"
+              maxlength="100">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('fullName')">
+              {{ getFieldError('fullName') }}
+            </div>
           </div>
-          
-          <!-- Character Counter -->
-          <div class="form-text">
-            {{ artistForm.get('full_name')?.value?.length || 0 }}/100 characters
+
+          <div class="mb-3">
+            <label class="form-label">Artist Type</label>
+            <select
+              class="form-select"
+              [class.is-invalid]="isFieldInvalid('artistTypeId')"
+              formControlName="artistTypeId">
+              <option value="">-- Select Artist Type --</option>
+              <option *ngFor="let type of artistTypes" [value]="type.id || type._id">
+                {{ type.name }}
+              </option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('artistTypeId')">
+              {{ getFieldError('artistTypeId') }}
+            </div>
           </div>
-        </div>
-        
-        <!-- Email Field -->
-        <div class="mb-3">
-          <label for="artistEmail" class="form-label">Email</label>
-          <input
-            type="email"
-            id="artistEmail"
-            class="form-control"
-            [class.is-invalid]="isFieldInvalid('email')"
-            formControlName="email"
-            placeholder="Enter email address"
-            maxlength="100">
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('email')">
-            {{ getFieldError('email') }}
+
+          <div class="mb-3">
+            <label class="form-label">Avatar</label>
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('avatar')"
+                formControlName="avatar"
+                placeholder="Select from media manager..."
+                readonly>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                (click)="openMediaManager()"
+                title="Select from Media Manager">
+                <i class="ti ti-photo"></i>
+              </button>
+            </div>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('avatar')">
+              {{ getFieldError('avatar') }}
+            </div>
+            <div *ngIf="form.get('avatar')?.value" class="mt-2">
+              <img
+                [src]="form.get('avatar')?.value"
+                alt="Avatar Preview"
+                class="img-thumbnail rounded-circle"
+                style="width: 72px; height: 72px; object-fit: cover;">
+            </div>
           </div>
-        </div>
-        
-        <!-- Status Field -->
-        <div class="mb-3">
-          <label for="artistStatus" class="form-label">
-            Status <span class="text-danger">*</span>
-          </label>
-          <div class="form-check form-switch">
+
+          <div class="mb-3 form-check form-switch">
             <input
               class="form-check-input"
               type="checkbox"
-              id="artistStatus"
-              formControlName="is_active">
-            <label class="form-check-label" for="artistStatus">
-              Active
-            </label>
+              id="isActive"
+              formControlName="isActive">
+            <label class="form-check-label" for="isActive">Active</label>
           </div>
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('is_active')">
-            {{ getFieldError('is_active') }}
-          </div>
+
         </div>
-        
+
+        <!-- Right Column -->
+        <div class="col-md-6">
+
+          <div class="mb-3">
+            <label class="form-label">Birth Date</label>
+            <input
+              type="date"
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('birthDate')"
+              formControlName="birthDate">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('birthDate')">
+              {{ getFieldError('birthDate') }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Nationality</label>
+            <select
+              class="form-select"
+              [class.is-invalid]="isFieldInvalid('nationality')"
+              formControlName="nationality">
+              <option value="">-- Select Nationality --</option>
+              <option *ngFor="let n of nationalities" [value]="n">{{ n }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('nationality')">
+              {{ getFieldError('nationality') }}
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Movies Count</label>
+              <input
+                type="number"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('moviesCount')"
+                formControlName="moviesCount"
+                placeholder="0"
+                min="0">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('moviesCount')">
+                {{ getFieldError('moviesCount') }}
+              </div>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">Rating</label>
+              <input
+                type="number"
+                class="form-control"
+                [class.is-invalid]="isFieldInvalid('rating')"
+                formControlName="rating"
+                placeholder="e.g., 8.5"
+                min="0"
+                max="10"
+                step="0.1">
+              <div class="form-text">0.0 – 10.0</div>
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('rating')">
+                {{ getFieldError('rating') }}
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Biography</label>
+            <textarea
+              class="form-control"
+              [class.is-invalid]="isFieldInvalid('bio')"
+              formControlName="bio"
+              placeholder="Enter artist biography"
+              rows="4"
+              maxlength="500"></textarea>
+            <div class="form-text">{{ form.get('bio')?.value?.length || 0 }}/500</div>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('bio')">
+              {{ getFieldError('bio') }}
+            </div>
+          </div>
+
+        </div>
+
       </div>
-      
-      <!-- Right Column -->
-      <div class="col-md-6">
-        
-        <!-- Birth Date Field -->
-        <div class="mb-3">
-          <label for="artistBirthDate" class="form-label">Birth Date</label>
-          <input
-            type="date"
-            id="artistBirthDate"
-            class="form-control"
-            [class.is-invalid]="isFieldInvalid('birth_date')"
-            formControlName="birth_date">
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('birth_date')">
-            {{ getFieldError('birth_date') }}
-          </div>
-        </div>
-        
-        <!-- Nationality Field -->
-        <div class="mb-3">
-          <label for="artistNationality" class="form-label">Nationality</label>
-          <input
-            type="text"
-            id="artistNationality"
-            class="form-control"
-            [class.is-invalid]="isFieldInvalid('nationality')"
-            formControlName="nationality"
-            placeholder="Enter nationality"
-            maxlength="50">
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('nationality')">
-            {{ getFieldError('nationality') }}
-          </div>
-        </div>
-        
-        <!-- Biography Field -->
-        <div class="mb-3">
-          <label for="artistBio" class="form-label">Biography</label>
-          <textarea
-            id="artistBio"
-            class="form-control"
-            [class.is-invalid]="isFieldInvalid('bio')"
-            formControlName="bio"
-            placeholder="Enter artist biography"
-            rows="3"
-            maxlength="500">
-          </textarea>
-          
-          <!-- Error Message -->
-          <div class="invalid-feedback" *ngIf="isFieldInvalid('bio')">
-            {{ getFieldError('bio') }}
-          </div>
-          
-          <!-- Character Counter -->
-          <div class="form-text">
-            {{ artistForm.get('bio')?.value?.length || 0 }}/500 characters
-          </div>
-        </div>
-        
-      </div>
-      
-    </div>
-    
-  </form>
-  
+
+    </form>
+  </div>
+
 </app-base-modal>
+
+<app-media-manager-modal
+  [isVisible]="showMediaManager"
+  [config]="mediaManagerConfig"
+  (closed)="onMediaManagerClosed()"
+  (filesSelected)="onMediaSelected($event)">
+</app-media-manager-modal>

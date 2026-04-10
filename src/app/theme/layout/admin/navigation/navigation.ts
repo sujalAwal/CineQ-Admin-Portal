@@ -173,22 +173,7 @@ export const NavigationItems: NavigationItem[] = [
         type: 'collapse',
         icon: 'ti ti-building-theater',
         children: [
-          {
-            id: 'people',
-            title: 'People',
-            type: 'item',
-            url: '/cinema/people',
-            icon: 'ti ti-users',
-            breadcrumbs: false
-          },
-          {
-            id: 'crew-roles',
-            title: 'Crew Roles',
-            type: 'item',
-            url: '/cinema/crew-roles',
-            icon: 'ti ti-briefcase',
-            breadcrumbs: false
-          },
+         
           {
             id: 'movies-cinema',
             title: 'Movies',

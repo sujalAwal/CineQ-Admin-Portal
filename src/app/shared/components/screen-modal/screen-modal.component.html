@@ -14,7 +14,7 @@
             <label class="form-label">Theatre <span class="text-danger">*</span></label>
             <select class="form-select" [class.is-invalid]="isFieldInvalid('theatreId')" formControlName="theatreId" [disabled]="theatresLoading">
               <option value="">{{ theatresLoading ? 'Loading theatres...' : 'Select Theatre' }}</option>
-              <option *ngFor="let t of theatres" [value]="t._id">{{ t.name }}</option>
+              <option *ngFor="let t of theatres" [value]="t?.id || t?._id">{{ t?.name }}</option>
             </select>
             <div class="invalid-feedback" *ngIf="isFieldInvalid('theatreId')">{{ getFieldError('theatreId') }}</div>
           </div>
@@ -60,6 +60,179 @@
       <div class="mb-3 form-check form-switch">
         <input class="form-check-input" type="checkbox" id="screenIsActive" formControlName="isActive">
         <label class="form-check-label" for="screenIsActive">Active</label>
+      </div>
+
+      <!-- Seat Layout Grid -->
+      <div class="mb-4 border-top pt-4">
+        <label class="form-label fw-bold">Seat Layout <span class="text-danger">*</span></label>
+        <small class="text-muted d-block mb-3">Total seats: <strong>{{ seats.length }}</strong> | Selected rows: <strong>{{ getSelectedRowsCount() }}</strong> | Selected columns: <strong>{{ getSelectedColumnsCount() }}</strong></small>
+
+        <div *ngIf="seats.length === 0" class="alert alert-info">
+          <small>Configure Rows and Columns above to generate seat layout</small>
+        </div>
+
+        <!-- Seat Legend & Status (MOVED TO TOP) -->
+        <div *ngIf="seats.length > 0" class="mb-4">
+          <!-- Legend -->
+          <div class="seat-legend mb-3">
+            <div class="legend-title">Seat Types:</div>
+            <div class="legend-items">
+              <div class="legend-item" *ngFor="let type of seatTypes">
+                <div class="legend-seat" [ngClass]="'seat-' + type.code"></div>
+                <small>{{ type.name }}</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Warning/Success -->
+          <div class="alert py-2 px-3" 
+               [ngClass]="getUnassignedSeatsCount() > 0 ? 'alert-warning' : 'alert-success'">
+            <small *ngIf="getUnassignedSeatsCount() > 0">
+              <strong>⚠️ {{ getUnassignedSeatsCount() }} seat(s)</strong> still need type assignment
+            </small>
+            <small *ngIf="getUnassignedSeatsCount() === 0">
+              <strong>✓ All seats assigned!</strong> Ready to save
+            </small>
+          </div>
+
+          <!-- Quick Fill Options -->
+          <div class="mt-3 d-flex gap-2 flex-wrap">
+            <small class="text-muted">Quick fill:</small>
+            <button type="button" class="btn btn-sm btn-outline-success" 
+                    (click)="fillAllRegular()"
+                    [disabled]="!hasRegularType()">
+              All Regular
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" 
+                    (click)="fillAllPremium()"
+                    [disabled]="!hasPremiumType()">
+              All Premium
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning" 
+                    (click)="fillAllVIP()"
+                    [disabled]="!hasVIPType()">
+              All VIP
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearAllSeats()">
+              Clear All
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" 
+                    *ngIf="getSelectedRowsCount() > 0"
+                    (click)="clearRowSelection()">
+              Clear Row Selection
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" 
+                    *ngIf="getSelectedColumnsCount() > 0"
+                    (click)="clearColumnSelection()">
+              Clear Column Selection
+            </button>
+          </div>
+        </div>
+
+        <!-- Seat Grid -->
+        <div *ngIf="seats.length > 0" class="seat-layout-wrapper">
+          <!-- Screen -->
+          <div class="screen-indicator">
+            <div class="screen-bar"></div>
+            <p class="screen-text">SCREEN</p>
+          </div>
+
+          <!-- Seat Grid with Horizontal Scroll -->
+          <div class="seats-grid-container">
+            <!-- Column Numbers Header - Scrollable -->
+            <div class="column-header">
+              <div class="row-label-cell"></div>
+              <div class="column-numbers-scroll-wrapper">
+                <div class="column-numbers">
+                  <div *ngFor="let col of getColumnNumbers()" 
+                       class="col-number"
+                       [class.col-selected]="isColumnSelected(col - 1)"
+                       (click)="toggleColumnSelection(col - 1)"
+                       [title]="'Click to select column ' + col">
+                    {{ col }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rows with Horizontal Scroll -->
+            <div class="rows-scroll-wrapper">
+              <div *ngFor="let row of getGroupedSeats(); let rowIdx = index" class="seat-row">
+                <!-- Row Label (Left - Fixed) -->
+                <div class="row-label-wrapper"
+                     [class.row-selected]="isRowSelected(row.seats[0]?.row)">
+                  <button type="button" 
+                          class="row-label-button"
+                          (click)="toggleRowSelection(row.seats[0]?.row); $event.stopPropagation()"
+                          [title]="'Click to select row ' + row.row">
+                    {{ row.row }}
+                  </button>
+                  <!-- Row Status Menu -->
+                  <div class="row-status-menu-toggle" 
+                       *ngIf="isRowSelected(row.seats[0]?.row)"
+                       (click)="showRowStatusMenu === row.seats[0]?.row ? showRowStatusMenu = null : showRowStatusMenu = row.seats[0]?.row; $event.stopPropagation()"
+                       title="Change status for entire row">
+                    ⋮
+                  </div>
+                </div>
+
+                <!-- Row Status Dropdown Menu -->
+                <div class="row-status-menu" 
+                     *ngIf="showRowStatusMenu === row.seats[0]?.row && isRowSelected(row.seats[0]?.row)"
+                     (click)="$event.stopPropagation()">
+                  <div class="menu-label">Change row status:</div>
+                  <div class="menu-items">
+                    <button type="button" 
+                            class="menu-item"
+                            *ngFor="let type of seatTypes"
+                            (click)="changeAllSelectedRowsStatus(type?.id); $event.stopPropagation()">
+                      <span class="menu-item-dot" [ngClass]="'seat-' + type.code"></span>
+                      {{ type?.name }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Seats (Scrollable Area) -->
+                <div class="seats-group">
+                  <div *ngFor="let seat of row.seats" class="seat-container">
+                    <div class="seat-wrapper">
+                      <button type="button" 
+                              class="seat-button"
+                              [ngClass]="'seat-' + getSeatTypeCode(seat.typeId)"
+                              [title]="seat.name + ' - ' + getSeatTypeById(seat.typeId)?.name">
+                        <span class="seat-number">{{ seat.name }}</span>
+                      </button>
+
+                      <!-- Kebab Menu Button (3 dots) -->
+                      <button type="button"
+                              class="seat-kebab-menu-btn"
+                              (click)="openSeatStatusMenu === seat.name ? openSeatStatusMenu = null : openSeatStatusMenu = seat.name; $event.stopPropagation()"
+                              title="Change seat status">
+                        ⋮
+                      </button>
+
+                      <!-- Seat Kebab Menu Dropdown -->
+                      <div class="seat-kebab-menu" 
+                           *ngIf="openSeatStatusMenu === seat.name"
+                           (click)="$event.stopPropagation()">
+                        <div class="menu-label">{{ seat.name }} - Change type:</div>
+                        <div class="menu-items">
+                          <button type="button"
+                                  class="menu-item"
+                                  *ngFor="let type of seatTypes"
+                                  (click)="changeSingleSeatStatus(seat, type?.id); $event.stopPropagation()">
+                            <span class="menu-item-dot" [ngClass]="'seat-' + type.code"></span>
+                            {{ type?.name }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </form>
   </div>

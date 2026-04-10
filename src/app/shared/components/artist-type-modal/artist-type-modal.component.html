@@ -1,0 +1,79 @@
+<app-base-modal
+  [isVisible]="isVisible"
+  [config]="modalConfig"
+  (closed)="onModalClose()"
+  (primaryAction)="onModalSave()"
+  (secondaryAction)="onModalClose()">
+
+  <div class="form-container">
+    <form [formGroup]="form">
+
+      <div class="mb-3">
+        <label class="form-label">Name <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('name')"
+          formControlName="name"
+          placeholder="e.g., Actor, Director, Producer">
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">
+          {{ getFieldError('name') }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea
+          class="form-control"
+          [class.is-invalid]="isFieldInvalid('description')"
+          formControlName="description"
+          placeholder="Brief description of this artist type"
+          rows="3"></textarea>
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">
+          {{ getFieldError('description') }}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8 mb-3">
+          <label class="form-label">Icon Class</label>
+          <input
+            type="text"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('icon')"
+            formControlName="icon"
+            placeholder="e.g., ti ti-user">
+          <div class="form-text">Tabler Icons class (e.g., <code>ti ti-user</code>, <code>ti ti-video</code>)</div>
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('icon')">
+            {{ getFieldError('icon') }}
+          </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+          <label class="form-label">Artist Count</label>
+          <input
+            type="number"
+            class="form-control"
+            [class.is-invalid]="isFieldInvalid('artistCount')"
+            formControlName="artistCount"
+            placeholder="0"
+            min="0">
+          <div class="invalid-feedback" *ngIf="isFieldInvalid('artistCount')">
+            {{ getFieldError('artistCount') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3 form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="isActive"
+          formControlName="isActive">
+        <label class="form-check-label" for="isActive">Active</label>
+      </div>
+
+    </form>
+  </div>
+
+</app-base-modal>

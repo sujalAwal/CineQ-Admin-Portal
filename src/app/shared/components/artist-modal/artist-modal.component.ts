@@ -1,43 +1,64 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BaseModalComponent } from '../base-modal/base-modal.component';
-import { ModalConfig } from '../base-modal/base-modal.component';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
+import { MediaManagerModalComponent } from '../media-manager-modal/media-manager-modal.component';
 import { ArtistService } from '../../services/artist.service';
-import { AuthService } from '../../services/auth.service';
-import { Artist, ArtistRequest } from '../../interfaces/artist.interface';
+import { ArtistTypesService } from '../../services/artist-types.service';
+import { MediaFile, MediaManagerConfig } from '../../interfaces/media.interface';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-artist-modal',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    BaseModalComponent
-  ],
+  imports: [CommonModule, ReactiveFormsModule, BaseModalComponent, MediaManagerModalComponent],
   templateUrl: './artist-modal.component.html',
   styleUrls: ['./artist-modal.component.scss']
 })
-export class ArtistModalComponent implements OnInit {
-  
-  // Modal Properties
+export class ArtistModalComponent implements OnInit, OnChanges, OnDestroy {
+
   @Input() isVisible: boolean = false;
-  @Input() artist: Artist | null = null; // For edit mode
+  @Input() item: any = null;
   @Input() isLoading: boolean = false;
-  
-  // Events
+
   @Output() closed = new EventEmitter<void>();
-  @Output() artistSaved = new EventEmitter<Artist>();
-  
-  // Form
-  artistForm!: FormGroup;
-  
-  // Modal Configuration
+  @Output() itemSaved = new EventEmitter<any>();
+
+  form!: FormGroup;
+  artistTypes: any[] = [];
+
+  // Media Manager
+  showMediaManager = false;
+  mediaManagerConfig: MediaManagerConfig = {
+    title: 'Select Avatar',
+    multipleSelection: false,
+    showUploadButton: true,
+    showCreateFolderButton: false,
+    showDeleteButton: false,
+    showPreviewButton: true
+  };
+
+  readonly nationalities: string[] = [
+    'Nepali', 'Indian', 'American', 'British', 'Australian', 'Canadian',
+    'French', 'German', 'Italian', 'Spanish', 'Portuguese', 'Russian',
+    'Chinese', 'Japanese', 'Korean', 'Thai', 'Pakistani', 'Bangladeshi',
+    'Sri Lankan', 'Afghan', 'Iranian', 'Turkish', 'Egyptian', 'Nigerian',
+    'South African', 'Kenyan', 'Ghanaian', 'Brazilian', 'Argentine',
+    'Mexican', 'Colombian', 'Chilean', 'Swedish', 'Norwegian', 'Danish',
+    'Finnish', 'Dutch', 'Belgian', 'Swiss', 'Austrian', 'Polish',
+    'Czech', 'Hungarian', 'Romanian', 'Greek', 'Israeli', 'Saudi Arabian',
+    'Emirati', 'Indonesian', 'Malaysian', 'Filipino', 'Vietnamese',
+    'Singaporean', 'New Zealander', 'Irish', 'Scottish', 'Welsh'
+  ];
+
+  private destroy$ = new Subject<void>();
+
   modalConfig: ModalConfig = {
     title: 'Add Artist',
-    icon: 'user',
-    size: 'md',
+    icon: 'user-plus',
+    size: 'lg',
     primaryButtonText: 'Save Artist',
     primaryButtonIcon: 'device-floppy',
     primaryButtonLoading: false,
@@ -46,129 +67,152 @@ export class ArtistModalComponent implements OnInit {
     showFooter: true,
     showSecondaryButton: true
   };
-  
+
   constructor(
     private fb: FormBuilder,
-    private artistService: ArtistService,
-    private authService: AuthService,
-    private toastr: ToastrService
+    private service: ArtistService,
+    private artistTypesService: ArtistTypesService,
+    private toastr: ToastrService,
+    private cdr: ChangeDetectorRef
   ) {}
-  
+
   ngOnInit(): void {
     this.initializeForm();
-    this.updateModalConfig();
   }
-  
+
   ngOnChanges(): void {
-    if (this.artistForm) {
+    if (this.form) {
       this.updateModalConfig();
       this.populateForm();
+      setTimeout(() => this.updateButtonState(), 0);
+    }
+    if (this.isVisible) {
+      this.loadDropdownData();
     }
   }
-  
-  // Initialize Reactive Form
-  private initializeForm(): void {
-    this.artistForm = this.fb.group({
-      full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      email: ['', [Validators.email, Validators.maxLength(100)]],
-      bio: ['', [Validators.maxLength(500)]],
-      birth_date: [''],
-      nationality: ['', [Validators.maxLength(50)]],
-      is_active: [true, [Validators.required]]
-    });
-    
-    // Watch form validity for button state
-    this.artistForm.valueChanges.subscribe(() => {
-      this.modalConfig.primaryButtonDisabled = this.artistForm.invalid;
-    });
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
-  
-  // Update modal config based on mode (add/edit)
+
+  private loadDropdownData(): void {
+    if (this.artistTypes.length) return;
+
+    this.artistTypesService.getList({ page: 1, size: 500 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.artistTypes = response.data.flatMap((item: any) => {
+            const records = item['artist-types'] || item['artist_types'] || item['artistTypes'] || [];
+            return Array.isArray(records) ? records : (item.id ? [item] : []);
+          });
+          this.cdr.markForCheck();
+        },
+        error: () => {}
+      });
+  }
+
+  private initializeForm(): void {
+    this.form = this.fb.group({
+      fullName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      avatar: ['', [Validators.maxLength(500)]],
+      artistTypeId: [''],
+      birthDate: [''],
+      nationality: ['', [Validators.maxLength(50)]],
+      bio: ['', [Validators.maxLength(500)]],
+      moviesCount: [null],
+      rating: [null, [Validators.min(0), Validators.max(10)]],
+      isActive: [true, [Validators.required]]
+    });
+
+    this.form.valueChanges.subscribe(() => this.updateButtonState());
+  }
+
+  private updateButtonState(): void {
+    this.modalConfig.primaryButtonDisabled = this.form.invalid || this.isLoading;
+  }
+
   private updateModalConfig(): void {
-    if (this.artist) {
-      // Edit Mode
+    if (this.item) {
       this.modalConfig.title = 'Edit Artist';
-      this.modalConfig.icon = 'user-edit';
       this.modalConfig.primaryButtonText = 'Update Artist';
     } else {
-      // Add Mode
       this.modalConfig.title = 'Add Artist';
-      this.modalConfig.icon = 'user-plus';
       this.modalConfig.primaryButtonText = 'Create Artist';
     }
-    
     this.modalConfig.primaryButtonLoading = this.isLoading;
-    this.modalConfig.primaryButtonDisabled = this.artistForm?.invalid || this.isLoading;
   }
-  
-  // Populate form with artist data (edit mode)
+
   private populateForm(): void {
-    if (this.artist && this.artistForm) {
-      this.artistForm.patchValue({
-        full_name: this.artist.full_name,
-        email: this.artist.email || '',
-        bio: this.artist.bio || '',
-        birth_date: this.artist.birth_date || '',
-        nationality: this.artist.nationality || '',
-        is_active: this.artist.is_active
-      });
+    if (this.item && this.form) {
+      this.form.patchValue({
+        fullName: this.item.full_name || this.item.fullName || '',
+        avatar: this.item.avatar || '',
+        artistTypeId: this.item.artist_type_id || this.item.artistTypeId || '',
+        birthDate: this.item.birth_date || this.item.birthDate || '',
+        nationality: this.item.nationality || '',
+        bio: this.item.bio || '',
+        moviesCount: this.item.movies_count ?? this.item.moviesCount ?? null,
+        rating: this.item.rating ?? null,
+        isActive: this.item.isActive ?? this.item.is_active ?? true
+      }, { emitEvent: false });
+
+      setTimeout(() => this.updateButtonState(), 200);
+    } else if (!this.item && this.form) {
+      this.resetForm();
     }
   }
-  
-  // Getters
-  get isEditMode(): boolean {
-    return !!(this.artist && this.artist.id);
-  }
-  
-  // Modal Events
+
   onModalClose(): void {
     this.resetForm();
     this.closed.emit();
   }
 
   onModalSave(): void {
-    if (this.artistForm.valid && !this.isLoading) {
-      this.isLoading = true;
-      this.updateModalConfig();
-      
-      const formValue = this.artistForm.value;
-      const artistData: ArtistRequest = {
-        full_name: formValue.full_name,
-        email: formValue.email,
-        bio: formValue.bio,
-        birth_date: formValue.birth_date,
-        nationality: formValue.nationality,
-        is_active: formValue.is_active,
-        ...(this.artist?.id && { id: this.artist.id })
-      };
-
-      // Use the store method for both create and update
-      this.artistService.storeArtist(artistData).subscribe({
-        next: (result) => {
-          this.isLoading = false;
-          this.updateModalConfig();
-          
-          const message = this.isEditMode ? 'Artist updated successfully!' : 'Artist created successfully!';
-          this.toastr.success(message);
-          
-          this.artistSaved.emit(result);
-          this.resetForm();
-          this.closed.emit();
-        },
-        error: (error) => {
-          this.isLoading = false;
-          this.updateModalConfig();
-          this.handleSaveError(error);
-        }
-      });
-    } else {
+    if (!this.form.valid) {
       this.markFormGroupTouched();
+      this.toastr.error('Please fill in all required fields correctly', 'Validation Error');
+      return;
     }
+
+    this.modalConfig.primaryButtonLoading = true;
+    this.modalConfig.primaryButtonDisabled = true;
+
+    const formValue = this.form.value;
+    const itemData = {
+      stepSlug: 'v1',
+      action: this.item?.id ? 'UPDATE' : 'CREATE',
+      ...(this.item?.id && { id: this.item.id }),
+      formData: {
+        ...(this.item?.id && { id: this.item.id }),
+        fullName: formValue.fullName.trim(),
+        avatar: formValue.avatar?.trim() || '',
+        artistTypeId: formValue.artistTypeId || '',
+        birthDate: formValue.birthDate || '',
+        nationality: formValue.nationality?.trim() || '',
+        bio: formValue.bio?.trim() || '',
+        moviesCount: formValue.moviesCount ?? null,
+        rating: formValue.rating ?? null,
+        isActive: formValue.isActive
+      }
+    };
+
+    this.service.save(itemData).subscribe({
+      next: (savedItem) => {
+        this.itemSaved.emit(savedItem);
+        this.resetLoadingState();
+        this.resetForm();
+      },
+      error: (error) => {
+        this.handleSaveError(error);
+        this.resetLoadingState();
+      }
+    });
   }
 
   private handleSaveError(error: any): void {
     let errorMessage = 'Failed to save. Please try again.';
-
     if (error?.error?.message) {
       errorMessage = error.error.message;
     } else if (error?.message) {
@@ -176,67 +220,71 @@ export class ArtistModalComponent implements OnInit {
     } else if (typeof error === 'string') {
       errorMessage = error;
     }
-
     this.toastr.error(errorMessage, 'Save Error');
   }
 
-  // Form Helpers
+  private resetLoadingState(): void {
+    this.modalConfig.primaryButtonLoading = false;
+    this.updateButtonState();
+  }
+
   private resetForm(): void {
-    this.artistForm.reset({
-      full_name: '',
-      email: '',
-      bio: '',
-      birth_date: '',
-      nationality: '',
-      is_active: true
-    });
-    this.artistForm.markAsUntouched();
+    this.form.reset({ isActive: true });
+    this.form.markAsUntouched();
   }
-  
+
   private markFormGroupTouched(): void {
-    Object.keys(this.artistForm.controls).forEach(key => {
-      this.artistForm.get(key)?.markAsTouched();
+    Object.keys(this.form.controls).forEach(key => {
+      this.form.get(key)?.markAsTouched();
     });
   }
-  
-  // Form Field Helpers
+
+  openMediaManager(): void {
+    this.showMediaManager = true;
+  }
+
+  onMediaSelected(files: MediaFile[]): void {
+    if (files && files.length > 0) {
+      this.form.patchValue({ avatar: files[0].url });
+      this.showMediaManager = false;
+    }
+  }
+
+  onMediaManagerClosed(): void {
+    this.showMediaManager = false;
+  }
+
   isFieldInvalid(fieldName: string): boolean {
-    const field = this.artistForm.get(fieldName);
+    const field = this.form.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
   }
-  
+
   getFieldError(fieldName: string): string {
-    const field = this.artistForm.get(fieldName);
-    
+    const field = this.form.get(fieldName);
     if (field?.errors) {
-      if (field.errors['required']) {
-        return `${this.getFieldLabel(fieldName)} is required`;
-      }
-      if (field.errors['email']) {
-        return 'Please enter a valid email address';
-      }
-      if (field.errors['minlength']) {
-        return `${this.getFieldLabel(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
-      }
-      if (field.errors['maxlength']) {
-        return `${this.getFieldLabel(fieldName)} must not exceed ${field.errors['maxlength'].requiredLength} characters`;
-      }
+      if (field.errors['required']) return `${this.getFieldLabel(fieldName)} is required`;
+      if (field.errors['email']) return 'Please enter a valid email address';
+      if (field.errors['minlength']) return `${this.getFieldLabel(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
+      if (field.errors['maxlength']) return `${this.getFieldLabel(fieldName)} must not exceed ${field.errors['maxlength'].requiredLength} characters`;
+      if (field.errors['min']) return `${this.getFieldLabel(fieldName)} cannot be less than ${field.errors['min'].min}`;
+      if (field.errors['max']) return `${this.getFieldLabel(fieldName)} cannot exceed ${field.errors['max'].max}`;
     }
-    
     return '';
   }
-  
+
   private getFieldLabel(fieldName: string): string {
     const labels: { [key: string]: string } = {
-      name: 'Artist Name',
+      fullName: 'Artist Name',
       email: 'Email',
-      phone: 'Phone',
-      bio: 'Biography',
-      birth_date: 'Birth Date',
+      avatar: 'Avatar URL',
+      artistTypeId: 'Artist Type',
+      birthDate: 'Birth Date',
       nationality: 'Nationality',
-      status: 'Status'
+      bio: 'Biography',
+      moviesCount: 'Movies Count',
+      rating: 'Rating',
+      isActive: 'Status'
     };
     return labels[fieldName] || fieldName;
   }
-  
 }

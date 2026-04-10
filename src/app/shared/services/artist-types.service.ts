@@ -7,10 +7,10 @@ import { environment } from '../../../environments/environment';
 @Injectable({
   providedIn: 'root'
 })
-export class ArtistService {
+export class ArtistTypesService {
 
   private readonly baseUrl = `${environment.api.baseUrl}/v1`;
-  private readonly SLUG = 'artists';
+  private readonly SLUG = 'artist-types';
 
   constructor(private http: HttpClient) {}
 
@@ -85,7 +85,7 @@ export class ArtistService {
   }
 
   bulkDelete(ids: string[]): Observable<boolean> {
-    const request = { ids, formSlug: this.SLUG, collectionName: 'artists' };
+    const request = { ids, formSlug: this.SLUG, collectionName: 'artist_types' };
     return this.http.delete<any>(`${this.baseUrl}/delete`, { body: request, withCredentials: true })
       .pipe(
         map(response => {
