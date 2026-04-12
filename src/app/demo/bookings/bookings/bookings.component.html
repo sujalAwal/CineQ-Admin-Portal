@@ -1,0 +1,147 @@
+<div class="container-fluid">
+  <div class="page-wrapper">
+    <!-- Page Title -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="page-header d-flex justify-content-between align-items-center">
+          <h1 class="page-title mb-0">Bookings</h1>
+          <button 
+            class="btn btn-sm btn-outline-primary"
+            (click)="toggleFilters()">
+            <i class="ti ti-filter"></i>
+            {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="row mb-3" *ngIf="showFilters">
+      <div class="col-12">
+        <div class="card filter-card">
+          <div class="card-body">
+            <form [formGroup]="filterForm">
+              <div class="row">
+                <!-- Payment Filters -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Status</label>
+                  <select class="form-select form-select-sm" formControlName="paymentStatus">
+                    <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Method</label>
+                  <select class="form-select form-select-sm" formControlName="paymentMethod">
+                    <option *ngFor="let option of paymentMethodOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Booking Filters -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Seat Status</label>
+                  <select class="form-select form-select-sm" formControlName="seatStatusCode">
+                    <option *ngFor="let option of seatStatusOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Booking Reference</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    placeholder="e.g., BK-4C943860A26A"
+                    formControlName="bookingReference">
+                </div>
+
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Customer ID</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    placeholder="Enter customer ID"
+                    formControlName="customerId">
+                </div>
+
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Showtime ID</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    placeholder="Enter showtime ID"
+                    formControlName="showtimeId">
+                </div>
+
+                <!-- Date Range Filters -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">From Date</label>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm"
+                    formControlName="fromDate">
+                </div>
+
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">To Date</label>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm"
+                    formControlName="toDate">
+                </div>
+
+                <!-- Booking Status Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Booking Status</label>
+                  <select class="form-select form-select-sm" formControlName="bookingStatus">
+                    <option *ngFor="let option of bookingStatusOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Filter Actions -->
+              <div class="row">
+                <div class="col-12">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-danger"
+                    (click)="resetFilters()">
+                    <i class="ti ti-refresh"></i>
+                    Reset Filters
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bookings Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body p-0">
+            <app-data-table
+              [config]="tableConfig"
+              [data]="data"
+              [loading]="loading"
+              [pagination]="pagination"
+              (search)="onSearch($event)"
+              (pageChange)="onPageChange($event)"
+              (actionClick)="onActionClick($event)"
+              (refresh)="onRefresh()">
+            </app-data-table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

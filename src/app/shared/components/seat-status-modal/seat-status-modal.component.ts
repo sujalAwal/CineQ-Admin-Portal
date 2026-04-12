@@ -60,6 +60,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges, OnDestroy {
     this.form = this.fb.group({
       code: ['', [Validators.required, Validators.min(1), Validators.max(8)]],
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      color: ['#e8e8e8', [Validators.required, Validators.pattern(/^#[0-9A-Fa-f]{6}$/)]],
       description: ['', [Validators.minLength(5), Validators.maxLength(500)]],
       isActive: [true, [Validators.required]]
     });
@@ -87,6 +88,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges, OnDestroy {
       this.form.patchValue({
         code: this.item.code,
         name: this.item.name,
+        color: this.item.color || '#e8e8e8',
         description: this.item.description || '',
         isActive: this.item.isActive
       }, { emitEvent: false });
@@ -115,6 +117,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges, OnDestroy {
         ...(this.item?.id && { id: this.item.id }),
         code: formValue.code,
         name: formValue.name.trim(),
+        color: formValue.color || '#e8e8e8',
         description: formValue.description?.trim() || '',
         isActive: formValue.isActive
       }
@@ -144,7 +147,7 @@ export class SeatStatusModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private resetLoadingState(): void { this.modalConfig.primaryButtonLoading = false; this.updateButtonState(); }
-  private resetForm(): void { this.form.reset({ isActive: true }); this.form.markAsUntouched(); }
+  private resetForm(): void { this.form.reset({ isActive: true, color: '#e8e8e8' }); this.form.markAsUntouched(); }
   private markFormGroupTouched(): void { Object.keys(this.form.controls).forEach(key => { this.form.get(key)?.markAsTouched(); }); }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -160,13 +163,14 @@ export class SeatStatusModalComponent implements OnInit, OnChanges, OnDestroy {
       if (field.errors['max']) return `${this.getFieldLabel(fieldName)} must not exceed 8`;
       if (field.errors['minlength']) return `${this.getFieldLabel(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
       if (field.errors['maxlength']) return `${this.getFieldLabel(fieldName)} must not exceed ${field.errors['maxlength'].requiredLength} characters`;
+      if (field.errors['pattern']) return 'Color must be a valid hex color (e.g., #FF0000)';
     }
     return '';
   }
 
   private getFieldLabel(fieldName: string): string {
     const labels: { [key: string]: string } = {
-      code: 'Code', name: 'Name', description: 'Description', isActive: 'Status'
+      code: 'Code', name: 'Name', color: 'Color', description: 'Description', isActive: 'Status'
     };
     return labels[fieldName] || fieldName;
   }

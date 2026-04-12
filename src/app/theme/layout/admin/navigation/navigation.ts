@@ -347,6 +347,38 @@ export const NavigationItems: NavigationItem[] = [
     ]
   },
   {
+    id: 'bookings',
+    title: 'Bookings Details',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'bookings-section',
+        title: 'Bookings Details',
+        type: 'collapse',
+        icon: 'ti ti-receipt',
+        children: [
+          {
+            id: 'bookings',
+            title: 'Bookings',
+            type: 'item',
+            url: '/bookings/bookings',
+            icon: 'ti ti-bookmark',
+            breadcrumbs: false
+          },
+          {
+            id: 'payments',
+            title: 'Payments',
+            type: 'item',
+            url: '/bookings/payments',
+            icon: 'ti ti-cash',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'elements',
     title: 'Elements',
     type: 'group',

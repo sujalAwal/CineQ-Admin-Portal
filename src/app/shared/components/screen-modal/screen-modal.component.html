@@ -78,7 +78,7 @@
             <div class="legend-title">Seat Types:</div>
             <div class="legend-items">
               <div class="legend-item" *ngFor="let type of seatTypes">
-                <div class="legend-seat" [ngClass]="'seat-' + type.code"></div>
+                <div class="legend-seat" [ngClass]="'seat-' + type.code" [style.background-color]="type?.color || null" [style.border-color]="type?.color || null"></div>
                 <small>{{ type.name }}</small>
               </div>
             </div>
@@ -96,36 +96,32 @@
           </div>
 
           <!-- Quick Fill Options -->
-          <div class="mt-3 d-flex gap-2 flex-wrap">
-            <small class="text-muted">Quick fill:</small>
-            <button type="button" class="btn btn-sm btn-outline-success" 
-                    (click)="fillAllRegular()"
-                    [disabled]="!hasRegularType()">
-              All Regular
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-primary" 
-                    (click)="fillAllPremium()"
-                    [disabled]="!hasPremiumType()">
-              All Premium
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-warning" 
-                    (click)="fillAllVIP()"
-                    [disabled]="!hasVIPType()">
-              All VIP
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearAllSeats()">
-              Clear All
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" 
-                    *ngIf="getSelectedRowsCount() > 0"
-                    (click)="clearRowSelection()">
-              Clear Row Selection
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" 
-                    *ngIf="getSelectedColumnsCount() > 0"
-                    (click)="clearColumnSelection()">
-              Clear Column Selection
-            </button>
+          <div class="mt-3">
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <small class="text-muted">Quick fill:</small>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      *ngFor="let type of seatTypes"
+                      [style.border-color]="type?.color || null"
+                      [style.color]="type?.color || null"
+                      (click)="fillAllSeatsWithType(type?.id)">
+                All {{ type?.name }}
+              </button>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mt-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearAllSeats()">
+                Clear All
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      *ngIf="getSelectedRowsCount() > 0"
+                      (click)="clearRowSelection()">
+                Clear Row Selection ({{ getSelectedRowsCount() }})
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger"
+                      *ngIf="getSelectedColumnsCount() > 0"
+                      (click)="clearColumnSelection()">
+                Clear Column Selection ({{ getSelectedColumnsCount() }})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -137,99 +133,91 @@
             <p class="screen-text">SCREEN</p>
           </div>
 
-          <!-- Seat Grid with Horizontal Scroll -->
+          <!-- Seat Grid -->
           <div class="seats-grid-container">
-            <!-- Column Numbers Header - Scrollable -->
+            <!-- Column Numbers Header -->
             <div class="column-header">
               <div class="row-label-cell"></div>
-              <div class="column-numbers-scroll-wrapper">
-                <div class="column-numbers">
-                  <div *ngFor="let col of getColumnNumbers()" 
-                       class="col-number"
-                       [class.col-selected]="isColumnSelected(col - 1)"
-                       (click)="toggleColumnSelection(col - 1)"
+              <div class="column-numbers">
+                <div *ngFor="let col of getColumnNumbers()"
+                     class="col-number-wrapper"
+                     [class.col-selected]="isColumnSelected(col - 1)">
+                  <div class="col-number"
+                       (click)="toggleColumnSelection(col - 1); $event.stopPropagation()"
                        [title]="'Click to select column ' + col">
                     {{ col }}
                   </div>
+                  <button type="button"
+                          class="status-menu-toggle col-status-toggle"
+                          *ngIf="isColumnSelected(col - 1)"
+                          (click)="openStatusMenuAt($event, 'col', col - 1, 'Column ' + col + ' - Change type:')"
+                          title="Change column status">
+                    &#8942;
+                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- Rows with Horizontal Scroll -->
-            <div class="rows-scroll-wrapper">
+            <!-- Seat Rows -->
+            <div class="rows-container">
               <div *ngFor="let row of getGroupedSeats(); let rowIdx = index" class="seat-row">
-                <!-- Row Label (Left - Fixed) -->
+                <!-- Row Label -->
                 <div class="row-label-wrapper"
                      [class.row-selected]="isRowSelected(row.seats[0]?.row)">
-                  <button type="button" 
+                  <button type="button"
                           class="row-label-button"
                           (click)="toggleRowSelection(row.seats[0]?.row); $event.stopPropagation()"
                           [title]="'Click to select row ' + row.row">
                     {{ row.row }}
                   </button>
-                  <!-- Row Status Menu -->
-                  <div class="row-status-menu-toggle" 
-                       *ngIf="isRowSelected(row.seats[0]?.row)"
-                       (click)="showRowStatusMenu === row.seats[0]?.row ? showRowStatusMenu = null : showRowStatusMenu = row.seats[0]?.row; $event.stopPropagation()"
-                       title="Change status for entire row">
-                    ⋮
-                  </div>
+                  <button type="button"
+                          class="status-menu-toggle row-status-toggle"
+                          *ngIf="isRowSelected(row.seats[0]?.row)"
+                          (click)="openStatusMenuAt($event, 'row', row.seats[0]?.row, 'Row ' + row.row + ' - Change type:')"
+                          title="Change row status">
+                    &#8942;
+                  </button>
                 </div>
 
-                <!-- Row Status Dropdown Menu -->
-                <div class="row-status-menu" 
-                     *ngIf="showRowStatusMenu === row.seats[0]?.row && isRowSelected(row.seats[0]?.row)"
-                     (click)="$event.stopPropagation()">
-                  <div class="menu-label">Change row status:</div>
-                  <div class="menu-items">
-                    <button type="button" 
-                            class="menu-item"
-                            *ngFor="let type of seatTypes"
-                            (click)="changeAllSelectedRowsStatus(type?.id); $event.stopPropagation()">
-                      <span class="menu-item-dot" [ngClass]="'seat-' + type.code"></span>
-                      {{ type?.name }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Seats (Scrollable Area) -->
+                <!-- Seats -->
                 <div class="seats-group">
                   <div *ngFor="let seat of row.seats" class="seat-container">
                     <div class="seat-wrapper">
-                      <button type="button" 
+                      <button type="button"
                               class="seat-button"
                               [ngClass]="'seat-' + getSeatTypeCode(seat.typeId)"
-                              [title]="seat.name + ' - ' + getSeatTypeById(seat.typeId)?.name">
+                              [style.background-color]="getSeatTypeById(seat.typeId)?.color || null"
+                              [style.border-color]="getSeatTypeById(seat.typeId)?.color || null"
+                              [title]="seat.name + ' - ' + (getSeatTypeById(seat.typeId)?.name || 'Unassigned')">
                         <span class="seat-number">{{ seat.name }}</span>
                       </button>
-
-                      <!-- Kebab Menu Button (3 dots) -->
                       <button type="button"
-                              class="seat-kebab-menu-btn"
-                              (click)="openSeatStatusMenu === seat.name ? openSeatStatusMenu = null : openSeatStatusMenu = seat.name; $event.stopPropagation()"
+                              class="status-menu-toggle seat-status-toggle"
+                              (click)="openStatusMenuAt($event, 'seat', seat.name, seat.name + ' - Change type:')"
                               title="Change seat status">
-                        ⋮
+                        &#8942;
                       </button>
-
-                      <!-- Seat Kebab Menu Dropdown -->
-                      <div class="seat-kebab-menu" 
-                           *ngIf="openSeatStatusMenu === seat.name"
-                           (click)="$event.stopPropagation()">
-                        <div class="menu-label">{{ seat.name }} - Change type:</div>
-                        <div class="menu-items">
-                          <button type="button"
-                                  class="menu-item"
-                                  *ngFor="let type of seatTypes"
-                                  (click)="changeSingleSeatStatus(seat, type?.id); $event.stopPropagation()">
-                            <span class="menu-item-dot" [ngClass]="'seat-' + type.code"></span>
-                            {{ type?.name }}
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Floating status dropdown (outside scroll container to avoid clipping) -->
+          <div class="status-dropdown"
+               *ngIf="isAnyDropdownOpen()"
+               [style.top.px]="dropdownPosition.top"
+               [style.left.px]="dropdownPosition.left"
+               (click)="$event.stopPropagation()">
+            <div class="menu-label">{{ dropdownLabel }}</div>
+            <div class="menu-items">
+              <button type="button" class="menu-item"
+                      *ngFor="let type of seatTypes"
+                      (click)="onDropdownItemClick(type?.id); $event.stopPropagation()">
+                <span class="menu-item-dot" [ngClass]="'seat-' + type.code" [style.background-color]="type?.color || null" [style.border-color]="type?.color || null"></span>
+                {{ type?.name }}
+              </button>
             </div>
           </div>
         </div>

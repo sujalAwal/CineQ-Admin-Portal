@@ -39,6 +39,7 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
   showRowStatusMenu: number | null = null; // Which row's status menu is open
   showColumnStatusMenu: number | null = null; // Which column's status menu is open
   openSeatStatusMenu: string | null = null; // Which seat's kebab menu is open (seat.name)
+  dropdownPosition: { top: number, left: number } = { top: 0, left: 0 };
   private destroy$ = new Subject<void>();
 
   modalConfig: ModalConfig = {
@@ -77,11 +78,11 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isVisible'] && this.isVisible) {
       this.loadTheatres();
-      this.loadSeatTypes();
+      this.loadSeatTypes(); // populateForm will be called after seatTypes load
     }
     if (this.form) {
       this.updateModalConfig();
-      this.populateForm();
+      // Don't populate form here - wait for seatTypes to load
       setTimeout(() => this.updateButtonState(), 0);
     }
   }
@@ -105,7 +106,13 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private loadSeatTypes(): void {
-    if (this.seatTypes.length) return;
+    if (this.seatTypes.length) {
+      // Already loaded, populate form now if in edit mode
+      if (this.item) {
+        this.populateForm();
+      }
+      return;
+    }
     this.seatTypesLoading = true;
     this.seatTypeService.getList({ page: 1, size: 100 })
       .pipe(takeUntil(this.destroy$))
@@ -118,6 +125,12 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
             return item.id ? [item] : [];
           }) || [];
           this.seatTypesLoading = false;
+          
+          // ✅ FIX: After seat types load, populate form if in edit mode
+          if (this.item) {
+            this.populateForm();
+          }
+          
           this.cdr.markForCheck();
         },
         error: () => { this.seatTypesLoading = false; }
@@ -197,7 +210,11 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
       this.toastr.error('Seat type not found', 'Error');
       return;
     }
-    this.seats.forEach(seat => seat.typeId = typeId);
+    const type = this.getSeatTypeById(typeId);
+    this.seats.forEach(seat => {
+      seat.typeId = typeId;
+      seat.type = type;
+    });
     this.cdr.markForCheck();
   }
 
@@ -223,7 +240,10 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   clearAllSeats(): void {
-    this.seats.forEach(seat => seat.typeId = '');
+    this.seats.forEach(seat => {
+      seat.typeId = '';
+      seat.type = null;
+    });
     this.cdr.markForCheck();
   }
 
@@ -263,6 +283,20 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  getSeatTypeColors(typeId: string): { bg: string, border: string, text: string } {
+    const type = this.getSeatTypeById(typeId);
+    if (type?.color) {
+      return { bg: type.color, border: type.color, text: '#fff' };
+    }
+    const fallbackColors: Record<string, { bg: string, border: string, text: string }> = {
+      'R': { bg: '#e8e8e8', border: '#bbb', text: '#495057' },
+      'P': { bg: '#d1e7f7', border: '#80b0d5', text: '#0056b3' },
+      'V': { bg: '#fff3cd', border: '#ffc107', text: '#856404' },
+      'X': { bg: '#495057', border: '#343a40', text: '#fff' }
+    };
+    return fallbackColors[type?.code] || { bg: '#fff', border: '#dee2e6', text: '#ccc' };
+  }
+
   // Grid layout helpers
   getGroupedSeats(): any[] {
     const grouped: { [key: number]: any } = {};
@@ -294,6 +328,64 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
 
   closeSeatTypeDropdown(): void {
     this.selectedSeatForEdit = null;
+  }
+
+  dropdownLabel: string = '';
+
+  isAnyDropdownOpen(): boolean {
+    return this.showRowStatusMenu !== null || this.showColumnStatusMenu !== null || this.openSeatStatusMenu !== null;
+  }
+
+  openStatusMenuAt(event: MouseEvent, menuType: 'row' | 'col' | 'seat', id: any, label: string): void {
+    event.stopPropagation();
+
+    // Toggle off if clicking the same menu
+    const isAlreadyOpen =
+      (menuType === 'row' && this.showRowStatusMenu === id) ||
+      (menuType === 'col' && this.showColumnStatusMenu === id) ||
+      (menuType === 'seat' && this.openSeatStatusMenu === id);
+
+    // Close all menus first
+    this.showRowStatusMenu = null;
+    this.showColumnStatusMenu = null;
+    this.openSeatStatusMenu = null;
+
+    if (isAlreadyOpen) {
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // Position relative to .seat-layout-wrapper
+    const button = (event.currentTarget || event.target) as HTMLElement;
+    const wrapper = button.closest('.seat-layout-wrapper') as HTMLElement;
+    if (!wrapper) return;
+
+    const buttonRect = button.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+
+    this.dropdownPosition = {
+      top: buttonRect.bottom - wrapperRect.top + 2,
+      left: buttonRect.right - wrapperRect.left + 4
+    };
+    this.dropdownLabel = label;
+
+    // Open the specific menu
+    if (menuType === 'row') this.showRowStatusMenu = id;
+    else if (menuType === 'col') this.showColumnStatusMenu = id;
+    else this.openSeatStatusMenu = id;
+
+    this.cdr.markForCheck();
+  }
+
+  onDropdownItemClick(typeId: string): void {
+    if (this.showRowStatusMenu !== null) {
+      this.changeAllSelectedRowsStatus(typeId);
+    } else if (this.showColumnStatusMenu !== null) {
+      this.changeAllSelectedColumnsStatus(typeId);
+    } else if (this.openSeatStatusMenu !== null) {
+      const seat = this.seats.find(s => s.name === this.openSeatStatusMenu);
+      if (seat) this.changeSingleSeatStatus(seat, typeId);
+    }
   }
 
   // ========== ROW & COLUMN SELECTION METHODS ==========
@@ -328,10 +420,12 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
 
   changeAllSelectedRowsStatus(typeId: string): void {
     if (!typeId) return;
+    const type = this.getSeatTypeById(typeId);
     this.selectedRowsForBulkEdit.forEach(rowIndex => {
       this.seats.forEach(seat => {
         if (seat.row === rowIndex) {
           seat.typeId = typeId;
+          seat.type = type;
         }
       });
     });
@@ -342,10 +436,12 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
 
   changeAllSelectedColumnsStatus(typeId: string): void {
     if (!typeId) return;
+    const type = this.getSeatTypeById(typeId);
     this.selectedColumnsForBulkEdit.forEach(colIndex => {
       this.seats.forEach(seat => {
         if (seat.col === colIndex) {
           seat.typeId = typeId;
+          seat.type = type;
         }
       });
     });
@@ -357,6 +453,7 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
   changeSingleSeatStatus(seat: any, typeId: string): void {
     if (!typeId) return;
     seat.typeId = typeId;
+    seat.type = this.getSeatTypeById(typeId);
     this.openSeatStatusMenu = null;
     this.cdr.markForCheck();
   }
@@ -395,35 +492,56 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private populateForm(): void {
-    if (this.item && this.form) {
-      this.form.patchValue({
-        screenName: this.item.screenName || '',
-        theatreId: this.item.theatreId || '',
-        rows: this.item.rows || 5,
-        columns: this.item.columns || 10,
-        screenType: this.item.screenType || '',
-        soundSystem: this.item.soundSystem || '',
-        breakTime: this.item.breakTime || 10,
-        isActive: this.item.isActive !== undefined ? this.item.isActive : true
-      }, { emitEvent: false });
-
-      // Regenerate seat layout with existing data
-      if (this.item.rows && this.item.columns) {
-        this.seats = this.generateSeats(this.item.rows, this.item.columns);
-        // If item has seats data, populate typeId for each seat
-        if (Array.isArray(this.item.seats)) {
-          this.item.seats.forEach((seat: any) => {
-            const seatInGrid = this.seats.find(s => s.name === seat.name);
-            if (seatInGrid) {
-              seatInGrid.typeId = seat.typeId || '';
-            }
-          });
-        }
-      }
-      setTimeout(() => this.updateButtonState(), 200);
-    } else {
-      this.seats = [];
+    // ✅ FIX: Ensure seatTypes are loaded before attempting code-to-type matching
+    if (!this.item || !this.form || this.seatTypes.length === 0) {
+      if (!this.item) this.seats = [];
+      return;
     }
+
+    this.form.patchValue({
+      screenName: this.item.screenName || '',
+      theatreId: this.item.theatreId || '',
+      rows: this.item.rows || 5,
+      columns: this.item.columns || 10,
+      screenType: this.item.screenType || '',
+      soundSystem: this.item.soundSystem || '',
+      breakTime: this.item.breakTime || 10,
+      isActive: this.item.isActive !== undefined ? this.item.isActive : true
+    }, { emitEvent: false });
+
+    // Regenerate seat layout with existing data
+    if (this.item.rows && this.item.columns) {
+      this.seats = this.generateSeats(this.item.rows, this.item.columns);
+      
+      // If item has seatLayout data, populate typeId and color from code
+      const layoutData = this.item.seatLayout || this.item.seats || [];
+      if (Array.isArray(layoutData)) {
+        layoutData.forEach((seatData: any) => {
+          const seatInGrid = this.seats.find(s => s.name === (seatData.seatName || seatData.name));
+          
+          if (seatInGrid && seatData.code) {
+            // ✅ FIX: Find the complete seat type object by code (includes id, name, color)
+            const matchedType = this.seatTypes.find((t: any) => t.code === seatData.code);
+            
+            if (matchedType) {
+              seatInGrid.typeId = matchedType.id;
+              // ✅ FIX: Assign full type object (which has .color property)
+              seatInGrid.type = matchedType;
+              
+              // Developer log to verify mapping
+              console.debug(`Seat ${seatInGrid.name}: code=${seatData.code} → typeId=${matchedType.id}, color=${matchedType.color}`);
+            } else {
+              console.warn(`No seat type found for code: ${seatData.code}`);
+              seatInGrid.typeId = '';
+              seatInGrid.type = null;
+            }
+          }
+        });
+      }
+    }
+    
+    setTimeout(() => this.updateButtonState(), 200);
+    this.cdr.markForCheck();
   }
 
   onModalClose(): void { this.resetForm(); this.closed.emit(); }
@@ -464,11 +582,11 @@ export class ScreenModalComponent implements OnInit, OnChanges, OnDestroy {
         screenType: formValue.screenType?.trim() || '',
         soundSystem: formValue.soundSystem?.trim() || '',
         breakTime: Number(formValue.breakTime) || 0,
-        seats: this.seats.map(seat => ({
+        seatLayout: this.seats.map(seat => ({
           seatName: seat.name,
-          row: seat.row,
-          col: seat.col,
-          typeId: seat.typeId
+          row: this.getRowLabel(seat.row),
+          col: seat.col + 1,
+          code: this.getSeatTypeCode(seat.typeId)
         })),
         isActive: formValue.isActive || false
       }

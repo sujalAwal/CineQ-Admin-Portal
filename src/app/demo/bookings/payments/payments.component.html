@@ -1,0 +1,122 @@
+<div class="container-fluid">
+  <div class="page-wrapper">
+    <!-- Page Title -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="page-header d-flex justify-content-between align-items-center">
+          <h1 class="page-title mb-0">Payments</h1>
+          <button 
+            class="btn btn-sm btn-outline-primary"
+            (click)="toggleFilters()">
+            <i class="ti ti-filter"></i>
+            {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="row mb-3" *ngIf="showFilters">
+      <div class="col-12">
+        <div class="card filter-card">
+          <div class="card-body">
+            <form [formGroup]="filterForm">
+              <div class="row">
+                <!-- Payment Status Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Status</label>
+                  <select class="form-select form-select-sm" formControlName="paymentStatus">
+                    <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Payment Method Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Method</label>
+                  <select class="form-select form-select-sm" formControlName="paymentMethod">
+                    <option *ngFor="let option of paymentMethodOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Payment Reference Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Reference</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    placeholder="e.g., PAY-B27AADEA58F44A8B"
+                    formControlName="paymentReference">
+                </div>
+
+                <!-- Booking Reference Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Booking Reference</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    placeholder="e.g., BK-4C943860A26A"
+                    formControlName="bookingReference">
+                </div>
+
+                <!-- From Date Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">From Date</label>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm"
+                    formControlName="fromDate">
+                </div>
+
+                <!-- To Date Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">To Date</label>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm"
+                    formControlName="toDate">
+                </div>
+              </div>
+
+              <!-- Filter Actions -->
+              <div class="row">
+                <div class="col-12">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-danger"
+                    (click)="resetFilters()">
+                    <i class="ti ti-refresh"></i>
+                    Reset Filters
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body p-0">
+            <app-data-table
+              [config]="tableConfig"
+              [data]="data"
+              [loading]="loading"
+              [pagination]="pagination"
+              (search)="onSearch($event)"
+              (pageChange)="onPageChange($event)"
+              (actionClick)="onActionClick($event)"
+              (refresh)="onRefresh()">
+            </app-data-table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -59,6 +59,23 @@ export class ScreenService {
         catchError(e => this.handleError(e)));
   }
 
+  // ✅ NEW: Get screens filtered by theatre (custom API, no v1)
+  getScreensByTheatre(theatreId: string): Observable<any[]> {
+    return this.http.get<any>(`${environment.api.baseUrl}/screen/theatre/${theatreId}`, { withCredentials: true })
+      .pipe(
+        map(response => {
+          if (response?.success && Array.isArray(response.data)) {
+            return response.data;
+          }
+          if (Array.isArray(response)) {
+            return response;
+          }
+          throw new Error(response?.message || 'Failed to fetch screens');
+        }),
+        catchError(e => this.handleError(e))
+      );
+  }
+
   private handleError(error: any): Observable<never> {
     console.error('API Error:', error);
     return throwError(() => new Error(error?.error?.message || error?.message || 'An error occurred'));

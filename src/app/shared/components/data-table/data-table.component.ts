@@ -224,10 +224,34 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
     
     const lowerValue = String(value).toLowerCase();
     switch (lowerValue) {
+      // Success/Green statuses
       case 'active':
+      case 'completed':
+      case 'confirmed':
+      case 'success':
         return 'bg-success';
+      
+      // Danger/Red statuses
       case 'inactive':
+      case 'failed':
+      case 'cancelled':
+      case 'error':
         return 'bg-danger';
+      
+      // Warning/Yellow statuses
+      case 'pending':
+      case 'initiated':
+      case 'reserved':
+      case 'warning':
+        return 'bg-warning';
+      
+      // Info/Blue statuses
+      case 'processing':
+      case 'booked':
+      case 'info':
+        return 'bg-info';
+      
+      // Default
       default:
         return 'bg-secondary';
     }

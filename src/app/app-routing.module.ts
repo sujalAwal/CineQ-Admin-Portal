@@ -166,6 +166,20 @@ const routes: Routes = [
             loadComponent: () => import('./demo/cinema-management/seat-layout/seat-layout.component').then((c) => c.SeatLayoutComponent)
           }
         ]
+      },
+      // Bookings Routes
+      {
+        path: 'bookings',
+        children: [
+          {
+            path: 'bookings',
+            loadComponent: () => import('./demo/bookings/bookings/bookings.component').then((c) => c.BookingsComponent)
+          },
+          {
+            path: 'payments',
+            loadComponent: () => import('./demo/bookings/payments/payments.component').then((c) => c.PaymentsComponent)
+          }
+        ]
       }
     ]
   },
