@@ -1,9 +1,12 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef, SimpleChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
 import { TheatreService } from '../../services/theatre.service';
+import { MasterDataService } from '../../services/master-data.service';
 import { ToastrService } from 'ngx-toastr';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-theatre-modal',
@@ -12,7 +15,7 @@ import { ToastrService } from 'ngx-toastr';
   templateUrl: './theatre-modal.component.html',
   styleUrls: ['./theatre-modal.component.scss']
 })
-export class TheatreModalComponent implements OnInit, OnChanges {
+export class TheatreModalComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() isVisible: boolean = false;
   @Input() item: any = null;
@@ -22,6 +25,12 @@ export class TheatreModalComponent implements OnInit, OnChanges {
   @Output() itemSaved = new EventEmitter<any>();
 
   form!: FormGroup;
+  districts: any[] = [];
+  provinces: any[] = [];
+  filteredDistricts: any[] = [];  // Districts filtered by selected province
+  selectedProvinceCode: string | null = null;
+  dataLoading: boolean = false;  // Track if master data is being fetched
+  private destroy$ = new Subject<void>();
 
   modalConfig: ModalConfig = {
     title: 'Add Theatre',
@@ -36,23 +45,171 @@ export class TheatreModalComponent implements OnInit, OnChanges {
     showSecondaryButton: true
   };
 
-  constructor(private fb: FormBuilder, private service: TheatreService, private toastr: ToastrService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private fb: FormBuilder,
+    private service: TheatreService,
+    private masterDataService: MasterDataService,
+    private toastr: ToastrService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  ngOnInit(): void { this.initializeForm(); }
+  ngOnInit(): void {
+    this.initializeForm();
+    this.setupStateChangeListener();
+    this.initializeMasterData();
+  }
 
-  ngOnChanges(): void {
-    if (this.form) {
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isVisible']?.currentValue === true && this.form) {
       this.updateModalConfig();
       this.populateForm();
-      setTimeout(() => this.updateButtonState(), 0);
+      setTimeout(() => this.updateButtonState(), 100);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * Initialize master data with automatic fetch if needed
+   */
+  private initializeMasterData(): void {
+    // First try to load from cache/service
+    const districtsData = this.masterDataService.getDistricts();
+    const provincesData = this.masterDataService.getProvinces();
+
+    if (districtsData.length > 0 && provincesData.length > 0) {
+      // Data already available - use it
+      console.log('Master data available from cache');
+      this.districts = districtsData;
+      this.provinces = provincesData;
+      this.cdr.markForCheck();
+    } else {
+      // Data not available - fetch it
+      console.log('Master data not available, fetching from API...');
+      this.fetchMasterDataAndPopulate();
+    }
+
+    // Also subscribe to future updates (e.g., if data is refreshed)
+    this.masterDataService.districts$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        console.log('Districts updated:', data);
+        this.districts = data || [];
+        const selectedState = this.form.get('state')?.value;
+        if (selectedState) {
+          this.filterDistrictsByProvince(selectedState);
+        }
+        this.cdr.markForCheck();
+      });
+
+    this.masterDataService.provinces$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(data => {
+        console.log('Provinces updated:', data);
+        this.provinces = data || [];
+        this.cdr.markForCheck();
+      });
+  }
+
+  /**
+   * Fetch master data from API and populate form
+   */
+  private fetchMasterDataAndPopulate(): void {
+    this.dataLoading = true;
+    this.cdr.markForCheck();
+    
+    this.masterDataService.fetchMasterData()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.districts = response.data?.districts || [];
+          this.provinces = response.data?.provinces || [];
+          this.dataLoading = false;
+          this.cdr.markForCheck();
+        },
+        error: (err) => {
+          console.error('Failed to fetch master data:', err);
+          // Set empty arrays to prevent "undefined" errors
+          this.districts = [];
+          this.provinces = [];
+          this.dataLoading = false;
+          this.cdr.markForCheck();
+        }
+      });
+  }
+
+  /**
+   * Helper method to filter districts by province code
+   */
+  private filterDistrictsByProvince(stateCode: string | null): void {
+    if (stateCode && this.districts.length > 0) {
+
+      const selectedProvince = this.provinces.find(p => p.code === stateCode);
+      this.filteredDistricts = this.districts.filter(d => {
+        console.log("District:",d);
+        console.log(stateCode);
+
+
+        
+        
+        return d.provinceId === selectedProvince?.id;
+      });
+      console.log(`Filtered districts for state ${stateCode}:`, this.filteredDistricts);
+    } else {
+      this.filteredDistricts = [];
+    }
+  }
+
+  /**
+   * Setup listener for state/province field changes
+   * When state is selected, filter districts by that province
+   */
+  private setupStateChangeListener(): void {
+    this.form.get('state')?.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(stateCode => {
+        console.log('State changed to:', stateCode);
+        this.selectedProvinceCode = stateCode || null;
+        
+        // Filter districts by selected province
+        this.filterDistrictsByProvince(stateCode);
+        
+        // Reset city field when province changes
+        this.form.get('city')?.setValue(null, { emitEvent: false });
+        
+        // Enable/disable city field based on whether state is selected
+        if (stateCode) {
+          this.form.get('city')?.enable({ emitEvent: false });
+        } else {
+          this.form.get('city')?.disable({ emitEvent: false });
+        }
+        
+        this.cdr.markForCheck();
+      });
+  }
+
+  /**
+   * Get district name by code
+   */
+  getDistrictNameByCode(code: string): string {
+    return this.districts.find(d => d.code === code)?.name || code;
+  }
+
+  /**
+   * Get province name by code
+   */
+  getProvinceNameByCode(code: string): string {
+    return this.provinces.find(p => p.code === code)?.name || code;
   }
 
   private initializeForm(): void {
     this.form = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       address: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
-      city: ['', [Validators.required]],
+      city: [{ value: '', disabled: true }, [Validators.required]],  // Disabled until state is selected
       state: ['', [Validators.required]],
       pincode: ['', [Validators.required, Validators.pattern(/^\d{5,10}$/)]],
       phone: ['', [Validators.required, Validators.pattern(/^[+]?[0-9]{10,15}$/)]],
@@ -83,11 +240,16 @@ export class TheatreModalComponent implements OnInit, OnChanges {
 
   private populateForm(): void {
     if (this.item && this.form) {
+      // IMPORTANT: Set state FIRST to trigger filtering
+      // Then set city to match the filtered list
+      const stateCode = this.item.state;
+      const cityCode = this.item.city;
+
+      // Step 1: Set form values (without emitting to avoid listener triggering during setup)
       this.form.patchValue({
         name: this.item.name,
         address: this.item.address,
-        city: this.item.city,
-        state: this.item.state,
+        state: stateCode,    // Set state first
         pincode: this.item.pincode,
         phone: this.item.phone,
         email: this.item.email,
@@ -96,7 +258,24 @@ export class TheatreModalComponent implements OnInit, OnChanges {
         chain: this.item.chain || '',
         isActive: this.item.isActive
       }, { emitEvent: false });
-      setTimeout(() => this.updateButtonState(), 200);
+
+      // Step 2: Manually filter districts and enable city field
+      this.selectedProvinceCode = stateCode || null;
+      this.filterDistrictsByProvince(stateCode);
+      
+      if (stateCode) {
+        this.form.get('city')?.enable({ emitEvent: false });
+      }
+
+      // Step 3: Now set city value (after filtering is done so it matches the filtered list)
+      this.form.patchValue({
+        city: cityCode
+      }, { emitEvent: false });
+
+      setTimeout(() => {
+        this.updateButtonState();
+        this.cdr.markForCheck();
+      }, 100);
     }
   }
 

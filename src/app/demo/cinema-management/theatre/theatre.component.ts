@@ -37,7 +37,7 @@ export class TheatreComponent implements OnInit, OnDestroy {
     columns: [
       { header: 'S.N', field: 'sn', type: 'sn', sortable: false, width: '60px', align: 'center' },
       { header: 'Name', field: 'name', type: 'text', sortable: true, width: '200px' },
-      { header: 'City', field: 'city', type: 'text', sortable: false, width: '120px' },
+      { header: 'Address', field: 'address', type: 'text', sortable: false, width: '120px' },
       { header: 'Phone', field: 'phone', type: 'text', sortable: false, width: '150px' },
       { header: 'Status', field: 'isActive', type: 'toggle', width: '60px', align: 'center' }
     ],

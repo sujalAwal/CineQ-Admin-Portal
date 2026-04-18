@@ -115,6 +115,18 @@ export interface RoleOptionData {
   value: string;
 }
 
+// District/Province Interface
+export interface DistrictOption {
+  code: string;
+  name: string;
+  province?: string;
+}
+
+export interface ProvinceOption {
+  code: string;
+  name: string;
+}
+
 // Master Data Response Interface
 export interface MasterDataResponse {
   success: boolean;
@@ -122,6 +134,10 @@ export interface MasterDataResponse {
   data: {
     permission: Permission[];
     role?: RoleOptionData[];
+    certifications?: any[];
+    movieReleaseStatuses?: any[];
+    districts?: DistrictOption[];
+    provinces?: ProvinceOption[];
     additionalData?: any;
   };
   timestamp: string;

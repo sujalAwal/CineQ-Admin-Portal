@@ -51,10 +51,6 @@ const routes: Routes = [
             loadComponent: () => import('./demo/content-management/artist-types/artist-types.component').then((c) => c.ArtistTypesComponent)
           },
           {
-            path: 'movies',
-            loadComponent: () => import('./demo/content-management/movies/movies.component').then((c) => c.MoviesComponent)
-          },
-          {
             path: 'media-manager',
             loadComponent: () => import('./demo/content-management/media-manager/media-manager.component').then((c) => c.MediaManagerComponent)
           },

@@ -26,6 +26,12 @@ export class MasterDataService {
   private movieReleaseStatusesSubject = new BehaviorSubject<any[]>([]);
   public movieReleaseStatuses$ = this.movieReleaseStatusesSubject.asObservable();
 
+  private districtsSubject = new BehaviorSubject<any[]>([]);
+  public districts$ = this.districtsSubject.asObservable();
+
+  private provincesSubject = new BehaviorSubject<any[]>([]);
+  public provinces$ = this.provincesSubject.asObservable();
+
   private readonly url = `${environment.api.baseUrl}/master-data`;
 
   constructor(
@@ -50,6 +56,8 @@ export class MasterDataService {
           this.rolesSubject.next(response.data.role || []);
           this.certificationsSubject.next(response.data.certifications || []);
           this.movieReleaseStatusesSubject.next(response.data.movieReleaseStatuses || []);
+          this.districtsSubject.next(response.data.districts || []);
+          this.provincesSubject.next(response.data.provinces || []);
         }
       }),
       catchError(error => {
@@ -149,6 +157,50 @@ export class MasterDataService {
   }
 
   /**
+   * Get districts from cache (synchronous)
+   */
+  getDistricts(): any[] {
+    return this.districtsSubject.value;
+  }
+
+  /**
+   * Get districts as Observable
+   */
+  getDistricts$(): Observable<any[]> {
+    const cached = this.getFromStorage();
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return of(cached.data.districts || []);
+    }
+    
+    // If cache is invalid or doesn't exist, fetch from API
+    return this.fetchMasterData().pipe(
+      map(response => response.data.districts || [])
+    );
+  }
+
+  /**
+   * Get provinces from cache (synchronous)
+   */
+  getProvinces(): any[] {
+    return this.provincesSubject.value;
+  }
+
+  /**
+   * Get provinces as Observable
+   */
+  getProvinces$(): Observable<any[]> {
+    const cached = this.getFromStorage();
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return of(cached.data.provinces || []);
+    }
+    
+    // If cache is invalid or doesn't exist, fetch from API
+    return this.fetchMasterData().pipe(
+      map(response => response.data.provinces || [])
+    );
+  }
+
+  /**
    * Cache data to localStorage
    */
   private cacheData(response: any): void {
@@ -175,7 +227,7 @@ export class MasterDataService {
   }
 
   /**
-   * Load permissions from localStorage
+   * Load all data from localStorage
    */
   private loadFromStorage(): void {
     const cached = this.getFromStorage();
@@ -184,6 +236,8 @@ export class MasterDataService {
       this.rolesSubject.next(cached.data.role || []);
       this.certificationsSubject.next(cached.data.certifications || []);
       this.movieReleaseStatusesSubject.next(cached.data.movieReleaseStatuses || []);
+      this.districtsSubject.next(cached.data.districts || []);
+      this.provincesSubject.next(cached.data.provinces || []);
     }
   }
 
@@ -203,6 +257,8 @@ export class MasterDataService {
     this.rolesSubject.next([]);
     this.certificationsSubject.next([]);
     this.movieReleaseStatusesSubject.next([]);
+    this.districtsSubject.next([]);
+    this.provincesSubject.next([]);
   }
 
   /**

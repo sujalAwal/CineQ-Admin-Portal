@@ -274,6 +274,79 @@ The seat layout modal (`SeatLayoutModalComponent`) is `xl` size with a complex n
 - Aisle seats are toggled per-cell; marking a seat as aisle clears its `seatTypeCode` and `price`
 - On save, `rowSeatType` / `rowPrice` (UI-only controls) are stripped — only clean `rows[]` data is sent to the API
 
+## Image Fields — Always Use Media Manager
+
+**Never use a plain text/URL input for image fields.** All image fields (poster, banner, avatar, thumbnail, etc.) must use an `input-group` with a media manager button that opens `MediaManagerModalComponent`.
+
+### Pattern (copy for every image field)
+
+**Component TS:**
+```typescript
+import { MediaManagerModalComponent } from '../media-manager-modal/media-manager-modal.component';
+import { MediaFile, MediaManagerConfig } from '../../interfaces/media.interface';
+
+// state
+showMediaManager = false;
+mediaManagerConfig: MediaManagerConfig = {
+  title: 'Select Image',
+  multipleSelection: false,
+  showUploadButton: true,
+  showCreateFolderButton: false,
+  showDeleteButton: false,
+  showPreviewButton: true
+};
+
+// methods
+openMediaManager(): void { this.showMediaManager = true; }
+onMediaSelected(files: MediaFile[]): void {
+  if (files?.length) {
+    this.form.patchValue({ myImageField: files[0].url });
+    this.showMediaManager = false;
+  }
+}
+onMediaManagerClosed(): void { this.showMediaManager = false; }
+```
+
+**Template HTML (field):**
+```html
+<div class="input-group">
+  <input type="text" class="form-control" formControlName="myImageField"
+         placeholder="Select from media manager..." readonly>
+  <button type="button" class="btn btn-outline-secondary"
+          (click)="openMediaManager()" title="Select from Media Manager">
+    <i class="ti ti-photo"></i>
+  </button>
+</div>
+<!-- Preview -->
+<div *ngIf="form.get('myImageField')?.value" class="mt-2">
+  <img [src]="form.get('myImageField')?.value" class="img-thumbnail" style="max-height:120px;">
+</div>
+```
+
+**Template HTML (modal — placed outside `<app-base-modal>`):**
+```html
+<app-media-manager-modal
+  [isVisible]="showMediaManager"
+  [config]="mediaManagerConfig"
+  (closed)="onMediaManagerClosed()"
+  (filesSelected)="onMediaSelected($event)">
+</app-media-manager-modal>
+```
+
+For **multiple image fields** (e.g., poster + banner in movies modal), use a `currentMediaField` discriminator — see `MoviesCinemaModalComponent` as the reference.
+
+## S.N Column — Pagination-Aware Numbering
+
+The `DataTableComponent` renders the S.N column using:
+
+```html
+{{ (pagination.currentPage - 1) * pagination.pageSize + i + 1 }}
+```
+
+This ensures the serial number continues across pages (e.g., page 2 starts at 21 for page size 20). **Never use `i + 1` alone** — it always resets to 1 on every page.
+
+This is handled centrally in `DataTableComponent` — no per-module changes are needed.
+
 ## Adding a New Cinema Management Module
 
 1. Create service in `src/app/shared/services/{name}.service.ts` with `private readonly SLUG = '{plural-kebab}'`
