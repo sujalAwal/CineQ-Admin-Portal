@@ -260,3 +260,29 @@ Multi-stage Dockerfile: Node 22-alpine build → Nginx-alpine serve. Nginx confi
 - ngx-toastr (notifications)
 - ngx-quill (rich text editor)
 - ngx-dropzone (file uploads)
+
+## Dashboard Module (Epic: a9cfcf82-69f0-44f7-81ca-15e321453d30)
+
+The main dashboard at `/dashboard/default` has been completely redesigned.
+
+### Features
+
+- **KPI Cards**: At-a-glance metrics for Total/Today's Bookings and Revenue, Now Showing Movies, and Active Theatres.
+- **Revenue Trend Chart**: A bar chart showing revenue over a selectable period (7, 15, or 30 days).
+- **Booking Status Chart**: A donut chart showing the distribution of Confirmed, Pending, and Cancelled bookings.
+- **Top 5 Lists**: Ranked lists for top-performing movies and theatres by revenue.
+- **Movie Showcase**: Horizontal scrolling carousels for "Now Showing" and "Coming Soon" movies.
+- **Recent Bookings**: A table displaying the latest booking transactions.
+- **Payment Methods Chart**: A pie chart visualizing the distribution of revenue by payment method.
+- **Responsive Layout**: A full-responsive design built with CSS Grid.
+- **Currency**: All monetary values are displayed in Nepalese Rupees (NPR).
+
+### Implementation Details
+
+- **Component**: `src/app/demo/dashboard/default/default.component.ts` (and its corresponding `.html` and `.scss` files).
+- **Service**: `src/app/shared/services/dashboard.service.ts`
+  - Fetches all dashboard data from the `/api/dashboard/stats` endpoint.
+  - Implements a 5-minute client-side cache for the dashboard data, with separate caching for different time periods on the revenue trend.
+- **Interface**: `src/app/shared/interfaces/dashboard.interface.ts`
+  - Defines the data structures for the API response, including `DashboardStats`, `RevenueTrendItem`, `StatusDistributionItem`, etc.
+- **Charting Library**: `ng-apexcharts` is used for all charts on the dashboard.

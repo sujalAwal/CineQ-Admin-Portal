@@ -1,126 +1,268 @@
-<div class="row">
-  <div class="col-xl-4 col-md-6">
-    <div class="card earning-card bg-secondary-dark text-white overflow-hidden">
-      <span class="round secondary-round small"></span>
-      <span class="round secondary-round big"></span>
-      <div class="card-body">
-        <div class="row">
-          <div class="col">
-            <div class="avatar avatar-lg">
-              <i class="text-white ti ti-credit-card f-24"></i>
-            </div>
-          </div>
-          <div class="col-auto">
-            <div class="btn-group" ngbDropdown>
-              <a type="button" class="avatar avatar-xs bg-secondary dropdown-toggle arrow-none" ngbDropdownToggle>
-                <i class="ti ti-dots"></i>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end" ngbDropdownMenu>
-                <li><button class="dropdown-item" type="button">Import Card</button></li>
-                <li><button class="dropdown-item" type="button">Export</button></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <span class="text-white d-block f-34 f-w-500 my-2">
-          $500.00
-          <i class="ti ti-circle-arrow-up-right opacity-50"></i>
-        </span>
-        <p class="mb-0 opacity-50">Total Earning</p>
-      </div>
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <h3 class="f-w-700 mb-0">CineQ Dashboard</h3>
+  <button class="btn btn-primary" (click)="refreshDashboard()" [disabled]="isLoading">
+    <i class="ti ti-refresh me-2"></i> Refresh
+  </button>
+</div>
+
+@if (isLoading) {
+  <div class="d-flex justify-content-center align-items-center" style="min-height: 500px;">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
     </div>
   </div>
-  <div class="col-xl-4 col-md-6">
-    <div class="card earning-card bg-primary-dark text-white overflow-hidden">
-      <span class="round primary-round small"></span>
-      <span class="round primary-round big"></span>
-      <div class="card-body">
-        <app-chart-data-month />
-      </div>
-    </div>
-  </div>
-  <div class="col-xl-4 col-md-12">
-    <div class="card total-income-card overflow-hidden bg-primary-dark text-white">
+} @else if (dashboardData) {
+  <!-- Row 1: KPI Cards -->
+  <div class="kpi-row">
+    <div class="card kpi-card border-top-primary">
       <div class="card-body">
         <div class="d-flex align-items-center">
-          <div class="avatar avatar-lg icon m-r-5">
-            <i class="text-white ti ti-layout-board-split f-24"></i>
+          <div class="flex-shrink-0">
+            <div class="avtar avtar-lg bg-light-primary text-primary">
+              <i class="ti ti-ticket f-30"></i>
+            </div>
           </div>
-          <div class="ms-2">
-            <h4 class="text-white f-w-600 mb-1">$203k</h4>
-            <p class="mb-0 opacity-50 text-sm">Total Income</p>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="f-w-600 mb-0">{{ dashboardData.kpiCards.totalBookings | number }}</h3>
+            <p class="mb-0 text-muted">Total Bookings</p>
+          </div>
+        </div>
+        <p class="mb-0 mt-2 text-sm text-muted">
+          Today: <span class="text-primary f-w-600">{{ dashboardData.kpiCards.todaysBookings | number }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="card kpi-card border-top-success">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="avtar avtar-lg bg-light-success text-success">
+              <i class="ti ti-currency-dollar f-30"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="f-w-600 mb-0">{{ dashboardData.kpiCards.totalRevenue | currency:'NPR':'Rs. ':'1.0-0' }}</h3>
+            <p class="mb-0 text-muted">Total Revenue</p>
+          </div>
+        </div>
+        <p class="mb-0 mt-2 text-sm text-muted">
+          Today: <span class="text-success f-w-600">{{ dashboardData.kpiCards.todaysRevenue | currency:'NPR':'Rs. ':'1.0-0' }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="card kpi-card border-top-info">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="flex-shrink-0">
+            <div class="avtar avtar-lg bg-light-info text-info">
+              <i class="ti ti-device-tv f-30"></i>
+            </div>
+          </div>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="f-w-600 mb-0">{{ dashboardData.kpiCards.nowShowingMovies | number }}</h3>
+            <p class="mb-0 text-muted">Now Showing</p>
           </div>
         </div>
       </div>
     </div>
-    <div class="card total-income-card warning overflow-hidden">
+    <div class="card kpi-card border-top-warning">
       <div class="card-body">
         <div class="d-flex align-items-center">
-          <div class="avatar avatar-lg icon-warning m-r-5">
-            <i class="text-warning ti ti-layout-board-split f-24"></i>
+          <div class="flex-shrink-0">
+            <div class="avtar avtar-lg bg-light-warning text-warning">
+              <i class="ti ti-building-community f-30"></i>
+            </div>
           </div>
-          <div class="ms-2">
-            <h4 class="f-w-600 mb-1">$203k</h4>
-            <p class="mb-0 opacity-50 text-sm">Total Income</p>
+          <div class="flex-grow-1 ms-3">
+            <h3 class="f-w-600 mb-0">{{ dashboardData.kpiCards.activeTheatres | number }}</h3>
+            <p class="mb-0 text-muted">Active Theatres</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="col-xl-8 col-md-12">
-    <app-bar-chart />
-  </div>
-  <div class="col-xl-4 col-md-12">
+  <!-- Row 2: Charts -->
+  <div class="charts-row">
     <div class="card">
-      <div class="card-body">
-        <div class="row mb-3 align-items-center">
-          <div class="col">
-            <h4>Popular Stocks</h4>
-          </div>
-          <div class="col-auto"></div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Revenue Trend</h5>
+        <div class="btn-group">
+          <button class="btn btn-sm" [ngClass]="selectedPeriod === 7 ? 'btn-primary' : 'btn-outline-secondary'" (click)="onPeriodChange(7)">7D</button>
+          <button class="btn btn-sm" [ngClass]="selectedPeriod === 15 ? 'btn-primary' : 'btn-outline-secondary'" (click)="onPeriodChange(15)">15D</button>
+          <button class="btn btn-sm" [ngClass]="selectedPeriod === 30 ? 'btn-primary' : 'btn-outline-secondary'" (click)="onPeriodChange(30)">30D</button>
         </div>
-        <div class="rounded bg-light-secondary overflow-hidden mb-3">
-          <div class="px-3 pt-3">
-            <div class="row mb-1 align-items-start">
-              <div class="col">
-                <h5 class="text-secondary mb-0">Bajaj Finery</h5>
-                <small class="text-muted">10% Profit</small>
-              </div>
-              <div class="col-auto">
-                <h4 class="mb-0">$1839.00</h4>
-              </div>
+      </div>
+      <div class="card-body">
+        @if(revenueChartOptions && !isRevenueChartLoading) {
+          <apx-chart [series]="revenueChartOptions.series" [chart]="revenueChartOptions.chart" [xaxis]="revenueChartOptions.xaxis" [stroke]="revenueChartOptions.stroke" [colors]="revenueChartOptions.colors" [dataLabels]="revenueChartOptions.dataLabels"></apx-chart>
+        } @else {
+          <div class="d-flex justify-content-center align-items-center" style="min-height: 350px;">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
             </div>
           </div>
-          <app-bajaj-chart />
-        </div>
-        <ul class="list-group list-group-flush">
-          @for (list of ListGroup; track list) {
-            <li class="list-group-item px-0 {{ list.space }}">
-              <div class="row align-items-start">
-                <div class="col">
-                  <h5 class="mb-0">{{ list.name }}</h5>
-                  <small class="{{ list.color }}">{{ list.profit }}</small>
-                </div>
-                <div class="col-auto">
-                  <h4 class="mb-0">
-                    {{ list.invest }}
-                    <span class="ms-2 align-top avatar avatar-xxs {{ list.bgColor }}">
-                      <i class="{{ list.icon }} {{ list.color }}"></i>
-                    </span>
-                  </h4>
-                </div>
+        }
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Booking Status</h5>
+      </div>
+      <div class="card-body">
+        @if(bookingStatusChartOptions) {
+          <apx-chart [series]="bookingStatusChartOptions.series" [chart]="bookingStatusChartOptions.chart" [labels]="bookingStatusChartOptions.labels" [colors]="bookingStatusChartOptions.colors" [legend]="bookingStatusChartOptions.legend" [dataLabels]="bookingStatusChartOptions.dataLabels"></apx-chart>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Top Performers -->
+  <div class="top-row">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Top 5 Movies</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush rank-list">
+          @for (movie of dashboardData.topMovies; track movie.movieId; let i = $index) {
+            <li class="list-group-item rank-item">
+              <span class="rank-number">{{ i + 1 }}</span>
+              <img [src]="movie.poster || 'assets/images/cineq/poster-placeholder.png'" alt="{{ movie.title }}" class="rank-poster">
+              <div class="rank-info">
+                <h6 class="mb-0 text-truncate">{{ movie.title }}</h6>
+                <small class="text-muted">{{ movie.totalBookings | number }} bookings</small>
+              </div>
+              <div class="rank-value">
+                <h6 class="mb-0">{{ movie.totalRevenue | currency:'NPR':'Rs. ':'1.0-0' }}</h6>
               </div>
             </li>
           }
         </ul>
-        <div class="text-center">
-          <a href="javascript:" class="b-b-primary text-primary f-w-500">
-            View all
-            <i class="ti ti-chevron-right"></i>
-          </a>
-        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Top 5 Theatres</h5>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush rank-list">
+          @for (theatre of dashboardData.topTheatres; track theatre.theatreId; let i = $index) {
+            <li class="list-group-item rank-item">
+              <span class="rank-number">{{ i + 1 }}</span>
+              <div class="rank-info">
+                <h6 class="mb-0 text-truncate">{{ theatre.name }}</h6>
+                <small class="text-muted">{{ theatre.city }}</small>
+              </div>
+              <div class="rank-value">
+                <h6 class="mb-0">{{ theatre.totalRevenue | currency:'NPR':'Rs. ':'1.0-0' }}</h6>
+                <small class="text-muted">{{ theatre.totalBookings | number }} bookings</small>
+              </div>
+            </li>
+          }
+        </ul>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- Row 4: Movie Showcase -->
+  <div>
+    <h5 class="mb-3">Now Showing</h5>
+    <div class="movies-scroll">
+      @for (movie of dashboardData.nowShowingMovies; track movie.id) {
+        <div class="movie-card">
+          <img [src]="movie.poster || 'assets/images/cineq/poster-placeholder.png'" alt="{{ movie.title }}" class="movie-poster">
+          <div class="movie-info">
+            <h6 class="movie-title text-truncate">{{ movie.title }}</h6>
+            <p class="movie-meta text-muted text-truncate">
+              {{ movie.duration }} min | {{ movie.certification }} | {{ movie.language.join(', ') }}
+            </p>
+          </div>
+          <span class="badge bg-light-success text-success">Now Showing</span>
+        </div>
+      }
+    </div>
+  </div>
+  <div class="mt-4">
+    <h5 class="mb-3">Coming Soon</h5>
+    <div class="movies-scroll">
+      @for (movie of dashboardData.comingSoonMovies; track movie.id) {
+        <div class="movie-card">
+          <img [src]="movie.poster || 'assets/images/cineq/poster-placeholder.png'" alt="{{ movie.title }}" class="movie-poster">
+          <div class="movie-info">
+            <h6 class="movie-title text-truncate">{{ movie.title }}</h6>
+            <p class="movie-meta text-muted text-truncate">
+              Releasing {{ movie.releaseDate | date:'MMM d' }}
+            </p>
+          </div>
+          <span class="badge bg-light-warning text-warning">Coming Soon</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Row 5: Operational -->
+  <div class="bottom-row mt-4">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Recent Bookings</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive recent-table">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Booking Ref</th>
+                <th>Movie</th>
+                <th>Seats</th>
+                <th>Amount</th>
+                <th>Payment</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (booking of dashboardData.recentBookings; track booking.bookingReference) {
+                <tr>
+                  <td>{{ booking.bookingReference }}</td>
+                  <td class="text-truncate">{{ booking.movieTitle }}</td>
+                  <td>{{ booking.numberOfSeats }}</td>
+                  <td>{{ booking.totalAmount | currency:'NPR':'Rs. ':'1.0-0' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-light-success text-success': booking.paymentStatus === 'COMPLETED',
+                      'bg-light-warning text-warning': booking.paymentStatus === 'PENDING',
+                      'bg-light-danger text-danger': booking.paymentStatus === 'FAILED'
+                    }">{{ booking.paymentStatus }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-light-success text-success': booking.status === 'Confirmed',
+                      'bg-light-warning text-warning': booking.status === 'Pending',
+                      'bg-light-danger text-danger': booking.status === 'Cancelled'
+                    }">{{ booking.status }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Payment Methods</h5>
+      </div>
+      <div class="card-body">
+        @if(paymentMethodChartOptions) {
+          <apx-chart [series]="paymentMethodChartOptions.series" [chart]="paymentMethodChartOptions.chart" [labels]="paymentMethodChartOptions.labels" [colors]="paymentMethodChartOptions.colors" [legend]="paymentMethodChartOptions.legend"></apx-chart>
+        }
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="card">
+    <div class="card-body text-center">
+      <p class="text-muted">Could not load dashboard data. Please try refreshing.</p>
+    </div>
+  </div>
+}
