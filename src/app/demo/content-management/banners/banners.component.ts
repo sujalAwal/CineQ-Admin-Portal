@@ -498,7 +498,12 @@ export class BannersComponent implements OnInit, OnDestroy {
           bannerImage: fullBanner.bannerImage,
           imageAltText: fullBanner.imageAltText,
           imageMobileUrl: fullBanner.imageMobileUrl,
-          buttons: fullBanner.buttons || []
+          buttons: fullBanner.buttons || [],
+          displayConfig: fullBanner.displayConfig || {
+            showTitle: true,
+            showDescription: true,
+            showButtons: true
+          }
         };
         this.modalLoading = false;
         this.showBannerModal = true;
@@ -518,7 +523,12 @@ export class BannersComponent implements OnInit, OnDestroy {
           bannerImage: banner.bannerImage,
           imageAltText: banner.imageAltText,
           imageMobileUrl: banner.imageMobileUrl,
-          buttons: banner.buttons || []
+          buttons: banner.buttons || [],
+          displayConfig: banner.displayConfig || {
+            showTitle: true,
+            showDescription: true,
+            showButtons: true
+          }
         };
         this.showBannerModal = true;
         this.cdr.markForCheck(); // Trigger change detection for OnPush

@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, FormsModule } from '@angular/forms';
 import { BaseModalComponent } from '../base-modal/base-modal.component';
 import { ModalConfig } from '../base-modal/base-modal.component';
 import { MediaManagerModalComponent } from '../media-manager-modal/media-manager-modal.component';
@@ -18,6 +18,7 @@ import { ToastService } from '../../services/toast.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     BaseModalComponent,
     MediaManagerModalComponent
   ],
@@ -64,6 +65,9 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   selectedImage: MediaFile | null = null;
   selectedMobileImage: MediaFile | null = null;
   currentImageTarget: 'banner' | 'mobile' = 'banner';
+
+  // Display Config section visibility toggle
+  displayConfigVisible: boolean = false;
   mediaManagerConfig: MediaManagerConfig = {
     title: 'Select Banner Image',
     allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
@@ -140,7 +144,12 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
       bannerImage: ['', [Validators.required, Validators.maxLength(2500)]],
       imageAltText: ['', [Validators.required, Validators.maxLength(500)]],
       imageMobileUrl: ['', [Validators.maxLength(255)]],
-      buttons: this.fb.array([], [Validators.maxLength(3)])
+      buttons: this.fb.array([], [Validators.maxLength(3)]),
+      displayConfig: this.fb.group({
+        showTitle: [true, [Validators.required]],
+        showDescription: [true, [Validators.required]],
+        showButtons: [true, [Validators.required]]
+      })
     });
     
     // Watch form validity for button state
@@ -215,7 +224,12 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         isActive: this.banner.isActive !== undefined ? this.banner.isActive : true,
         bannerImage: this.banner.bannerImage || '',
         imageAltText: this.banner.imageAltText || '',
-        imageMobileUrl: this.banner.imageMobileUrl || ''
+        imageMobileUrl: this.banner.imageMobileUrl || '',
+        displayConfig: {
+          showTitle: this.banner.displayConfig?.showTitle ?? true,
+          showDescription: this.banner.displayConfig?.showDescription ?? true,
+          showButtons: this.banner.displayConfig?.showButtons ?? true
+        }
       });
 
       // Disable slug field in edit mode (slug is immutable)
@@ -284,6 +298,11 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         imageAltText: formValue.imageAltText,
         imageMobileUrl: formValue.imageMobileUrl || undefined,
         buttons: buttons,
+        displayConfig: formValue.displayConfig || {
+          showTitle: true,
+          showDescription: true,
+          showButtons: true
+        },
         // Include id for updates
         ...(this.banner?.id && { id: this.banner.id })
       };
@@ -347,7 +366,12 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
       isActive: true,
       bannerImage: '',
       imageAltText: '',
-      imageMobileUrl: ''
+      imageMobileUrl: '',
+      displayConfig: {
+        showTitle: true,
+        showDescription: true,
+        showButtons: true
+      }
     });
     this.bannerForm.markAsUntouched();
     

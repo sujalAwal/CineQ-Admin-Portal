@@ -6,6 +6,13 @@ export interface BannerButton {
   openInNewTab: boolean;
 }
 
+// Banner Display Configuration Interface
+export interface DisplayConfig {
+  showTitle: boolean;
+  showDescription: boolean;
+  showButtons: boolean;
+}
+
 // Banner Interface 
 export interface Banner {
   id: string;
@@ -18,6 +25,7 @@ export interface Banner {
   imageAltText: string;
   imageMobileUrl?: string;
   buttons: BannerButton[];
+  displayConfig?: DisplayConfig;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -34,6 +42,7 @@ export interface BannerRequest {
   imageAltText: string;
   imageMobileUrl?: string;
   buttons: BannerButton[];
+  displayConfig?: DisplayConfig;
 }
 
 // Banner Form Submit Request Interface
