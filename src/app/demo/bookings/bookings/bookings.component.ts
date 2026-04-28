@@ -90,6 +90,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
     entityName: 'Bookings',
     apiEndpoint: '/bookings/list',
     columns: [
+      { header: 'S.N', field: 'sn', type: 'sn' as const, sortable: false, width: '60px', align: 'center' as const },
         { header: 'Customer Name', field: 'customer.name', type: 'text' as const },
       { header: 'Booking Ref', field: 'bookingReference', type: 'text' as const },
       { header: 'Customer Email', field: 'customer.email', type: 'email' as const },
@@ -99,7 +100,7 @@ export class BookingsComponent implements OnInit, OnDestroy {
       { header: 'Booking Status', field: 'status', type: 'badge' as const }
     ],
     actions: [
-      { type: 'view' as const, label: 'View', icon: 'ti ti-eye' }
+      { type: 'view' as const, label: 'View', icon: 'ti ti-eye', class: 'btn-outline-primary' }
     ],
     searchable: true,
     paginated: true

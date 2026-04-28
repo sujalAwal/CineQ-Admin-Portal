@@ -150,9 +150,9 @@
               [class.text-center]="column.align === 'center'"
               [class.text-end]="column.align === 'right'"
             >
-             <!-- SN -->
+              <!-- SN -->
               <span *ngIf="column.type === 'sn'">
-                {{ (pagination.currentPage - 1) * pagination.pageSize + i + 1 }}
+                {{ pagination.currentPage * pagination.pageSize + i + 1 }}
               </span>
               <!-- Text/Number/Date/Email Display -->
               <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'"
@@ -213,7 +213,7 @@
                     [title]="action.label"
                     (click)="onActionClick(action, item)"
                   >
-                    <i [class]="action.icon"></i>
+                    <i *ngIf="action.icon" [class]="action.icon"></i>
                   </button>
                 </ng-container>
               </div>

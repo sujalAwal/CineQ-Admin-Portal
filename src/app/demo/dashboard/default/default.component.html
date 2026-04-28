@@ -209,11 +209,11 @@
       </div>
       <div class="card-body">
         <div class="table-responsive recent-table">
-          <table class="table table-hover">
+          <table class="table table-hover recent-bookings-table">
             <thead>
               <tr>
-                <th>Booking Ref</th>
-                <th>Movie</th>
+                <th class="ms-3">Movie</th>
+                <th>Booking Date</th>
                 <th>Seats</th>
                 <th>Amount</th>
                 <th>Payment</th>
@@ -222,26 +222,55 @@
             </thead>
             <tbody>
               @for (booking of dashboardData.recentBookings; track booking.bookingReference) {
-                <tr>
-                  <td>{{ booking.bookingReference }}</td>
-                  <td class="text-truncate">{{ booking.movieTitle }}</td>
-                  <td>{{ booking.numberOfSeats }}</td>
-                  <td>{{ booking.totalAmount | currency:'NPR':'Rs. ':'1.0-0' }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'bg-light-success text-success': booking.paymentStatus === 'COMPLETED',
-                      'bg-light-warning text-warning': booking.paymentStatus === 'PENDING',
-                      'bg-light-danger text-danger': booking.paymentStatus === 'FAILED'
-                    }">{{ booking.paymentStatus }}</span>
-                  </td>
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'bg-light-success text-success': booking.status === 'Confirmed',
-                      'bg-light-warning text-warning': booking.status === 'Pending',
-                      'bg-light-danger text-danger': booking.status === 'Cancelled'
-                    }">{{ booking.status }}</span>
-                  </td>
-                </tr>
+              <tr>
+                <td>
+                  <div class="">
+                  
+                    <div class="ms-1">
+                      <h6 class="mb-0 f-w-600 text-truncate">{{ booking.movieTitle }}</h6>
+                      <small class="text-muted">#{{ booking.bookingReference }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <h6 class="mb-0">{{ booking.bookingDate | date:'MMM d, y' }}</h6>
+                  <small class="text-muted">{{ booking.bookingDate | date:'shortTime' }}</small>
+                </td>
+                <td>
+                  <h6 class="mb-0">{{ booking.numberOfSeats }}</h6>
+                </td>
+                <td>
+                  <h6 class="mb-0 f-w-600">{{ booking.totalAmount | currency:'NPR':'Rs. ':'1.0-0' }}</h6>
+                </td>
+                <td>
+                  <span class="badge rounded-pill" [ngClass]="{
+                    'bg-light-success text-success': booking.paymentStatus === 'COMPLETED',
+                    'bg-light-warning text-warning': booking.paymentStatus === 'PENDING',
+                    'bg-light-danger text-danger': booking.paymentStatus === 'FAILED'
+                  }">
+                    <i class="ti me-1" [ngClass]="{
+                      'ti-circle-check': booking.paymentStatus === 'COMPLETED',
+                      'ti-clock': booking.paymentStatus === 'PENDING',
+                      'ti-alert-circle': booking.paymentStatus === 'FAILED'
+                    }"></i>
+                    {{ booking.paymentStatus }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge rounded-pill" [ngClass]="{
+                    'bg-light-success text-success': booking.status === 'Confirmed',
+                    'bg-light-warning text-warning': booking.status === 'Pending',
+                    'bg-light-danger text-danger': booking.status === 'Cancelled'
+                  }">
+                    <i class="ti me-1" [ngClass]="{
+                      'ti-ticket': booking.status === 'Confirmed',
+                      'ti-hourglass': booking.status === 'Pending',
+                      'ti-ban': booking.status === 'Cancelled'
+                    }"></i>
+                    {{ booking.status }}
+                  </span>
+                </td>
+              </tr>
               }
             </tbody>
           </table>

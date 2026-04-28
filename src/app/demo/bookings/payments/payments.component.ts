@@ -4,7 +4,9 @@ import {
   ChangeDetectorRef,
   OnInit,
   OnDestroy,
-  inject
+  inject,
+  ViewChild,
+  TemplateRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -13,15 +15,25 @@ import { DataTableComponent } from 'src/app/shared/components/data-table/data-ta
 import { ToastService } from 'src/app/shared/services/toast.service';
 import { TableConfig } from 'src/app/shared/interfaces/table.interface';
 import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 
 interface Payment {
   id: string;
-  paymentReference: string;
-  bookingReference: string;
+  paymentId: string;
+  bookingId: string;
   amount: number;
   paymentMethod: string;
   status: string;
+  gatewayTransactionId: string;
+  paymentUrl: string;
+  gatewayMetadata: Record<string, any>;
   createdAt: any;
+  updatedAt: any;
+  userDetails: {
+    customerId: string;
+    email: string;
+    customerName?: string;
+  };
 }
 
 @Component({
@@ -33,16 +45,23 @@ interface Payment {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PaymentsComponent implements OnInit, OnDestroy {
+  @ViewChild('metadataModal') metadataModal!: TemplateRef<any>;
+
   private paymentsService = inject(PaymentsService);
   private toastService = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
+  private modalService = inject(NgbModal);
   private destroy$ = new Subject<void>();
 
   data: Payment[] = [];
   loading = false;
   pagination = { currentPage: 0, totalPages: 0, totalItems: 0, pageSize: 10 };
-  currentFilters = { page: 1, size: 10 };
+  currentFilters = { page: 0, size: 10 };
+
+  // Modal properties
+  selectedPayment: Payment | null = null;
+  modalRef: NgbModalRef | null = null;
 
   // Filter form
   filterForm!: FormGroup;
@@ -52,17 +71,26 @@ export class PaymentsComponent implements OnInit, OnDestroy {
   paymentStatusOptions = [
     { value: '', label: 'All Payment Status' },
     { value: 'INITIATED', label: 'Initiated' },
-    { value: 'COMPLETED', label: 'Completed' },
-    { value: 'FAILED', label: 'Failed' },
-    { value: 'CANCELED', label: 'Canceled' }
+    { value: 'COMPLETED', label: 'Completed' }
   ];
 
   paymentMethodOptions = [
     { value: '', label: 'All Payment Methods' },
     { value: 'KHALTI', label: 'Khalti' },
-    { value: 'ESEWA', label: 'eSewa' },
-    { value: 'CREDIT_CARD', label: 'Credit Card' },
-    { value: 'DEBIT_CARD', label: 'Debit Card' }
+    { value: 'ESEWA', label: 'eSewa' }
+  ];
+
+  sortByOptions = [
+    { value: 'createdAt', label: 'Created Date' },
+    { value: 'updatedAt', label: 'Updated Date' },
+    { value: 'amount', label: 'Amount' },
+    { value: 'status', label: 'Status' },
+    { value: 'paymentMethod', label: 'Payment Method' }
+  ];
+
+  sortDirectionOptions = [
+    { value: 'desc', label: 'Descending' },
+    { value: 'asc', label: 'Ascending' }
   ];
 
   tableConfig: TableConfig = {
@@ -70,15 +98,16 @@ export class PaymentsComponent implements OnInit, OnDestroy {
     entityName: 'Payments',
     apiEndpoint: '/payments/list',
     columns: [
-      { header: 'Payment Reference', field: 'paymentReference', type: 'text' as const },
-      { header: 'Booking Reference', field: 'bookingReference', type: 'text' as const },
+      { header: 'S.N', field: 'sn', type: 'sn' as const, sortable: false, width: '60px', align: 'center' as const },
+      { header: 'Customer', field: 'userDetails.customerName', type: 'text' as const },
+      { header: 'Payment ID', field: 'paymentId', type: 'text' as const },
       { header: 'Amount', field: 'amount', type: 'currency' as const },
-      { header: 'Payment Method', field: 'paymentMethod', type: 'text' as const },
+      { header: 'Method', field: 'paymentMethod', type: 'text' as const },
       { header: 'Status', field: 'status', type: 'badge' as const },
-      { header: 'Created At', field: 'createdAt', type: 'date' as const }
+      { header: 'Date', field: 'createdAt', type: 'date' as const }
     ],
     actions: [
-      { type: 'view' as const, label: 'View', icon: 'ti ti-eye' }
+      { type: 'view' as const, label: 'View Metadata', icon: 'ti ti-eye', class: 'btn-outline-primary' }
     ],
     searchable: true,
     paginated: true
@@ -93,16 +122,23 @@ export class PaymentsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.modalRef) {
+      this.modalRef.close();
+    }
   }
 
   private initializeFilterForm(): void {
     this.filterForm = this.fb.group({
-      paymentStatus: [''],
+      status: [''],
       paymentMethod: [''],
-      paymentReference: [''],
-      bookingReference: [''],
-      fromDate: [''],
-      toDate: ['']
+      customerId: [''],
+      bookingId: [''],
+      amountMin: [''],
+      amountMax: [''],
+      startDate: [''],
+      endDate: [''],
+      sortBy: ['updatedAt'],
+      sortDirection: ['desc']
     });
   }
 
@@ -114,7 +150,7 @@ export class PaymentsComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(() => {
-        this.currentFilters = { page: 1, size: 10 };
+        this.currentFilters = { page: 0, size: 10 };
         this.loadPayments();
       });
   }
@@ -128,7 +164,14 @@ export class PaymentsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           if (response.success && response.data?.payments) {
-            this.data = response.data.payments;
+            // Add customer name to userDetails for display
+            this.data = response.data.payments.map((payment: Payment) => ({
+              ...payment,
+              userDetails: {
+                ...payment.userDetails
+              }
+            }));
+            
             this.pagination = {
               currentPage: response.data.page || 0,
               totalPages: response.data.totalPages || 0,
@@ -150,30 +193,46 @@ export class PaymentsComponent implements OnInit, OnDestroy {
   private buildFilterParams(): any {
     const formValue = this.filterForm.value;
     const params: any = {
-      page: this.currentFilters.page - 1,
+      page: this.currentFilters.page,
       size: this.currentFilters.size
     };
 
     // Add payment filters
-    if (formValue.paymentStatus) {
-      params.paymentStatus = formValue.paymentStatus;
+    if (formValue.status) {
+      params.status = formValue.status;
     }
     if (formValue.paymentMethod) {
       params.paymentMethod = formValue.paymentMethod;
     }
-    if (formValue.paymentReference) {
-      params.paymentReference = formValue.paymentReference;
+    if (formValue.customerId) {
+      params.customerId = formValue.customerId;
     }
-    if (formValue.bookingReference) {
-      params.bookingReference = formValue.bookingReference;
+    if (formValue.bookingId) {
+      params.bookingId = formValue.bookingId;
+    }
+
+    // Add amount range filters
+    if (formValue.amountMin) {
+      params.amountMin = formValue.amountMin;
+    }
+    if (formValue.amountMax) {
+      params.amountMax = formValue.amountMax;
     }
 
     // Add date range filters
-    if (formValue.fromDate) {
-      params.fromDate = formValue.fromDate;
+    if (formValue.startDate) {
+      params.startDate = formValue.startDate;
     }
-    if (formValue.toDate) {
-      params.toDate = formValue.toDate;
+    if (formValue.endDate) {
+      params.endDate = formValue.endDate;
+    }
+
+    // Add sorting parameters
+    if (formValue.sortBy) {
+      params.sortBy = formValue.sortBy;
+    }
+    if (formValue.sortDirection) {
+      params.sortDirection = formValue.sortDirection;
     }
 
     return params;
@@ -186,13 +245,13 @@ export class PaymentsComponent implements OnInit, OnDestroy {
 
   resetFilters(): void {
     this.filterForm.reset();
-    this.currentFilters = { page: 1, size: 10 };
+    this.currentFilters = { page: 0, size: 10 };
     this.loadPayments();
   }
 
   onSearch(searchTerm: string): void {
     if (searchTerm.trim()) {
-      this.filterForm.patchValue({ paymentReference: searchTerm });
+      this.filterForm.patchValue({ paymentId: searchTerm });
     }
   }
 
@@ -203,10 +262,25 @@ export class PaymentsComponent implements OnInit, OnDestroy {
 
   onActionClick(event: any): void {
     const { action, item } = event;
-    switch (action) {
-      case 'view':
-        // Handle view action
-        break;
+    
+    if (action === 'view') {
+      this.viewGatewayMetadata(item);
+    }
+  }
+
+  private viewGatewayMetadata(payment: Payment): void {
+    this.selectedPayment = payment;
+    this.modalRef = this.modalService.open(this.metadataModal, {
+      size: 'lg',
+      centered: true,
+      backdrop: 'static'
+    });
+  }
+
+  closeModal(): void {
+    if (this.modalRef) {
+      this.modalRef.close();
+      this.selectedPayment = null;
     }
   }
 

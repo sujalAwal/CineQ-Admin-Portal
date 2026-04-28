@@ -70,3 +70,103 @@
     }
   }
 }
+
+// Modal Styles
+::ng-deep {
+  .modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1.5rem;
+
+    .modal-title {
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin: 0;
+    }
+
+    .btn-close {
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.1);
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+
+    .payment-info {
+      h6 {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      .row > div {
+        margin-bottom: 1.5rem;
+
+        small {
+          font-size: 0.75rem;
+          margin-bottom: 0.25rem;
+        }
+
+        strong {
+          font-size: 0.95rem;
+          color: #333;
+          word-break: break-all;
+        }
+      }
+    }
+
+    .metadata-section {
+      margin-top: 2rem;
+      border-top: 1px solid #dee2e6;
+      padding-top: 2rem;
+
+      h6 {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        color: #333;
+      }
+
+      .metadata-container {
+        max-height: 400px;
+        overflow-y: auto;
+        border-radius: 0.375rem;
+        background-color: #f8f9fa !important;
+        border: 1px solid #dee2e6;
+
+        pre {
+          margin: 0;
+          font-size: 0.8rem;
+          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+          background-color: transparent;
+          padding: 0;
+
+          code {
+            color: #333;
+            background-color: transparent;
+            padding: 0;
+          }
+        }
+      }
+    }
+  }
+
+  .modal-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    padding: 1.5rem;
+
+    .btn-secondary {
+      background-color: #6c757d;
+      border-color: #6c757d;
+
+      &:hover {
+        background-color: #5a6268;
+        border-color: #545b62;
+      }
+    }
+  }
+}

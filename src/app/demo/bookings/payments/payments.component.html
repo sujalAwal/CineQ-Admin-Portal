@@ -25,7 +25,7 @@
                 <!-- Payment Status Filter -->
                 <div class="col-md-6 col-lg-4 mb-3">
                   <label class="form-label">Payment Status</label>
-                  <select class="form-select form-select-sm" formControlName="paymentStatus">
+                  <select class="form-select form-select-sm" formControlName="status">
                     <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
                       {{ option.label }}
                     </option>
@@ -42,42 +42,58 @@
                   </select>
                 </div>
 
-                <!-- Payment Reference Filter -->
+                <!-- Customer ID Filter -->
                 <div class="col-md-6 col-lg-4 mb-3">
-                  <label class="form-label">Payment Reference</label>
+                  <label class="form-label">Customer ID</label>
                   <input 
                     type="text" 
                     class="form-control form-control-sm" 
-                    placeholder="e.g., PAY-B27AADEA58F44A8B"
-                    formControlName="paymentReference">
+                    formControlName="customerId">
                 </div>
 
-                <!-- Booking Reference Filter -->
+                <!-- Booking ID Filter -->
                 <div class="col-md-6 col-lg-4 mb-3">
-                  <label class="form-label">Booking Reference</label>
+                  <label class="form-label">Booking ID</label>
                   <input 
                     type="text" 
                     class="form-control form-control-sm" 
-                    placeholder="e.g., BK-4C943860A26A"
-                    formControlName="bookingReference">
+                    formControlName="bookingId">
                 </div>
 
-                <!-- From Date Filter -->
+                <!-- Amount Min Filter -->
                 <div class="col-md-6 col-lg-4 mb-3">
-                  <label class="form-label">From Date</label>
+                  <label class="form-label">Minimum Amount</label>
+                  <input 
+                    type="number" 
+                    class="form-control form-control-sm"
+                    formControlName="amountMin">
+                </div>
+
+                <!-- Amount Max Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Maximum Amount</label>
+                  <input 
+                    type="number" 
+                    class="form-control form-control-sm"
+                    formControlName="amountMax">
+                </div>
+
+                <!-- Start Date Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Start Date</label>
                   <input 
                     type="date" 
                     class="form-control form-control-sm"
-                    formControlName="fromDate">
+                    formControlName="startDate">
                 </div>
 
-                <!-- To Date Filter -->
+                <!-- End Date Filter -->
                 <div class="col-md-6 col-lg-4 mb-3">
-                  <label class="form-label">To Date</label>
+                  <label class="form-label">End Date</label>
                   <input 
                     type="date" 
                     class="form-control form-control-sm"
-                    formControlName="toDate">
+                    formControlName="endDate">
                 </div>
               </div>
 
@@ -120,3 +136,47 @@
     </div>
   </div>
 </div>
+
+<!-- Gateway Metadata Modal -->
+<ng-template #metadataModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Gateway Metadata</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedPayment">
+    <div class="payment-info mb-4">
+      <h6 class="mb-3">Payment Information</h6>
+      <div class="row">
+        <div class="col-md-6">
+          <small class="text-muted d-block">Payment ID</small>
+          <strong>{{ selectedPayment.paymentId }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Gateway Transaction ID</small>
+          <strong>{{ selectedPayment.gatewayTransactionId }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Payment Method</small>
+          <strong>{{ selectedPayment.paymentMethod }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Amount</small>
+          <strong>Rs {{ selectedPayment.amount }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="metadata-section">
+      <h6 class="mb-3">Gateway Metadata</h6>
+      <div class="metadata-container p-3 bg-light rounded">
+        <pre><code>{{ selectedPayment.gatewayMetadata | json }}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">
+      <i class="ti ti-x"></i>
+      Close
+    </button>
+  </div>
+</ng-template>
