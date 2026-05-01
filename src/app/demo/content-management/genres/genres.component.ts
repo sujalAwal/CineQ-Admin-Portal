@@ -10,14 +10,14 @@ import { GenreModalComponent } from '../../../shared/components/genre-modal/genr
 import { ConfirmationModalComponent, ConfirmationConfig } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Genre } from '../../../shared/interfaces/genre.interface';
-import { 
-  TableConfig, 
-  TableColumn, 
-  TableAction, 
+import {
+  TableConfig,
+  TableColumn,
+  TableAction,
   PaginationInfo,
   TableActionEvent,
   BulkSelectionEvent,
-  BulkAction 
+  BulkAction
 } from '../../../shared/interfaces/table.interface';
 import { GenreService } from 'src/app/shared/services/genre.service';
 import { GenrePageRequest, PaginatedApiResponse } from '../../../shared/interfaces/genre.interface';
@@ -30,7 +30,7 @@ import { GenrePageRequest, PaginatedApiResponse } from '../../../shared/interfac
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GenresComponent implements OnInit, OnDestroy {
-  
+
   // Table configuration
   tableConfig: TableConfig = {
     title: 'Genres Management',
@@ -150,7 +150,7 @@ export class GenresComponent implements OnInit, OnDestroy {
 
   // 🆕 Memory leak prevention
   private destroy$ = new Subject<void>();
-  
+
   // 🆕 Debounced search
   private searchSubject = new Subject<string>();
 
@@ -159,14 +159,14 @@ export class GenresComponent implements OnInit, OnDestroy {
     type: 'enable' | 'disable' | null;
     selectedIds: string[];
   } = {
-    type: null,
-    selectedIds: []
-  };
+      type: null,
+      selectedIds: []
+    };
 
   constructor(private toastService: ToastService,
-              private genreService: GenreService,
-              private cdr: ChangeDetectorRef
-  ) {}
+    private genreService: GenreService,
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit() {
     this.setupDebouncedSearch();
@@ -209,7 +209,7 @@ export class GenresComponent implements OnInit, OnDestroy {
   loadGenres(additionalFilters?: Partial<GenrePageRequest>) {
     this.loading = true;
     this.cdr.markForCheck(); // Trigger change detection for loading state
-    
+
     // Merge current filters with any additional filters
     const requestParams: GenrePageRequest = {
       ...this.currentFilters,
@@ -220,9 +220,9 @@ export class GenresComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$)) // Prevent memory leaks
       .subscribe({
         next: (response: PaginatedApiResponse<Genre>) => {
-          // Extract data and pagination info from response
+          // API returns a flat array of genres
           this.genresData = response.data;
-          
+
           // Update pagination info
           this.pagination = {
             currentPage: response.page,
@@ -271,7 +271,7 @@ export class GenresComponent implements OnInit, OnDestroy {
    */
   onPageChange(page: number) {
     console.log('Page changed to:', page);
-    
+
     this.currentFilters.page = page;
     this.loadGenres();
   }
@@ -279,9 +279,9 @@ export class GenresComponent implements OnInit, OnDestroy {
   /**
    * Handle sorting
    */
-  onSort(sortInfo: {field: string, order: 'asc' | 'desc'}) {
+  onSort(sortInfo: { field: string, order: 'asc' | 'desc' }) {
     console.log('Sorting by:', sortInfo);
-    
+
     // Update current filters with new sorting
     this.currentFilters = {
       ...this.currentFilters,
@@ -289,34 +289,34 @@ export class GenresComponent implements OnInit, OnDestroy {
       sortDirection: sortInfo.order,
       page: 1 // Reset to first page when sorting
     };
-    
+
     this.loadGenres();
   }
 
   /**
    * 🚀 Optimistic UI update for toggle
    */
-  onToggleChange(event: {item: any, field: string, value: boolean}) {
+  onToggleChange(event: { item: any, field: string, value: boolean }) {
     const genreId = event.item.id;
     const genreName = event.item.name;
-    
+
     // 1. Optimistic update - update UI immediately
     this.updateGenreInList(genreId, { is_active: event.value });
     this.cdr.markForCheck();
-    
+
     // 2. Sync with server
     const operation = event.value ? this.genreService.enableGenre : this.genreService.disableGenre;
-    
+
     operation.call(this.genreService, [genreId])
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (success) => {
           if (success) {
-            const message = event.value 
+            const message = event.value
               ? `Genre "${genreName}" is now active and available.`
               : `Genre "${genreName}" has been set to inactive.`;
             const title = event.value ? 'Genre Activated' : 'Genre Deactivated';
-            
+
             if (event.value) {
               this.toastService.activated(message, title);
             } else {
@@ -339,7 +339,7 @@ export class GenresComponent implements OnInit, OnDestroy {
    * 🚀 Update genre in local list (optimistic update)
    */
   private updateGenreInList(id: string, updates: Partial<Genre>) {
-    this.genresData = this.genresData.map(genre => 
+    this.genresData = this.genresData.map(genre =>
       genre.id === id ? { ...genre, ...updates } : genre
     );
   }
@@ -350,7 +350,7 @@ export class GenresComponent implements OnInit, OnDestroy {
    * Handle bulk actions from data table
    */
   onBulkAction(event: BulkSelectionEvent) {
-    
+
     if (event.selectedIds.length === 0) {
       this.toastService.warning('Please select at least one genre.', 'No Selection');
       return;
@@ -358,7 +358,7 @@ export class GenresComponent implements OnInit, OnDestroy {
 
     // Store bulk operation details
     this.bulkOperation.selectedIds = event.selectedIds;
-    
+
     switch (event.action) {
       case 'bulk-enable':
         this.bulkOperation.type = 'enable';
@@ -380,7 +380,7 @@ export class GenresComponent implements OnInit, OnDestroy {
     const selectedGenres = this.genresData.filter(genre => selectedIds.includes(genre.id));
     const genreNames = selectedGenres.map(g => g.name).join(', ');
     const count = selectedIds.length;
-    
+
     if (operation === 'enable') {
       this.confirmationConfig = {
         title: 'Enable Genres',
@@ -406,7 +406,7 @@ export class GenresComponent implements OnInit, OnDestroy {
         size: 'sm'
       };
     }
-    
+
     this.showConfirmationModal = true;
   }
 
@@ -454,7 +454,7 @@ export class GenresComponent implements OnInit, OnDestroy {
    */
   onGenreSaved(genreData: Genre) {
     this.modalLoading = true;
-    
+
     // Prepare the request data
     const genreRequest = {
       id: genreData.id,
@@ -466,7 +466,7 @@ export class GenresComponent implements OnInit, OnDestroy {
     this.genreService.storeGenre(genreRequest).subscribe({
       next: (response) => {
         console.log('Genre save response:', response);
-        
+
         if (genreData.id) {
           // Update existing genre
           this.toastService.success(
@@ -480,10 +480,10 @@ export class GenresComponent implements OnInit, OnDestroy {
             'Genre Created'
           );
         }
-        
+
         this.modalLoading = false;
         this.onGenreModalClosed();
-        
+
         // Refresh the genre list to show the latest data
         this.loadGenres();
       },
@@ -501,7 +501,7 @@ export class GenresComponent implements OnInit, OnDestroy {
    */
   private deleteGenre(genre: any) {
     console.log('Deleting genre:', genre);
-    
+
     // Set up confirmation modal
     this.genreToDelete = genre;
     this.confirmationConfig = {
@@ -523,7 +523,7 @@ export class GenresComponent implements OnInit, OnDestroy {
     // Handle single genre deletion
     if (this.genreToDelete) {
       this.confirmationConfig.loading = true;
-      
+
       this.genreService.deleteGenre(this.genreToDelete.id).subscribe({
         next: (success) => {
           if (success) {
@@ -553,10 +553,10 @@ export class GenresComponent implements OnInit, OnDestroy {
     // 🆕 Handle bulk operations
     if (this.bulkOperation.type && this.bulkOperation.selectedIds.length > 0) {
       this.confirmationConfig.loading = true;
-      
+
       const selectedIds = this.bulkOperation.selectedIds;
       const operation = this.bulkOperation.type;
-      
+
       if (operation === 'enable') {
         this.genreService.enableGenre(selectedIds).subscribe({
           next: (success) => {
@@ -599,7 +599,7 @@ export class GenresComponent implements OnInit, OnDestroy {
     this.showConfirmationModal = false;
     this.genreToDelete = null;
     this.confirmationConfig.loading = false;
-    
+
     // 🆕 Reset bulk operation state
     this.resetBulkOperation();
   }

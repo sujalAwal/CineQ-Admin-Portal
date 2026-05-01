@@ -105,7 +105,8 @@
         <!-- Banner Image -->
         <div class="col-md-6 mb-3">
           <label class="form-label">
-            Desktop Banner <span class="text-danger">*</span>
+            Desktop Banner <span class="text-danger" *ngIf="!banner || !banner.bannerImage">*</span>
+            <span class="badge bg-success ms-2" *ngIf="banner && getSelectedImageUrl()">Uploaded</span>
           </label>
           
           <div class="image-selection-container compact">
@@ -114,13 +115,22 @@
                 [src]="getSelectedImageUrl()" 
                 alt="Banner Preview"
                 class="banner-image-preview">
-              <button
-                type="button"
-                class="btn btn-sm btn-danger remove-image-btn"
-                (click)="removeSelectedImage()"
-                title="Remove Image">
-                <i class="ti ti-x"></i>
-              </button>
+              <div class="image-actions">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light"
+                  (click)="openMediaManager('banner')"
+                  title="Change Image">
+                  <i class="ti ti-edit"></i>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-danger"
+                  (click)="removeSelectedImage()"
+                  title="Remove Image">
+                  <i class="ti ti-trash"></i>
+                </button>
+              </div>
             </div>
             
             <div class="no-image-placeholder" *ngIf="!getSelectedImageUrl()" (click)="openMediaManager('banner')">
@@ -194,7 +204,7 @@
         <div class="col-md-6 mb-3">
           <label class="form-label">Status</label>
           <div class="status-toggle-wrapper">
-            <div class="form-check form-switch glass-switch">
+            <div class="form-check form-switch d-flex justify-content-center">
               <input
                 class="form-check-input"
                 type="checkbox"
@@ -311,6 +321,73 @@
         <i class="ti ti-click"></i>
         <p class="mb-0">No action buttons added yet</p>
         <small class="text-muted">Click "Add Button" to add call-to-action buttons</small>
+      </div>
+    </div>
+
+    <!-- Section: Display Configuration -->
+    <div class="form-section last">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="section-title mb-0">
+          <i class="ti ti-eye me-2"></i>Display Configuration
+        </h6>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          (click)="displayConfigVisible = !displayConfigVisible"
+          [attr.aria-expanded]="displayConfigVisible"
+          title="Toggle Display Configuration">
+          <i [class]="displayConfigVisible ? 'ti ti-chevron-up' : 'ti ti-chevron-down'"></i>
+        </button>
+      </div>
+      
+      <!-- Display Config Form Group -->
+      <div *ngIf="displayConfigVisible" formGroupName="displayConfig" class="display-config-section">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Show Title</label>
+            <div class="form-check form-switch d-flex justify-content-center">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="showTitle"
+                formControlName="showTitle">
+              <label class="form-check-label" for="showTitle">
+                {{ bannerForm.get('displayConfig')?.get('showTitle')?.value ? 'Enabled' : 'Disabled' }}
+              </label>
+            </div>
+            <small class="text-muted d-block mt-2 text-center">Display banner title in the UI</small>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Show Description</label>
+            <div class="form-check form-switch d-flex justify-content-center">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="showDescription"
+                formControlName="showDescription">
+              <label class="form-check-label" for="showDescription">
+                {{ bannerForm.get('displayConfig')?.get('showDescription')?.value ? 'Enabled' : 'Disabled' }}
+              </label>
+            </div>
+            <small class="text-muted d-block mt-2 text-center">Display banner description in the UI</small>
+          </div>
+          
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Show Buttons</label>
+            <div class="form-check form-switch d-flex justify-content-center">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="showButtons"
+                formControlName="showButtons">
+              <label class="form-check-label" for="showButtons">
+                {{ bannerForm.get('displayConfig')?.get('showButtons')?.value ? 'Enabled' : 'Disabled' }}
+              </label>
+            </div>
+            <small class="text-muted d-block mt-2 text-center">Display action buttons in the UI</small>
+          </div>
+        </div>
       </div>
     </div>
     

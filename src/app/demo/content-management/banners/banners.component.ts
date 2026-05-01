@@ -55,6 +55,12 @@ export class BannersComponent implements OnInit, OnDestroy {
         icon: '',
         type: 'bulk-disable',
         class: 'btn-warning'
+      },
+      {
+        label: 'Delete',
+        icon: '',
+        type: 'bulk-delete',
+        class: 'btn-danger'
       }
     ],
     columns: [
@@ -85,7 +91,8 @@ export class BannersComponent implements OnInit, OnDestroy {
         field: 'description',
         type: 'text',
         sortable: false,
-        width: '250px'
+        width: '250px',
+        maxLength: 35
       },
       {
         header: 'Display Order',
@@ -163,7 +170,7 @@ export class BannersComponent implements OnInit, OnDestroy {
 
   // 🆕 Bulk operation state
   bulkOperation: {
-    type: 'enable' | 'disable' | null;
+    type: 'enable' | 'disable' | 'delete' | null;
     selectedIds: string[];
   } = {
     type: null,
@@ -274,6 +281,21 @@ export class BannersComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Handle refresh button - clear search and reload data
+   */
+  onRefresh() {
+    // Clear search filters
+    this.currentFilters = {
+      page: 1,
+      size: this.currentFilters.size || 20
+    };
+    
+    // Reload data from API
+    this.loadBanners();
+    this.cdr.markForCheck();
+  }
+
+  /**
    * Handle pagination
    */
   onPageChange(page: number) {
@@ -378,6 +400,10 @@ export class BannersComponent implements OnInit, OnDestroy {
         this.bulkOperation.type = 'disable';
         this.showBulkConfirmation('disable', event.selectedIds);
         break;
+      case 'bulk-delete':
+        this.bulkOperation.type = 'delete';
+        this.showBulkConfirmation('delete', event.selectedIds);
+        break;
       default:
         console.warn('Unknown bulk action:', event.action);
     }
@@ -386,7 +412,7 @@ export class BannersComponent implements OnInit, OnDestroy {
   /**
    * Show confirmation modal for bulk operations
    */
-  private showBulkConfirmation(operation: 'enable' | 'disable', selectedIds: string[]) {
+  private showBulkConfirmation(operation: 'enable' | 'disable' | 'delete', selectedIds: string[]) {
     const selectedBanners = this.bannersData.filter(banner => selectedIds.includes(banner.id));
     const bannerTitles = selectedBanners.map(b => b.title).join(', ');
     const count = selectedIds.length;
@@ -403,7 +429,7 @@ export class BannersComponent implements OnInit, OnDestroy {
         loading: false,
         size: 'sm'
       };
-    } else {
+    } else if (operation === 'disable') {
       this.confirmationConfig = {
         title: 'Disable Banners',
         message: `Are you sure you want to <strong>disable</strong> ${count} banner(s)?<br><br><div class="text-muted small">${bannerTitles}</div>`,
@@ -412,6 +438,18 @@ export class BannersComponent implements OnInit, OnDestroy {
         confirmText: 'Disable',
         cancelText: 'Cancel',
         confirmButtonClass: 'btn-warning',
+        loading: false,
+        size: 'sm'
+      };
+    } else if (operation === 'delete') {
+      this.confirmationConfig = {
+        title: 'Delete Banners',
+        message: `Are you sure you want to <strong>delete</strong> ${count} banner(s)?<br><br><div class="text-muted small">${bannerTitles}</div><br><small class="text-danger">This action cannot be undone.</small>`,
+        icon: 'ti ti-trash-x',
+        iconColor: 'danger',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        confirmButtonClass: 'btn-danger',
         loading: false,
         size: 'sm'
       };
@@ -437,23 +475,65 @@ export class BannersComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Edit banner
+   * Edit banner - fetch full data from API first
    */
   private editBanner(banner: any) {
     console.log('Editing banner:', banner);
-    this.selectedBanner = {
-      id: banner.id,
-      slug: banner.slug,
-      title: banner.title,
-      description: banner.description,
-      order: banner.order,
-      isActive: banner.isActive,
-      bannerImage: banner.bannerImage,
-      imageAltText: banner.imageAltText,
-      imageMobileUrl: banner.imageMobileUrl,
-      buttons: banner.buttons || []
-    };
-    this.showBannerModal = true;
+    
+    // Show loading state
+    this.modalLoading = true;
+    this.cdr.markForCheck();
+    
+    // Fetch full banner data from API to get complete image URLs
+    this.bannerService.getBannerById(banner.id).subscribe({
+      next: (fullBanner) => {
+        console.log('Fetched full banner data:', fullBanner);
+        this.selectedBanner = {
+          id: fullBanner.id,
+          slug: fullBanner.slug,
+          title: fullBanner.title,
+          description: fullBanner.description,
+          order: fullBanner.order,
+          isActive: fullBanner.isActive,
+          bannerImage: fullBanner.bannerImage,
+          imageAltText: fullBanner.imageAltText,
+          imageMobileUrl: fullBanner.imageMobileUrl,
+          buttons: fullBanner.buttons || [],
+          displayConfig: fullBanner.displayConfig || {
+            showTitle: true,
+            showDescription: true,
+            showButtons: true
+          }
+        };
+        this.modalLoading = false;
+        this.showBannerModal = true;
+        this.cdr.markForCheck(); // Trigger change detection for OnPush
+      },
+      error: (error) => {
+        console.error('Failed to fetch banner details:', error);
+        this.modalLoading = false;
+        // Fallback to row data if API fails
+        this.selectedBanner = {
+          id: banner.id,
+          slug: banner.slug,
+          title: banner.title,
+          description: banner.description,
+          order: banner.order,
+          isActive: banner.isActive,
+          bannerImage: banner.bannerImage,
+          imageAltText: banner.imageAltText,
+          imageMobileUrl: banner.imageMobileUrl,
+          buttons: banner.buttons || [],
+          displayConfig: banner.displayConfig || {
+            showTitle: true,
+            showDescription: true,
+            showButtons: true
+          }
+        };
+        this.showBannerModal = true;
+        this.cdr.markForCheck(); // Trigger change detection for OnPush
+      }
+    });
   }
 
   /**
@@ -499,7 +579,6 @@ export class BannersComponent implements OnInit, OnDestroy {
    * Delete banner
    */
   private deleteBanner(banner: any) {
-    console.log('Deleting banner:', banner);
     
     // Set up confirmation modal
     this.bannerToDelete = banner;
@@ -524,8 +603,8 @@ export class BannersComponent implements OnInit, OnDestroy {
       this.confirmationConfig.loading = true;
       
       this.bannerService.deleteBanner(this.bannerToDelete.id).subscribe({
-        next: (success) => {
-          if (success) {
+        next: (response) => {
+          if (response.success) {
             this.toastService.success(
               `Banner "${this.bannerToDelete!.title}" has been deleted successfully!`,
               'Banner Deleted'
@@ -587,6 +666,23 @@ export class BannersComponent implements OnInit, OnDestroy {
           },
           error: (error) => {
             console.error('Failed to disable banners:', error);
+            this.resetBulkOperation();
+          }
+        });
+      } else if (operation === 'delete') {
+        this.bannerService.bulkDeleteBanners(selectedIds).subscribe({
+          next: (response) => {
+            if (response.success) {
+              this.toastService.success(
+                `${response.data.deleted} banner(s) have been deleted successfully!`,
+                'Banners Deleted'
+              );
+              this.loadBanners(); // Refresh data from API
+            }
+            this.resetBulkOperation();
+          },
+          error: (error) => {
+            console.error('Failed to delete banners:', error);
             this.resetBulkOperation();
           }
         });

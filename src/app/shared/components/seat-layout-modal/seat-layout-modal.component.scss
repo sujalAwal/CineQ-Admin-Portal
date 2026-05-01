@@ -1,0 +1,16 @@
+.seat-cell {
+  background: #f8f9fa;
+  transition: background 0.15s;
+
+  &.seat-aisle {
+    background: #e9ecef;
+    opacity: 0.6;
+  }
+
+  &.seat-active {
+    background: #fff;
+    &:hover {
+      background: #f0f7ff;
+    }
+  }
+}

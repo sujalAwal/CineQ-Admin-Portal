@@ -3,7 +3,8 @@ name: Cine Q Admin Portal Deployment
 on:
   push:
     branches:
-      - main
+      - develop
+  workflow_dispatch:  # Allow manual triggers
 
 jobs:
   deploy:
@@ -23,6 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: 📦 Installing Dependencies
         run: |
@@ -33,12 +35,36 @@ jobs:
           echo "::endgroup::"
 
       - name: 🏗️ Building Angular App
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_TIMEOUT: ${{ secrets.API_TIMEOUT || '30' }}
+          API_RETRY_ATTEMPTS: ${{ secrets.API_RETRY_ATTEMPTS || '1' }}
+          SUPABASE_STORAGE_BASE_URL: ${{ secrets.SUPABASE_STORAGE_BASE_URL }}
         run: |
           echo "::group::Angular Build Process"
           echo "Building 'cine-q' for Production..."
-          npm run build -- --configuration production
-          echo "Build complete. Checking output directory..."
-          ls -R dist/cineq-app
+          npm run build-prod
+          echo "Build complete!"
+          echo "::endgroup::"
+
+      - name: 🔍 Verify Build Output
+        run: |
+          echo "::group::Build Verification"
+          echo "📂 Listing dist directory structure:"
+          ls -la dist/cineq-admin-portal/
+          echo ""
+          echo "🔍 Looking for index.html:"
+          if [ -f "dist/cineq-admin-portal/index.html" ]; then
+            echo "✅ index.html found!"
+            echo "📊 File size:"
+            ls -lh dist/cineq-admin-portal/index.html
+            echo ""
+            echo "📄 First few lines of index.html:"
+            head -n 10 dist/cineq-admin-portal/index.html
+          else
+            echo "❌ ERROR: index.html NOT found!"
+            exit 1
+          fi
           echo "::endgroup::"
 
       - name: ☁️ Publishing to Cloudflare Pages
@@ -47,9 +73,23 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: 'admin-portal-cineq'
-          directory: 'dist/cineq-app'
+          directory: 'dist/cineq-admin-portal'
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-        # This action automatically logs its own progress (uploading, etc.)
+          branch: ${{ github.ref_name }}
 
       - name: ✅ Deployment Finished
-        run: echo "Cine Q is now live on Cloudflare!"
+        if: success()
+        run: |
+          echo "::group::Deployment Summary"
+          echo "🎉 Cine Q Admin Portal is now live on Cloudflare Pages!"
+          echo "📅 Deployed at: $(date)"
+          echo "🌿 Branch: ${{ github.ref_name }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "::endgroup::"
+
+      - name: ❌ Deployment Failed
+        if: failure()
+        run: |
+          echo "::group::Deployment Failed"
+          echo "❌ Deployment failed. Check the logs above for details."
+          echo "::endgroup::"

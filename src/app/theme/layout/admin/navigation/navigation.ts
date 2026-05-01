@@ -27,7 +27,7 @@ export const NavigationItems: NavigationItem[] = [
         title: 'Dashboard',
         type: 'item',
         classes: 'nav-item',
-        url: '/default',
+        url: '/dashboard',
         icon: 'ti ti-dashboard',
         breadcrumbs: false
       }
@@ -67,14 +67,6 @@ export const NavigationItems: NavigationItem[] = [
             type: 'item',
             url: '/content/artist-types',
             icon: 'ti ti-palette',
-            breadcrumbs: false
-          },
-          {
-            id: 'movies',
-            title: 'Movies',
-            type: 'item',
-            url: '/content/movies',
-            icon: 'ti ti-movie',
             breadcrumbs: false
           },
           {
@@ -148,6 +140,143 @@ export const NavigationItems: NavigationItem[] = [
             url: '/main-settings/modulemanagement',
             icon: 'ti ti-packages',
             breadcrumbs: false
+          },
+          {
+            id: 'email-templates',
+            title: 'Email Templates',
+            type: 'item',
+            url: '/main-settings/email-templates',
+            icon: 'ti ti-mail',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'cinema-management',
+    title: 'Cinema Management',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'cinema-section',
+        title: 'Cinema Management',
+        type: 'collapse',
+        icon: 'ti ti-building-theater',
+        children: [
+         
+          {
+            id: 'movies-cinema',
+            title: 'Movies',
+            type: 'item',
+            url: '/cinema/movies',
+            icon: 'ti ti-movie',
+            breadcrumbs: false
+          },
+          {
+            id: 'theatre',
+            title: 'Theatres',
+            type: 'item',
+            url: '/cinema/theatre',
+            icon: 'ti ti-building',
+            breadcrumbs: false
+          },
+          {
+            id: 'seat-type',
+            title: 'Seat Types',
+            type: 'item',
+            url: '/cinema/seat-type',
+            icon: 'ti ti-chair',
+            breadcrumbs: false
+          },
+          {
+            id: 'seat-status',
+            title: 'Seat Status',
+            type: 'item',
+            url: '/cinema/seat-status',
+            icon: 'ti ti-toggle-left',
+            breadcrumbs: false
+          },
+          {
+            id: 'screen',
+            title: 'Screens',
+            type: 'item',
+            url: '/cinema/screen',
+            icon: 'ti ti-tv',
+            breadcrumbs: false
+          },
+          {
+            id: 'showtime-status',
+            title: 'Showtime Status',
+            type: 'item',
+            url: '/cinema/showtime-status',
+            icon: 'ti ti-clock',
+            breadcrumbs: false
+          },
+          {
+            id: 'showtime',
+            title: 'Showtimes',
+            type: 'item',
+            url: '/cinema/showtime',
+            icon: 'ti ti-calendar-time',
+            breadcrumbs: false
+          },
+          {
+            id: 'seat-layout',
+            title: 'Seat Layouts',
+            type: 'item',
+            url: '/cinema/seat-layout',
+            icon: 'ti ti-layout-grid',
+            breadcrumbs: false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    type: 'group',
+    icon: 'icon-navigation',
+    children: [
+      {
+        id: 'settings-section',
+        title: 'Settings',
+        type: 'collapse',
+        icon: 'ti ti-settings-2',
+        children: [
+          {
+            id: 'setting-groups',
+            title: 'Setting Groups',
+            type: 'item',
+            url: '/settings/setting-groups',
+            icon: 'ti ti-folder-cog',
+            breadcrumbs: false
+          },
+          {
+            id: 'backend-settings',
+            title: 'Backend Settings',
+            type: 'item',
+            url: '/settings/backend-settings',
+            icon: 'ti ti-server-cog',
+            breadcrumbs: false
+          },
+          {
+            id: 'admin-portal-settings',
+            title: 'Admin Portal Settings',
+            type: 'item',
+            url: '/settings/admin-portal-settings',
+            icon: 'ti ti-layout-dashboard',
+            breadcrumbs: false
+          },
+          {
+            id: 'customer-portal-settings',
+            title: 'Customer Portal Settings',
+            type: 'item',
+            url: '/settings/customer-portal-settings',
+            icon: 'ti ti-users-group',
+            breadcrumbs: false
           }
         ]
       }
@@ -178,94 +307,34 @@ export const NavigationItems: NavigationItem[] = [
     ]
   },
   {
-    id: 'page',
-    title: 'Pages',
+    id: 'bookings',
+    title: 'Bookings Details',
     type: 'group',
     icon: 'icon-navigation',
     children: [
       {
-        id: 'Authentication',
-        title: 'Authentication',
+        id: 'bookings-section',
+        title: 'Bookings Details',
         type: 'collapse',
-        icon: 'ti ti-key',
+        icon: 'ti ti-receipt',
         children: [
           {
-            id: 'login',
-            title: 'Login',
+            id: 'bookings',
+            title: 'Bookings',
             type: 'item',
-            url: '/login',
-            target: true,
+            url: '/bookings/bookings',
+            icon: 'ti ti-bookmark',
             breadcrumbs: false
           },
           {
-            id: 'register',
-            title: 'Register',
+            id: 'payments',
+            title: 'Payments',
             type: 'item',
-            url: '/register',
-            target: true,
+            url: '/bookings/payments',
+            icon: 'ti ti-cash',
             breadcrumbs: false
           }
         ]
-      }
-    ]
-  },
-  {
-    id: 'elements',
-    title: 'Elements',
-    type: 'group',
-    icon: 'icon-navigation',
-    children: [
-      {
-        id: 'typography',
-        title: 'Typography',
-        type: 'item',
-        classes: 'nav-item',
-        url: '/typography',
-        icon: 'ti ti-typography'
-      },
-      {
-        id: 'color',
-        title: 'Colors',
-        type: 'item',
-        classes: 'nav-item',
-        url: '/color',
-        icon: 'ti ti-brush'
-      },
-      {
-        id: 'tabler',
-        title: 'Tabler',
-        type: 'item',
-        classes: 'nav-item',
-        url: 'https://tabler-icons.io/',
-        icon: 'ti ti-plant-2',
-        target: true,
-        external: true
-      }
-    ]
-  },
-  {
-    id: 'other',
-    title: 'Other',
-    type: 'group',
-    icon: 'icon-navigation',
-    children: [
-      {
-        id: 'sample-page',
-        title: 'Sample Page',
-        type: 'item',
-        url: '/sample-page',
-        classes: 'nav-item',
-        icon: 'ti ti-brand-chrome'
-      },
-      {
-        id: 'document',
-        title: 'Document',
-        type: 'item',
-        classes: 'nav-item',
-        url: 'https://angularjs.org/',
-        icon: 'ti ti-vocabulary',
-        target: true,
-        external: true
       }
     ]
   }

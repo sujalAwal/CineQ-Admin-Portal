@@ -51,10 +51,6 @@ const routes: Routes = [
             loadComponent: () => import('./demo/content-management/artist-types/artist-types.component').then((c) => c.ArtistTypesComponent)
           },
           {
-            path: 'movies',
-            loadComponent: () => import('./demo/content-management/movies/movies.component').then((c) => c.MoviesComponent)
-          },
-          {
             path: 'media-manager',
             loadComponent: () => import('./demo/content-management/media-manager/media-manager.component').then((c) => c.MediaManagerComponent)
           },
@@ -100,6 +96,84 @@ const routes: Routes = [
           {
             path: 'modulemanagement',
             loadComponent: () => import('./demo/main-settings/modulemanagement/modulemanagement.component').then((c) => c.ModulemanagementComponent)
+          },
+          {
+            path: 'email-templates',
+            loadComponent: () => import('./demo/main-settings/email-templates/email-templates.component').then((c) => c.EmailTemplatesComponent)
+          }
+        ]
+      },
+      // Settings Routes
+      {
+        path: 'settings',
+        children: [
+          {
+            path: 'setting-groups',
+            loadComponent: () => import('./demo/settings/setting-groups/setting-groups.component').then((c) => c.SettingGroupsComponent)
+          },
+          {
+            path: 'backend-settings',
+            loadComponent: () => import('./demo/settings/backend-settings/backend-settings.component').then((c) => c.BackendSettingsComponent)
+          },
+          {
+            path: 'admin-portal-settings',
+            loadComponent: () => import('./demo/settings/admin-portal-settings/admin-portal-settings.component').then((c) => c.AdminPortalSettingsComponent)
+          },
+          {
+            path: 'customer-portal-settings',
+            loadComponent: () => import('./demo/settings/customer-portal-settings/customer-portal-settings.component').then((c) => c.CustomerPortalSettingsComponent)
+          }
+        ]
+      },
+      // Cinema Management Routes
+      {
+        path: 'cinema',
+        children: [
+          {
+            path: 'movies',
+            loadComponent: () => import('./demo/cinema-management/movies-cinema/movies.component').then((c) => c.MoviesCinemaComponent)
+          },
+          {
+            path: 'theatre',
+            loadComponent: () => import('./demo/cinema-management/theatre/theatre.component').then((c) => c.TheatreComponent)
+          },
+          {
+            path: 'seat-type',
+            loadComponent: () => import('./demo/cinema-management/seat-type/seat-type.component').then((c) => c.SeatTypeComponent)
+          },
+          {
+            path: 'seat-status',
+            loadComponent: () => import('./demo/cinema-management/seat-status/seat-status.component').then((c) => c.SeatStatusComponent)
+          },
+          {
+            path: 'screen',
+            loadComponent: () => import('./demo/cinema-management/screen/screen.component').then((c) => c.ScreenComponent)
+          },
+          {
+            path: 'showtime-status',
+            loadComponent: () => import('./demo/cinema-management/showtime-status/showtime-status.component').then((c) => c.ShowtimeStatusComponent)
+          },
+          {
+            path: 'showtime',
+            loadComponent: () => import('./demo/cinema-management/showtime/showtime.component').then((c) => c.ShowtimeComponent)
+          },
+          {
+            path: 'seat-layout',
+            loadComponent: () => import('./demo/cinema-management/seat-layout/seat-layout.component').then((c) => c.SeatLayoutComponent)
+          }
+        ]
+      },
+      // Bookings Routes
+      {
+        path: 'bookings',
+        children: [
+          {
+            path: 'bookings',
+            loadComponent: () => import('./demo/bookings/bookings/bookings.component').then((c) => c.BookingsComponent)
+          },
+          {
+            path: 'payments',
+            loadComponent: () => import('./demo/bookings/payments/payments.component').then((c) => c.PaymentsComponent)
           }
         ]
       }

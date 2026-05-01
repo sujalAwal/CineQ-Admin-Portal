@@ -1,0 +1,212 @@
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
+import { PeopleService } from '../../services/people.service';
+import { ToastrService } from 'ngx-toastr';
+
+@Component({
+  selector: 'app-people-modal',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, BaseModalComponent],
+  templateUrl: './people-modal.component.html',
+  styleUrls: ['./people-modal.component.scss']
+})
+export class PeopleModalComponent implements OnInit, OnChanges {
+
+  @Input() isVisible: boolean = false;
+  @Input() person: any = null;
+  @Input() isLoading: boolean = false;
+
+  @Output() closed = new EventEmitter<void>();
+  @Output() personSaved = new EventEmitter<any>();
+
+  form!: FormGroup;
+
+  modalConfig: ModalConfig = {
+    title: 'Add Person',
+    icon: 'user-plus',
+    size: 'md',
+    primaryButtonText: 'Save Person',
+    primaryButtonIcon: 'device-floppy',
+    primaryButtonLoading: false,
+    primaryButtonDisabled: false,
+    secondaryButtonText: 'Cancel',
+    showFooter: true,
+    showSecondaryButton: true
+  };
+
+  constructor(
+    private fb: FormBuilder,
+    private peopleService: PeopleService,
+    private toastr: ToastrService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.initializeForm();
+  }
+
+  ngOnChanges(): void {
+    if (this.form) {
+      this.updateModalConfig();
+      this.populateForm();
+      setTimeout(() => {
+        this.updateButtonState();
+      }, 0);
+    }
+  }
+
+  private initializeForm(): void {
+    this.form = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      image: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
+      description: ['', [Validators.maxLength(2000)]],
+      isActive: [true, [Validators.required]]
+    });
+
+    this.form.valueChanges.subscribe(() => {
+      this.updateButtonState();
+    });
+  }
+
+  private updateButtonState(): void {
+    this.modalConfig.primaryButtonDisabled = this.form.invalid || this.isLoading;
+  }
+
+  private updateModalConfig(): void {
+    if (this.person) {
+      this.modalConfig.title = 'Edit Person';
+      this.modalConfig.icon = 'user-edit';
+      this.modalConfig.primaryButtonText = 'Update Person';
+    } else {
+      this.modalConfig.title = 'Add Person';
+      this.modalConfig.icon = 'user-plus';
+      this.modalConfig.primaryButtonText = 'Create Person';
+    }
+
+    this.modalConfig.primaryButtonLoading = this.isLoading;
+  }
+
+  private populateForm(): void {
+    if (this.person && this.form) {
+      this.form.patchValue({
+        name: this.person.name,
+        image: this.person.image,
+        description: this.person.description || '',
+        isActive: this.person.isActive
+      }, { emitEvent: false });
+
+      setTimeout(() => {
+        this.updateButtonState();
+      }, 200);
+    }
+  }
+
+  onModalClose(): void {
+    this.resetForm();
+    this.closed.emit();
+  }
+
+  onModalSave(): void {
+    if (!this.form.valid) {
+      this.markFormGroupTouched();
+      this.toastr.error('Please fill in all required fields correctly', 'Validation Error');
+      return;
+    }
+
+    this.modalConfig.primaryButtonLoading = true;
+    this.modalConfig.primaryButtonDisabled = true;
+
+    const formValue = this.form.value;
+    const personData = {
+      stepSlug: 'v1',
+      action: this.person?.id ? 'UPDATE' : 'CREATE',
+      ...(this.person?.id && { id: this.person.id }),
+      formData: {
+        ...(this.person?.id && { id: this.person.id }),
+        name: formValue.name.trim(),
+        image: formValue.image.trim(),
+        description: formValue.description?.trim() || '',
+        isActive: formValue.isActive
+      }
+    };
+
+    this.peopleService.save(personData).subscribe({
+      next: (savedPerson) => {
+        this.personSaved.emit(savedPerson);
+        this.resetLoadingState();
+        this.resetForm();
+      },
+      error: (error) => {
+        this.handleSaveError(error);
+        this.resetLoadingState();
+      }
+    });
+  }
+
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
+  }
+
+  private resetLoadingState(): void {
+    this.modalConfig.primaryButtonLoading = false;
+    this.updateButtonState();
+  }
+
+  private resetForm(): void {
+    this.form.reset({
+      isActive: true
+    });
+    this.form.markAsUntouched();
+  }
+
+  private markFormGroupTouched(): void {
+    Object.keys(this.form.controls).forEach(key => {
+      this.form.get(key)?.markAsTouched();
+    });
+  }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.form.get(fieldName);
+    return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.form.get(fieldName);
+
+    if (field?.errors) {
+      if (field.errors['required']) {
+        return `${this.getFieldLabel(fieldName)} is required`;
+      }
+      if (field.errors['minlength']) {
+        return `${this.getFieldLabel(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
+      }
+      if (field.errors['maxlength']) {
+        return `${this.getFieldLabel(fieldName)} must not exceed ${field.errors['maxlength'].requiredLength} characters`;
+      }
+    }
+
+    return '';
+  }
+
+  private getFieldLabel(fieldName: string): string {
+    const labels: { [key: string]: string } = {
+      name: 'Name',
+      image: 'Image URL',
+      description: 'Description',
+      isActive: 'Status'
+    };
+    return labels[fieldName] || fieldName;
+  }
+}

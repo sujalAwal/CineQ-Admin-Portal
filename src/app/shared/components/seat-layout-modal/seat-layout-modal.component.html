@@ -1,0 +1,133 @@
+<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (closed)="onModalClose()" (primaryAction)="onModalSave()" (secondaryAction)="onModalClose()">
+  <div class="form-container">
+    <form [formGroup]="form">
+
+      <!-- Layout Identity -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Layout Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('name')" formControlName="name" placeholder="e.g., Standard 10x20, IMAX Premium">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">{{ getFieldError('name') }}</div>
+          </div>
+        </div>
+        <div class="col-md-3 d-flex align-items-center pt-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="isDefaultToggle" formControlName="isDefault">
+            <label class="form-check-label" for="isDefaultToggle">
+              <strong>Default Template</strong><br>
+              <small class="text-muted">Reusable, not screen-specific</small>
+            </label>
+          </div>
+        </div>
+        <div class="col-md-3 d-flex align-items-center pt-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="layoutIsActive" formControlName="isActive">
+            <label class="form-check-label" for="layoutIsActive">Active</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen selector (only when not default) -->
+      <div class="row" *ngIf="!form.get('isDefault')?.value">
+        <div class="col-md-8">
+          <div class="mb-3">
+            <label class="form-label">Screen <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('screenId')" formControlName="screenId">
+              <option value="">{{ loadingDropdowns ? 'Loading screens...' : 'Select Screen' }}</option>
+              <option *ngFor="let s of screens" [value]="s._id">{{ s.screenName }} ({{ s.rows }}×{{ s.columns }})</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('screenId')">{{ getFieldError('screenId') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4 d-flex align-items-end pb-3">
+          <button type="button" class="btn btn-outline-secondary w-100" (click)="generateLayout()" [disabled]="!selectedScreen">
+            <i class="ti ti-layout-grid me-1"></i>Generate Layout
+          </button>
+        </div>
+      </div>
+
+      <!-- Generate button for default template -->
+      <div class="row" *ngIf="form.get('isDefault')?.value && rowsArray.length === 0">
+        <div class="col-md-12">
+          <div class="alert alert-info d-flex align-items-center gap-2">
+            <i class="ti ti-info-circle"></i>
+            For a default template, manually add rows below or select a screen first to auto-generate.
+          </div>
+        </div>
+      </div>
+
+      <!-- Seat Layout Builder -->
+      <div *ngIf="rowsArray.length > 0">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="mb-0">Seat Configuration <small class="text-muted">({{ getTotalLayoutSeats() }} bookable seats across {{ rowsArray.length }} rows)</small></h6>
+        </div>
+
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+          <table class="table table-sm table-bordered align-middle">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width:50px">Row</th>
+                <th style="width:160px">Row Seat Type <small class="text-muted d-block">(apply to all)</small></th>
+                <th style="width:120px">Row Price <small class="text-muted d-block">(apply to all)</small></th>
+                <th>Seats</th>
+              </tr>
+            </thead>
+            <tbody formArrayName="rows">
+              <tr *ngFor="let row of rowsArray.controls; let ri = index" [formGroupName]="ri">
+                <td class="text-center fw-bold">{{ row.get('rowLabel')?.value }}</td>
+                <td>
+                  <select class="form-select form-select-sm" formControlName="rowSeatType">
+                    <option value="">-- Type --</option>
+                    <option *ngFor="let st of seatTypes" [value]="st.code">{{ st.name }}</option>
+                  </select>
+                </td>
+                <td>
+                  <input type="number" class="form-control form-control-sm" formControlName="rowPrice" placeholder="Price" min="0" step="0.01">
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1" formArrayName="seats">
+                    <div *ngFor="let seat of getSeatsArray(ri).controls; let si = index"
+                      [formGroupName]="si"
+                      class="seat-cell border rounded text-center p-1"
+                      [class.seat-aisle]="seat.get('isAisle')?.value"
+                      [class.seat-active]="!seat.get('isAisle')?.value"
+                      style="min-width:38px; cursor:pointer; font-size:11px;"
+                      [title]="seat.get('isAisle')?.value ? 'Aisle (click to restore)' : seat.get('seatCode')?.value">
+                      <div class="fw-bold">{{ seat.get('seatCode')?.value }}</div>
+                      <div *ngIf="!seat.get('isAisle')?.value">
+                        <select class="form-select form-select-sm p-0" style="font-size:10px; height:18px;" formControlName="seatTypeCode">
+                          <option value="">Type</option>
+                          <option *ngFor="let st of seatTypes" [value]="st.code">{{ st.code }}</option>
+                        </select>
+                        <input type="number" class="form-control form-control-sm p-0 mt-1" style="font-size:10px; height:18px;" formControlName="price" placeholder="₹" min="0">
+                      </div>
+                      <div *ngIf="seat.get('isAisle')?.value" class="text-muted" style="font-size:10px;">AISLE</div>
+                      <div class="mt-1">
+                        <input type="checkbox" class="form-check-input" formControlName="isActive" title="Seat active" *ngIf="!seat.get('isAisle')?.value">
+                        <button type="button" class="btn btn-link p-0 text-secondary" style="font-size:10px;" (click)="toggleAisle(ri, si)" [title]="seat.get('isAisle')?.value ? 'Restore seat' : 'Mark as aisle'">
+                          <i [class]="seat.get('isAisle')?.value ? 'ti ti-armchair' : 'ti ti-minus'"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-2 text-muted small">
+          <i class="ti ti-info-circle me-1"></i>
+          Toggle the <i class="ti ti-minus"></i> icon on any seat to mark it as an aisle gap. Row-level seat type and price apply to all non-aisle seats in that row.
+        </div>
+      </div>
+
+      <div *ngIf="rowsArray.length === 0 && form.get('isDefault')?.value" class="text-center text-muted border rounded p-4">
+        <i class="ti ti-layout-grid" style="font-size:2rem;"></i>
+        <p class="mt-2 mb-0">No seat rows configured. Select a screen and click "Generate Layout" or add rows manually.</p>
+      </div>
+
+    </form>
+  </div>
+</app-base-modal>

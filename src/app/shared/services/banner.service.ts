@@ -14,7 +14,9 @@ import {
   BannerFormSubmitRequest,
   BannerListResponse,
   BannerBulkStatusRequest,
-  BannerBulkStatusResponse
+  BannerBulkStatusResponse,
+  BulkDeleteRequest,
+  BulkDeleteResponse
 } from '../interfaces/banner.interface';
 import { 
   PaginatedApiResponse
@@ -24,13 +26,17 @@ import {
   providedIn: 'root'
 })
 export class BannerService {
+  // Form identifier - used across all API calls
+  private readonly FORM_SLUG = 'banner';
+  
   private currentBannerSubject = new BehaviorSubject<Banner | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
 
   // API endpoints based on documentation
-  private readonly formSubmitUrl = `${environment.api.baseUrl}/v1/submit/banner`;
-  private readonly listUrl = `${environment.api.baseUrl}/v1/list/banner`;
+  private readonly formSubmitUrl = `${environment.api.baseUrl}/v1/submit/${this.FORM_SLUG}`;
+  private readonly listUrl = `${environment.api.baseUrl}/v1/list/${this.FORM_SLUG}`;
   private readonly bulkStatusUrl = `${environment.api.baseUrl}/v1/update-status`;
+  private readonly deleteUrl = `${environment.api.baseUrl}/v1/delete`;
 
   // 🚀 Performance optimizations
   private bannerCache = new Map<string, { data: any, timestamp: number }>();
@@ -81,8 +87,21 @@ export class BannerService {
     }).pipe(
       map(response => {
         if (response && response.success) {
-          // Extract banners from the nested structure: data[0].banner
-          const banners = response.data?.[0]?.banner || [];
+          // Extract banners - handle nested structure: data[0].banner or data[0]['banners']
+          let banners: Banner[] = [];
+          
+          if (Array.isArray(response.data) && response.data.length > 0) {
+            const firstItem = response.data[0] as any;
+            // Check for nested structure with various key formats
+            if (firstItem?.banner && Array.isArray(firstItem.banner)) {
+              banners = firstItem.banner;
+            } else if (firstItem?.banners && Array.isArray(firstItem.banners)) {
+              banners = firstItem.banners;
+            } else if (firstItem?.id) {
+              // Flat structure: data is directly the array of banners
+              banners = response.data as unknown as Banner[];
+            }
+          }
           
           // Transform to PaginatedApiResponse format for component compatibility
           const paginatedResponse: PaginatedApiResponse<Banner> = {
@@ -152,7 +171,9 @@ export class BannerService {
     const isUpdate = !!banner.id;
     
     const requestPayload: BannerFormSubmitRequest = {
-      formSlug: 'banner',
+      // Include id at root level for updates (API requirement)
+      ...(isUpdate && banner.id && { id: banner.id }),
+      formSlug: this.FORM_SLUG,
       stepSlug: 'v1',
       action: isUpdate ? 'UPDATE' : 'CREATE',
       formData: banner
@@ -163,8 +184,6 @@ export class BannerService {
     }).pipe(
       map(response => {
         if (response && response.success && response.data) {
-          const action = isUpdate ? 'updated' : 'created';
-          this.toastr.success(`Banner ${action} successfully!`, 'Success');
           // Invalidate cache after successful mutation
           this.invalidateCache();
           return response;
@@ -180,17 +199,12 @@ export class BannerService {
 
   /**
    * Read a single banner by ID
-   * POST /api/v1/forms/submit with action: READ
+   * GET /api/v1/view/banner/{id}
    */
   getBannerById(id: string): Observable<Banner> {
-    const requestPayload: BannerFormSubmitRequest = {
-      formSlug: 'banner',
-      stepSlug: 'v1',
-      action: 'READ',
-      formData: { id }
-    };
+    const viewUrl = `${environment.api.baseUrl}/v1/view/${this.FORM_SLUG}/${id}`;
     
-    return this.http.post<BannerResponse>(this.formSubmitUrl, requestPayload, {
+    return this.http.get<BannerResponse>(viewUrl, {
       withCredentials: true
     }).pipe(
       map(response => {
@@ -213,33 +227,11 @@ export class BannerService {
   }
 
   /**
-   * Delete banner (soft-delete)
-   * POST /api/v1/forms/submit with action: DELETE
+   * Delete banner (soft-delete) - single or bulk
+   * DELETE /v1/delete
    */
-  deleteBanner(id: string): Observable<boolean> {
-    const requestPayload: BannerFormSubmitRequest = {
-      formSlug: 'banner',
-      stepSlug: 'v1',
-      action: 'DELETE',
-      formData: { id }
-    };
-    
-    return this.http.post<BannerResponse>(this.formSubmitUrl, requestPayload, { 
-      withCredentials: true 
-    }).pipe(
-      map(response => {
-        if (response && response.success) {
-          this.toastr.success(response.message || 'Banner deleted successfully!', 'Success');
-          // Invalidate cache after successful deletion
-          this.invalidateCache();
-          return true;
-        }
-        throw new Error(response?.message || 'Failed to delete banner');
-      }),
-      catchError((error: any) => {
-        return this.handleError(error);
-      })
-    );
+  deleteBanner(id: string): Observable<BulkDeleteResponse> {
+    return this.bulkDeleteBanners([id]);
   }
 
   /**
@@ -249,7 +241,7 @@ export class BannerService {
   enableBanner(ids: string[]): Observable<boolean> {
     const requestPayload: BannerBulkStatusRequest = {
       ids,
-      formSlug: 'banner',
+      formSlug: this.FORM_SLUG,
       isActive: true
     };
     
@@ -277,7 +269,7 @@ export class BannerService {
   disableBanner(ids: string[]): Observable<boolean> {
     const requestPayload: BannerBulkStatusRequest = {
       ids,
-      formSlug: 'banner',
+      formSlug: this.FORM_SLUG,
       isActive: false
     };
     
@@ -291,6 +283,34 @@ export class BannerService {
           return true;
         }
         throw new Error(response?.message || 'Failed to disable banners');
+      }),
+      catchError((error: any) => {
+        return this.handleError(error);
+      })
+    );
+  }
+
+  /**
+   * Bulk delete banners (soft-delete)
+   * DELETE /v1/delete
+   */
+  bulkDeleteBanners(ids: string[]): Observable<BulkDeleteResponse> {
+    const requestPayload: BulkDeleteRequest = {
+      formSlug: this.FORM_SLUG,
+      ids
+    };
+    
+    return this.http.delete<BulkDeleteResponse>(this.deleteUrl, { 
+      body: requestPayload,
+      withCredentials: true 
+    }).pipe(
+      map(response => {
+        if (response && response.success) {
+          // Invalidate cache after successful deletion
+          this.invalidateCache();
+          return response;
+        }
+        throw new Error(response?.message || 'Failed to delete banners');
       }),
       catchError((error: any) => {
         return this.handleError(error);

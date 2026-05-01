@@ -1,0 +1,94 @@
+<div class="multi-select-wrapper">
+  <!-- Main button/display area with selected chips -->
+  <div class="multi-select-container">
+    <!-- Selected chips display area -->
+    <div class="selected-chips-area" *ngIf="selectedIds.length > 0; else emptyState">
+      <div class="chips-container">
+        <div *ngFor="let id of selectedIds" class="chip">
+          <span class="chip-text">{{ getOptionDisplayName(getSelectedOption(id)!) }}</span>
+          <button type="button" 
+                  class="chip-remove" 
+                  (click)="removeOption(id, $event)"
+                  title="Remove">
+            <i class="ti ti-x"></i>
+          </button>
+        </div>
+      </div>
+      <button type="button" 
+              class="btn-clear-all" 
+              (click)="clearAllSelections($event)"
+              *ngIf="selectedIds.length > 1"
+              title="Clear all">
+        <i class="ti ti-trash"></i>
+      </button>
+    </div>
+
+    <!-- Empty state (no selection yet) -->
+    <ng-template #emptyState>
+      <div class="empty-state" (click)="toggleDropdown()" [class.disabled]="isDisabled || isLoading">
+        <span *ngIf="!isLoading" class="placeholder-text">
+          <i class="ti ti-filter me-2"></i>{{ placeholder }}
+        </span>
+        <span *ngIf="isLoading" class="placeholder-text loading">
+          <i class="ti ti-loader-quarter spin me-1"></i>Loading...
+        </span>
+        <i class="ti ti-chevron-down chevron" [class.rotated]="isOpen"></i>
+      </div>
+    </ng-template>
+
+    <!-- Dropdown toggle button (when items selected) -->
+    <button *ngIf="selectedIds.length > 0"
+            type="button" 
+            class="btn-toggle" 
+            [class.open]="isOpen"
+            [class.disabled]="isDisabled || isLoading"
+            (click)="toggleDropdown()">
+      <i class="ti ti-chevron-down chevron" [class.rotated]="isOpen"></i>
+    </button>
+  </div>
+
+  <!-- Dropdown menu -->
+  <div class="multi-select-dropdown" *ngIf="isOpen && !isDisabled" [class.show]="isOpen">
+    <!-- Search input -->
+    <div class="multi-select-search p-2 border-bottom">
+      <input type="text" 
+             class="form-control form-control-sm" 
+             [placeholder]="searchPlaceholder"
+             [(ngModel)]="searchText"
+             (ngModelChange)="onSearchChange($event)"
+             (click)="$event.stopPropagation()"
+             autofocus>
+    </div>
+
+    <!-- Options list -->
+    <div class="multi-select-options">
+      <div *ngIf="isLoading" class="p-3 text-center text-muted">
+        <i class="ti ti-loader-quarter spin me-1"></i>Loading options...
+      </div>
+
+      <div *ngIf="!isLoading && filteredOptions.length === 0" class="empty-message">
+        <i class="ti ti-search me-2"></i>
+        {{ searchText.trim() ? 'No results found' : 'All items selected' }}
+      </div>
+
+      <div *ngIf="!isLoading && filteredOptions.length > 0" class="options-container">
+        <button *ngFor="let option of filteredOptions" 
+                type="button"
+                class="option-item"
+                (click)="selectOption(getOptionId(option))">
+          <span class="option-content">
+            <i class="ti ti-plus icon-plus"></i>
+            <span class="option-text">{{ getOptionDisplayName(option) }}</span>
+          </span>
+          <i class="ti ti-chevron-right icon-chevron"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div *ngIf="errorMessage" class="error-message">
+    <i class="ti ti-alert-circle me-1"></i>{{ errorMessage }}
+  </div>
+</div>
+

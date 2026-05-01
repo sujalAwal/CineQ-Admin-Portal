@@ -1,0 +1,72 @@
+.page-wrapper {
+  padding: 1.5rem 0;
+
+  .page-header {
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+
+    h1 {
+      margin: 0;
+      font-size: 1.875rem;
+      font-weight: 600;
+    }
+
+    .btn {
+      white-space: nowrap;
+    }
+  }
+
+  .card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid #e0e0e0;
+
+    &.filter-card {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+
+      .card-body {
+        padding: 1.5rem;
+
+        form {
+          .form-label {
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+          }
+
+          .form-control-sm,
+          .form-select-sm {
+            font-size: 0.875rem;
+            height: 2rem;
+            border-radius: 0.25rem;
+
+            &:focus {
+              border-color: #80bdff;
+              box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .btn-outline-primary {
+    &:hover {
+      background-color: #007bff;
+      border-color: #007bff;
+      color: white;
+    }
+  }
+
+  .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+
+    &:hover {
+      background-color: #c82333;
+      border-color: #bd2130;
+    }
+  }
+}

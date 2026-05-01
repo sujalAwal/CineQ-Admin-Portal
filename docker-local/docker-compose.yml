@@ -1,0 +1,17 @@
+services:
+  cineq-admin-local:
+    build:
+      context: ..         # project root (for package.json)
+      dockerfile: docker-local/Dockerfile
+    ports:
+      - "4300:4300"
+    volumes:
+      - ../src:/app/src                   # hot reload — only src is mounted
+      - ../angular.json:/app/angular.json
+      - ../tsconfig.json:/app/tsconfig.json
+      - ../tsconfig.app.json:/app/tsconfig.app.json
+      - /app/node_modules                 # keep container's node_modules, don't override with host
+    environment:
+      - NODE_ENV=development
+    stdin_open: true      # keep stdin open so Angular CLI doesn't exit
+    tty: true

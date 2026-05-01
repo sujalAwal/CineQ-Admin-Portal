@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, FormsModule } from '@angular/forms';
 import { BaseModalComponent } from '../base-modal/base-modal.component';
 import { ModalConfig } from '../base-modal/base-modal.component';
 import { MediaManagerModalComponent } from '../media-manager-modal/media-manager-modal.component';
@@ -18,6 +18,7 @@ import { ToastService } from '../../services/toast.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     BaseModalComponent,
     MediaManagerModalComponent
   ],
@@ -64,6 +65,9 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
   selectedImage: MediaFile | null = null;
   selectedMobileImage: MediaFile | null = null;
   currentImageTarget: 'banner' | 'mobile' = 'banner';
+
+  // Display Config section visibility toggle
+  displayConfigVisible: boolean = false;
   mediaManagerConfig: MediaManagerConfig = {
     title: 'Select Banner Image',
     allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'],
@@ -140,7 +144,12 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
       bannerImage: ['', [Validators.required, Validators.maxLength(2500)]],
       imageAltText: ['', [Validators.required, Validators.maxLength(500)]],
       imageMobileUrl: ['', [Validators.maxLength(255)]],
-      buttons: this.fb.array([], [Validators.maxLength(3)])
+      buttons: this.fb.array([], [Validators.maxLength(3)]),
+      displayConfig: this.fb.group({
+        showTitle: [true, [Validators.required]],
+        showDescription: [true, [Validators.required]],
+        showButtons: [true, [Validators.required]]
+      })
     });
     
     // Watch form validity for button state
@@ -215,14 +224,31 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         isActive: this.banner.isActive !== undefined ? this.banner.isActive : true,
         bannerImage: this.banner.bannerImage || '',
         imageAltText: this.banner.imageAltText || '',
-        imageMobileUrl: this.banner.imageMobileUrl || ''
+        imageMobileUrl: this.banner.imageMobileUrl || '',
+        displayConfig: {
+          showTitle: this.banner.displayConfig?.showTitle ?? true,
+          showDescription: this.banner.displayConfig?.showDescription ?? true,
+          showButtons: this.banner.displayConfig?.showButtons ?? true
+        }
       });
 
       // Disable slug field in edit mode (slug is immutable)
       this.bannerForm.get('slug')?.disable();
+      
+      // In edit mode, make bannerImage non-required if image already exists
+      // (user can keep existing image without re-uploading)
+      if (this.banner.bannerImage) {
+        this.bannerForm.get('bannerImage')?.clearValidators();
+        this.bannerForm.get('bannerImage')?.setValidators([Validators.maxLength(2500)]);
+        this.bannerForm.get('bannerImage')?.updateValueAndValidity();
+      }
     } else {
       // Enable slug field in create mode
       this.bannerForm.get('slug')?.enable();
+      
+      // Restore required validator for bannerImage in create mode
+      this.bannerForm.get('bannerImage')?.setValidators([Validators.required, Validators.maxLength(2500)]);
+      this.bannerForm.get('bannerImage')?.updateValueAndValidity();
     }
   }
   
@@ -261,8 +287,10 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         openInNewTab: btn.openInNewTab
       }));
       
+      // Build banner data request
       const bannerData: BannerRequest = {
         title: formValue.title,
+        slug: formValue.slug, // Always include slug
         description: formValue.description || undefined,
         order: formValue.order,
         isActive: formValue.isActive,
@@ -270,9 +298,13 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
         imageAltText: formValue.imageAltText,
         imageMobileUrl: formValue.imageMobileUrl || undefined,
         buttons: buttons,
-        ...(this.banner?.id && { id: this.banner.id }),
-        // Only include slug for create (not update)
-        ...(!this.banner?.id && { slug: formValue.slug })
+        displayConfig: formValue.displayConfig || {
+          showTitle: true,
+          showDescription: true,
+          showButtons: true
+        },
+        // Include id for updates
+        ...(this.banner?.id && { id: this.banner.id })
       };
       
       try {
@@ -285,7 +317,7 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
             this.resetForm();
           },
           error: (error) => {
-            console.log('Failed to save banner:', error);
+            this.handleSaveError(error);
             this.resetLoadingState();
             // Modal stays open so user can try again
           }
@@ -301,6 +333,20 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
   
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
+  }
+
   // Reset loading states
   private resetLoadingState(): void {
     this.modalConfig.primaryButtonLoading = false;
@@ -320,12 +366,21 @@ export class BannerModalComponent implements OnInit, OnChanges, OnDestroy {
       isActive: true,
       bannerImage: '',
       imageAltText: '',
-      imageMobileUrl: ''
+      imageMobileUrl: '',
+      displayConfig: {
+        showTitle: true,
+        showDescription: true,
+        showButtons: true
+      }
     });
     this.bannerForm.markAsUntouched();
     
     // Enable slug field for next create
     this.bannerForm.get('slug')?.enable();
+    
+    // Restore required validator for bannerImage (for next create operation)
+    this.bannerForm.get('bannerImage')?.setValidators([Validators.required, Validators.maxLength(2500)]);
+    this.bannerForm.get('bannerImage')?.updateValueAndValidity();
     
     // Reset image selections
     this.selectedImage = null;

@@ -6,6 +6,13 @@ export interface BannerButton {
   openInNewTab: boolean;
 }
 
+// Banner Display Configuration Interface
+export interface DisplayConfig {
+  showTitle: boolean;
+  showDescription: boolean;
+  showButtons: boolean;
+}
+
 // Banner Interface 
 export interface Banner {
   id: string;
@@ -18,6 +25,7 @@ export interface Banner {
   imageAltText: string;
   imageMobileUrl?: string;
   buttons: BannerButton[];
+  displayConfig?: DisplayConfig;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -34,10 +42,12 @@ export interface BannerRequest {
   imageAltText: string;
   imageMobileUrl?: string;
   buttons: BannerButton[];
+  displayConfig?: DisplayConfig;
 }
 
 // Banner Form Submit Request Interface
 export interface BannerFormSubmitRequest {
+  id?: string; // Required at root level for updates
   formSlug: 'banner';
   stepSlug: 'v1';
   action: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE';
@@ -94,6 +104,29 @@ export interface BannerBulkStatusResponse {
   };
   timestamp: string;
   path: string;
+}
+
+// Bulk Delete Request
+export interface BulkDeleteRequest {
+  formSlug: string;
+  ids: string[];
+}
+
+// Bulk Delete Response
+export interface BulkDeleteResponse {
+  success: boolean;
+  message: string;
+  data: {
+    deleted: number;
+    failed: number;
+    results: Array<{
+      id: string;
+      success: boolean;
+      message: string;
+    }>;
+  };
+  timestamp?: string;
+  path?: string;
 }
 
 // Banner Page Request Interface

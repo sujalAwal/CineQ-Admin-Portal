@@ -220,7 +220,7 @@ export class FormManagersComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: PaginatedApiResponse<FormManager>) => {
-          this.formManagersData = response.data;
+           this.formManagersData = response.data;
           
           this.pagination = {
             currentPage: response.page,

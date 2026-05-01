@@ -1,0 +1,182 @@
+<div class="container-fluid">
+  <div class="page-wrapper">
+    <!-- Page Title -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="page-header d-flex justify-content-between align-items-center">
+          <h1 class="page-title mb-0">Payments</h1>
+          <button 
+            class="btn btn-sm btn-outline-primary"
+            (click)="toggleFilters()">
+            <i class="ti ti-filter"></i>
+            {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="row mb-3" *ngIf="showFilters">
+      <div class="col-12">
+        <div class="card filter-card">
+          <div class="card-body">
+            <form [formGroup]="filterForm">
+              <div class="row">
+                <!-- Payment Status Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Status</label>
+                  <select class="form-select form-select-sm" formControlName="status">
+                    <option *ngFor="let option of paymentStatusOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Payment Method Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Payment Method</label>
+                  <select class="form-select form-select-sm" formControlName="paymentMethod">
+                    <option *ngFor="let option of paymentMethodOptions" [value]="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Customer ID Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Customer ID</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    formControlName="customerId">
+                </div>
+
+                <!-- Booking ID Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Booking ID</label>
+                  <input 
+                    type="text" 
+                    class="form-control form-control-sm" 
+                    formControlName="bookingId">
+                </div>
+
+                <!-- Amount Min Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Minimum Amount</label>
+                  <input 
+                    type="number" 
+                    class="form-control form-control-sm"
+                    formControlName="amountMin">
+                </div>
+
+                <!-- Amount Max Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Maximum Amount</label>
+                  <input 
+                    type="number" 
+                    class="form-control form-control-sm"
+                    formControlName="amountMax">
+                </div>
+
+                <!-- Start Date Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">Start Date</label>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm"
+                    formControlName="startDate">
+                </div>
+
+                <!-- End Date Filter -->
+                <div class="col-md-6 col-lg-4 mb-3">
+                  <label class="form-label">End Date</label>
+                  <input 
+                    type="date" 
+                    class="form-control form-control-sm"
+                    formControlName="endDate">
+                </div>
+              </div>
+
+              <!-- Filter Actions -->
+              <div class="row">
+                <div class="col-12">
+                  <button 
+                    type="button" 
+                    class="btn btn-sm btn-danger"
+                    (click)="resetFilters()">
+                    <i class="ti ti-refresh"></i>
+                    Reset Filters
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body p-0">
+            <app-data-table
+              [config]="tableConfig"
+              [data]="data"
+              [loading]="loading"
+              [pagination]="pagination"
+              (search)="onSearch($event)"
+              (pageChange)="onPageChange($event)"
+              (actionClick)="onActionClick($event)"
+              (refresh)="onRefresh()">
+            </app-data-table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gateway Metadata Modal -->
+<ng-template #metadataModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">Gateway Metadata</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+  </div>
+  <div class="modal-body" *ngIf="selectedPayment">
+    <div class="payment-info mb-4">
+      <h6 class="mb-3">Payment Information</h6>
+      <div class="row">
+        <div class="col-md-6">
+          <small class="text-muted d-block">Payment ID</small>
+          <strong>{{ selectedPayment.paymentId }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Gateway Transaction ID</small>
+          <strong>{{ selectedPayment.gatewayTransactionId }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Payment Method</small>
+          <strong>{{ selectedPayment.paymentMethod }}</strong>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted d-block">Amount</small>
+          <strong>Rs {{ selectedPayment.amount }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="metadata-section">
+      <h6 class="mb-3">Gateway Metadata</h6>
+      <div class="metadata-container p-3 bg-light rounded">
+        <pre><code>{{ selectedPayment.gatewayMetadata | json }}</code></pre>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">
+      <i class="ti ti-x"></i>
+      Close
+    </button>
+  </div>
+</ng-template>

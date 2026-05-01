@@ -1,98 +1,5 @@
-// Media Manager Component Styles - Clean White Design
-.media-manager-container {
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: #ffffff;
-  color: #000000;
-}
+// Media Manager Component Styles
 
-// Header Styles
-.manager-header {
-  margin-bottom: 2rem;
-  
-  h2 {
-    color: #000000;
-    font-weight: 600;
-    
-    i {
-      color: #0d6efd;
-      margin-right: 0.5rem;
-    }
-  }
-  
-  p {
-    font-size: 0.95rem;
-    color: #6c757d;
-  }
-
-  // Button group styles to keep buttons in one row
-  .button-group {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0.25rem;
-    align-items: center;
-    justify-content: flex-end;
-    white-space: nowrap;
-    width: 100%;
-
-    .btn {
-      flex-shrink: 0;
-      min-width: fit-content;
-      font-size: 0.875rem;
-      padding: 0.375rem 0.75rem;
-    }
-  }
-
-  // Ensure buttons are aligned to the right
-  .col-md-6.text-end {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-  }
-  
-  .btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: #ffffff;
-    
-    &:hover {
-      background-color: #0b5ed7;
-      border-color: #0a58ca;
-    }
-  }
-
-  .btn-outline-primary {
-    color: #0d6efd;
-    border-color: #0d6efd;
-    
-    &:hover {
-      background-color: #0d6efd;
-      color: #ffffff;
-    }
-  }
-
-  .btn-success {
-    background-color: #198754;
-    border-color: #198754;
-    color: #ffffff;
-    
-    &:hover {
-      background-color: #157347;
-      border-color: #146c43;
-    }
-  }
-
-  .btn-outline-secondary {
-    color: #6c757d;
-    border-color: #6c757d;
-    
-    &:hover {
-      background-color: #6c757d;
-      color: #ffffff;
-    }
-  }
-}
 
 // Upload Modal Styles
 .upload-dropzone {
@@ -306,9 +213,11 @@
 // Media Grid Styles
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 1rem;
-  margin-top: 2rem;
+  padding: 1rem;
+  flex: 1;
+  align-content: start;
 }
 
 .media-item {
@@ -342,10 +251,26 @@
   top: 0.5rem;
   left: 0.5rem;
   z-index: 10;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.25rem;
+  padding: 0.125rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 
   .form-check-input {
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid #dee2e6;
+    margin: 0;
+    cursor: pointer;
+    width: 1.125rem;
+    height: 1.125rem;
+    background-color: #ffffff;
+    border: 2px solid #adb5bd;
+
+    &:checked {
+      background-color: #0d6efd;
+      border-color: #0d6efd;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+      background-size: 100% 100%;
+      background-repeat: no-repeat;
+    }
   }
 }
 
@@ -451,35 +376,32 @@
   }
 }
 
-// Main Content Area Layout
-.main-content-area {
+// Main Layout
+.media-layout {
   display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
+  min-height: 70vh;
 }
 
 // Sidebar Styles
-.sidebar {
-  width: 280px;
-  min-width: 280px;
-  background-color: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  height: fit-content;
-  max-height: 70vh;
+.media-sidebar {
+  width: 260px;
+  min-width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid #e9ecef;
+  background-color: #f8f9fa;
   overflow-y: auto;
+  max-height: 75vh;
 
   .sidebar-header {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
+    padding: 0.875rem 1rem;
     border-bottom: 1px solid #e9ecef;
+    background-color: #ffffff;
 
     h6 {
       color: #000000;
       font-weight: 600;
       margin: 0;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
 
       i {
         color: #0d6efd;
@@ -487,6 +409,15 @@
       }
     }
   }
+}
+
+// Main Content Area
+.media-main {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
 }
 
 // Folder Tree Styles
@@ -582,20 +513,11 @@
   }
 }
 
-// Main Content Styles
-.main-content {
-  flex: 1;
-  background-color: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-}
-
 // Breadcrumb Navigation
 .breadcrumb-nav {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
 
   .breadcrumb {
     margin: 0;
@@ -790,47 +712,23 @@
 
 // Responsive Design
 @media (max-width: 768px) {
-  .media-manager-container {
-    padding: 1rem;
+  .media-layout {
+    flex-direction: column;
   }
-  
-  .manager-header {
-    .row {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .col-md-8,
-    .col-md-4 {
-      width: 100%;
-    }
-    
-    .text-end {
-      text-align: start !important;
-    }
+
+  .media-sidebar {
+    width: 100%;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #e9ecef;
   }
-  
-  .selected-files-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+
+  .media-main {
+    max-height: none;
   }
-  
-  .selected-file-item {
-    padding: 0.75rem;
-    
-    .file-icon i {
-      font-size: 1.25rem;
-    }
-    
-    .file-info {
-      .file-name {
-        font-size: 0.8rem;
-      }
-      
-      .file-meta {
-        font-size: 0.7rem;
-      }
-    }
+
+  .media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }
 
@@ -887,43 +785,3 @@
   }
 }
 
-// Responsive Design for Button Group
-@media (max-width: 768px) {
-  .manager-header {
-    .button-group {
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      
-      .btn {
-        font-size: 0.8rem;
-        padding: 0.25rem 0.5rem;
-      }
-    }
-    
-    .col-md-6.text-end {
-      justify-content: flex-end;
-    }
-  }
-}
-
-@media (max-width: 576px) {
-  .manager-header {
-    .row {
-      flex-direction: column;
-      gap: 1rem;
-    }
-    
-    .col-md-6 {
-      width: 100%;
-    }
-    
-    .col-md-6.text-end {
-      justify-content: center;
-    }
-    
-    .button-group {
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-  }
-}

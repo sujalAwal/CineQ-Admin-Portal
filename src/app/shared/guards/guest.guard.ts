@@ -36,6 +36,7 @@ export class GuestGuard implements CanActivate {
         // Already authenticated, redirect to dashboard
         this.router.navigate([environment.app.defaultRoute]);
         return false;
+        ``
       })
     );
   }

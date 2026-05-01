@@ -1,0 +1,11 @@
+::ng-deep {
+  .card-header h5 {
+    margin-bottom: 0;
+  }
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

@@ -20,6 +20,18 @@ export class MasterDataService {
   private rolesSubject = new BehaviorSubject<RoleOptionData[]>([]);
   public roles$ = this.rolesSubject.asObservable();
 
+  private certificationsSubject = new BehaviorSubject<any[]>([]);
+  public certifications$ = this.certificationsSubject.asObservable();
+
+  private movieReleaseStatusesSubject = new BehaviorSubject<any[]>([]);
+  public movieReleaseStatuses$ = this.movieReleaseStatusesSubject.asObservable();
+
+  private districtsSubject = new BehaviorSubject<any[]>([]);
+  public districts$ = this.districtsSubject.asObservable();
+
+  private provincesSubject = new BehaviorSubject<any[]>([]);
+  public provinces$ = this.provincesSubject.asObservable();
+
   private readonly url = `${environment.api.baseUrl}/master-data`;
 
   constructor(
@@ -33,8 +45,8 @@ export class MasterDataService {
   /**
    * Fetch master data from API and cache it
    */
-  fetchMasterData(): Observable<MasterDataResponse> {
-    return this.http.get<MasterDataResponse>(this.url, { withCredentials: true }).pipe(
+  fetchMasterData(): Observable<any> {
+    return this.http.get<any>(this.url, { withCredentials: true }).pipe(
       tap(response => {
         if (response && response.success && response.data) {
           // Cache the data
@@ -42,6 +54,10 @@ export class MasterDataService {
           // Update BehaviorSubjects
           this.permissionsSubject.next(response.data.permission || []);
           this.rolesSubject.next(response.data.role || []);
+          this.certificationsSubject.next(response.data.certifications || []);
+          this.movieReleaseStatusesSubject.next(response.data.movieReleaseStatuses || []);
+          this.districtsSubject.next(response.data.districts || []);
+          this.provincesSubject.next(response.data.provinces || []);
         }
       }),
       catchError(error => {
@@ -97,9 +113,97 @@ export class MasterDataService {
   }
 
   /**
+   * Get certifications from cache (synchronous)
+   */
+  getCertifications(): any[] {
+    return this.certificationsSubject.value;
+  }
+
+  /**
+   * Get certifications as Observable
+   */
+  getCertifications$(): Observable<any[]> {
+    const cached = this.getFromStorage();
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return of(cached.data.certifications || []);
+    }
+    
+    // If cache is invalid or doesn't exist, fetch from API
+    return this.fetchMasterData().pipe(
+      map(response => response.data.certifications || [])
+    );
+  }
+
+  /**
+   * Get movie release statuses from cache (synchronous)
+   */
+  getMovieReleaseStatuses(): any[] {
+    return this.movieReleaseStatusesSubject.value;
+  }
+
+  /**
+   * Get movie release statuses as Observable
+   */
+  getMovieReleaseStatuses$(): Observable<any[]> {
+    const cached = this.getFromStorage();
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return of(cached.data.movieReleaseStatuses || []);
+    }
+    
+    // If cache is invalid or doesn't exist, fetch from API
+    return this.fetchMasterData().pipe(
+      map(response => response.data.movieReleaseStatuses || [])
+    );
+  }
+
+  /**
+   * Get districts from cache (synchronous)
+   */
+  getDistricts(): any[] {
+    return this.districtsSubject.value;
+  }
+
+  /**
+   * Get districts as Observable
+   */
+  getDistricts$(): Observable<any[]> {
+    const cached = this.getFromStorage();
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return of(cached.data.districts || []);
+    }
+    
+    // If cache is invalid or doesn't exist, fetch from API
+    return this.fetchMasterData().pipe(
+      map(response => response.data.districts || [])
+    );
+  }
+
+  /**
+   * Get provinces from cache (synchronous)
+   */
+  getProvinces(): any[] {
+    return this.provincesSubject.value;
+  }
+
+  /**
+   * Get provinces as Observable
+   */
+  getProvinces$(): Observable<any[]> {
+    const cached = this.getFromStorage();
+    if (cached && this.isCacheValid(cached.timestamp)) {
+      return of(cached.data.provinces || []);
+    }
+    
+    // If cache is invalid or doesn't exist, fetch from API
+    return this.fetchMasterData().pipe(
+      map(response => response.data.provinces || [])
+    );
+  }
+
+  /**
    * Cache data to localStorage
    */
-  private cacheData(response: MasterDataResponse): void {
+  private cacheData(response: any): void {
     const cacheData = {
       data: response.data,
       timestamp: Date.now()
@@ -123,13 +227,17 @@ export class MasterDataService {
   }
 
   /**
-   * Load permissions from localStorage
+   * Load all data from localStorage
    */
   private loadFromStorage(): void {
     const cached = this.getFromStorage();
     if (cached && this.isCacheValid(cached.timestamp)) {
       this.permissionsSubject.next(cached.data.permission || []);
       this.rolesSubject.next(cached.data.role || []);
+      this.certificationsSubject.next(cached.data.certifications || []);
+      this.movieReleaseStatusesSubject.next(cached.data.movieReleaseStatuses || []);
+      this.districtsSubject.next(cached.data.districts || []);
+      this.provincesSubject.next(cached.data.provinces || []);
     }
   }
 
@@ -147,12 +255,16 @@ export class MasterDataService {
     localStorage.removeItem(this.STORAGE_KEY);
     this.permissionsSubject.next([]);
     this.rolesSubject.next([]);
+    this.certificationsSubject.next([]);
+    this.movieReleaseStatusesSubject.next([]);
+    this.districtsSubject.next([]);
+    this.provincesSubject.next([]);
   }
 
   /**
    * Refresh master data (force fetch from API)
    */
-  refresh(): Observable<MasterDataResponse> {
+  refresh(): Observable<any> {
     this.clearCache();
     return this.fetchMasterData();
   }

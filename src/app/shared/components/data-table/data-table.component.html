@@ -150,13 +150,16 @@
               [class.text-center]="column.align === 'center'"
               [class.text-end]="column.align === 'right'"
             >
-             <!-- SN -->
-              <span *ngIf="column.type === 'sn' ">
-                {{ i+1 }}
+              <!-- SN -->
+              <span *ngIf="column.type === 'sn'">
+                {{ pagination.currentPage * pagination.pageSize + i + 1 }}
               </span>
               <!-- Text/Number/Date/Email Display -->
-              <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'">
-                {{ getColumnValue(item, column) }}
+              <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'"
+                    [attr.title]="column.maxLength && getColumnValue(item, column)?.length > column.maxLength ? getColumnValue(item, column) : null">
+                {{ column.maxLength && getColumnValue(item, column)?.length > column.maxLength 
+                   ? (getColumnValue(item, column) | slice:0:column.maxLength) + '...' 
+                   : getColumnValue(item, column) }}
               </span>
              
 
@@ -210,7 +213,7 @@
                     [title]="action.label"
                     (click)="onActionClick(action, item)"
                   >
-                    <i [class]="action.icon"></i>
+                    <i *ngIf="action.icon" [class]="action.icon"></i>
                   </button>
                 </ng-container>
               </div>

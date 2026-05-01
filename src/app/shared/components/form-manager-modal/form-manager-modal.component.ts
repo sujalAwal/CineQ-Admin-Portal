@@ -572,9 +572,7 @@ export class FormManagerModalComponent implements OnInit, OnChanges, OnDestroy, 
           this.resetForm();
         },
         error: (error) => {
-          console.error('Failed to save form manager:', error);
-          const errorMessage = error?.error?.message || error?.message || 'Failed to save form manager. Please try again.';
-          this.toastr.error(errorMessage, 'Save Error');
+          this.handleSaveError(error);
           this.resetLoadingState();
         }
       });
@@ -585,6 +583,20 @@ export class FormManagerModalComponent implements OnInit, OnChanges, OnDestroy, 
     }
   }
   
+  private handleSaveError(error: any): void {
+    let errorMessage = 'Failed to save. Please try again.';
+
+    if (error?.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    this.toastr.error(errorMessage, 'Save Error');
+  }
+
   // Reset loading states
   private resetLoadingState(): void {
     this.modalConfig.primaryButtonLoading = false;

@@ -1,0 +1,340 @@
+<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (closed)="onModalClose()" (primaryAction)="onModalSave()" (secondaryAction)="onModalClose()">
+  <div class="form-container">
+    <form [formGroup]="form">
+
+      <!-- Hidden fields for theatre and screen names (auto-populated, sent with payload) -->
+      <input type="hidden" formControlName="theatreName">
+      <input type="hidden" formControlName="screenName">
+
+      <!-- Movie & Theatre -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Movie <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('movieId')" formControlName="movieId">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Movie' }}</option>
+              <option *ngFor="let m of movies" [value]="m.id">{{ m.title }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('movieId')">{{ getFieldError('movieId') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Theatre <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('theatreId')" formControlName="theatreId">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Theatre' }}</option>
+              <option *ngFor="let t of theatres" [value]="t.id">{{ t.name }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('theatreId')">{{ getFieldError('theatreId') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Screen & Date & Time -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Screen <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('screenId')" formControlName="screenId" [disabled]="!form.get('theatreId')?.value || screensLoading">
+              <option value="">{{ screensLoading ? 'Loading screens...' : (form.get('theatreId')?.value ? 'Select Screen' : 'Select theatre first') }}</option>
+              <option *ngFor="let s of screens" [value]="s.id">{{ s.screenName }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('screenId')">{{ getFieldError('screenId') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Show Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" [class.is-invalid]="isFieldInvalid('showDate')" formControlName="showDate">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('showDate')">{{ getFieldError('showDate') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Show Time (HH:MM) <span class="text-danger">*</span></label>
+            <input type="time" class="form-control" [class.is-invalid]="isFieldInvalid('showTime')" formControlName="showTime">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('showTime')">{{ getFieldError('showTime') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ NEW: Seat Layout Display (READ-ONLY VIEW with EDITABLE seats) -->
+      <div class="mb-4 border-top pt-4" *ngIf="seats.length > 0">
+        <label class="form-label fw-bold">Seat Layout Preview <span class="text-muted">(Total: <strong>{{ seats.length }}</strong> seats)</span></label>
+        <small class="text-muted d-block mb-3">Selected rows: <strong>{{ getSelectedRowsCount() }}</strong> | Selected columns: <strong>{{ getSelectedColumnsCount() }}</strong></small>
+
+        <!-- Seat Legend -->
+        <div class="seat-legend mb-3">
+          <div class="legend-title">Seat Types:</div>
+          <div class="legend-items">
+            <div class="legend-item" *ngFor="let type of seatTypes">
+              <div class="legend-seat" [ngClass]="'seat-' + type.code" [style.background-color]="type?.color || null" [style.border-color]="type?.color || null"></div>
+              <small>{{ type.name }}</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Alert -->
+        <div class="alert py-2 px-3" [ngClass]="getUnassignedSeatsCount() > 0 ? 'alert-warning' : 'alert-success'">
+          <small *ngIf="getUnassignedSeatsCount() > 0">
+            <strong>⚠️ {{ getUnassignedSeatsCount() }} seat(s)</strong> need type assignment
+          </small>
+          <small *ngIf="getUnassignedSeatsCount() === 0">
+            <strong>✓ All seat types assigned!</strong>
+          </small>
+        </div>
+
+        <!-- Quick Fill & Seat Type Pricing -->
+        <div class="mt-3">
+          <div class="row">
+            <!-- Left Column: Seat Type Pricing Table -->
+            <div class="col-md-4">
+              <div class="card">
+                <div class="card-header bg-light">
+                  <small class="fw-bold">Seat Types | Prices</small>
+                </div>
+                <div class="card-body p-2">
+                  <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                      <tr>
+                        <th style="width: 50%;">Type</th>
+                        <th style="width: 50%;">Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let type of seatTypes">
+                        <td>
+                          <span class="badge" [style.background-color]="type?.color || '#ccc'">
+                            {{ type?.name }}
+                          </span>
+                        </td>
+                        <td>
+                          <input type="number"
+                                 class="form-control form-control-sm"
+                                 [(ngModel)]="seatTypePrices[type?.id]"
+                                 [ngModelOptions]="{standalone: true}"
+                                 (change)="onSeatTypePriceChange(type?.id)"
+                                 (ngModelChange)="cdr.markForCheck()"
+                                 placeholder="0"
+                                 min="0">
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Quick Fill Buttons & Clear Buttons -->
+            <div class="col-md-8">
+              <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
+                <small class="text-muted">Quick fill:</small>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        *ngFor="let type of seatTypes"
+                        [style.border-color]="type?.color || null"
+                        [style.color]="type?.color || null"
+                        (click)="fillAllSeatsWithType(type?.id)">
+                  All {{ type?.name }}
+                </button>
+              </div>
+              <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearAllSeats()">
+                  Clear All
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        *ngIf="getSelectedRowsCount() > 0"
+                        (click)="clearRowSelection()">
+                  Clear Row Selection ({{ getSelectedRowsCount() }})
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        *ngIf="getSelectedColumnsCount() > 0"
+                        (click)="clearColumnSelection()">
+                  Clear Column Selection ({{ getSelectedColumnsCount() }})
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seat Grid -->
+        <div class="seat-layout-wrapper mt-4">
+          <!-- Screen -->
+          <div class="screen-indicator">
+            <div class="screen-bar"></div>
+            <p class="screen-text">SCREEN</p>
+          </div>
+
+          <!-- Seat Grid -->
+          <div class="seats-grid-container">
+            <!-- Column Numbers Header -->
+            <div class="column-header">
+              <div class="row-label-cell"></div>
+              <div class="column-numbers">
+                <div *ngFor="let col of getColumnNumbers()"
+                     class="col-number-wrapper"
+                     [class.col-selected]="isColumnSelected(col - 1)">
+                  <div class="col-number"
+                       (click)="toggleColumnSelection(col - 1); $event.stopPropagation()"
+                       [title]="'Click to select column ' + col">
+                    {{ col }}
+                  </div>
+                  <button type="button"
+                          class="status-menu-toggle col-status-toggle"
+                          *ngIf="isColumnSelected(col - 1)"
+                          (click)="openStatusMenuAt($event, 'col', col - 1, 'Column ' + col + ' - Change type:')"
+                          title="Change column status">
+                    &#8942;
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Seat Rows -->
+            <div class="rows-container">
+              <div *ngFor="let row of getGroupedSeats(); let rowIdx = index" class="seat-row">
+                <!-- Row Label -->
+                <div class="row-label-wrapper"
+                     [class.row-selected]="isRowSelected(row.seats[0]?.row)">
+                  <button type="button"
+                          class="row-label-button"
+                          (click)="toggleRowSelection(row.seats[0]?.row); $event.stopPropagation()"
+                          [title]="'Click to select row ' + row.row">
+                    {{ row.row }}
+                  </button>
+                  <button type="button"
+                          class="status-menu-toggle row-status-toggle"
+                          *ngIf="isRowSelected(row.seats[0]?.row)"
+                          (click)="openStatusMenuAt($event, 'row', row.seats[0]?.row, 'Row ' + row.row + ' - Change type:')"
+                          title="Change row status">
+                    &#8942;
+                  </button>
+                </div>
+
+                <!-- Seats -->
+                <div class="seats-group">
+                  <div *ngFor="let seat of row.seats" class="seat-container">
+                    <div class="seat-wrapper">
+                      <button type="button"
+                              class="seat-button"
+                              [ngClass]="'seat-' + getSeatTypeCode(seat.typeId)"
+                              [style.background-color]="getSeatTypeById(seat.typeId)?.color || null"
+                              [style.border-color]="getSeatTypeById(seat.typeId)?.color || null"
+                              [title]="seat.name + ' - ' + (getSeatTypeById(seat.typeId)?.name || 'Unassigned')">
+                        <span class="seat-number">{{ seat.name }}</span>
+                      </button>
+                      <button type="button"
+                              class="status-menu-toggle seat-status-toggle"
+                              (click)="openStatusMenuAt($event, 'seat', seat.name, seat.name + ' - Change type:')"
+                              title="Change seat status">
+                        &#8942;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating status dropdown -->
+          <div class="status-dropdown"
+               *ngIf="isAnyDropdownOpen()"
+               [style.top.px]="dropdownPosition.top"
+               [style.left.px]="dropdownPosition.left"
+               (click)="$event.stopPropagation()">
+            <div class="menu-label">Choose seat type & price</div>
+            
+            <!-- Price Input for Row -->
+            <div *ngIf="showRowStatusMenu !== null" class="menu-price-input p-2 border-bottom">
+              <input type="number"
+                     class="form-control form-control-sm"
+                     placeholder="Price (optional)"
+                     min="0"
+                     [(ngModel)]="pendingRowPrice"
+                     [ngModelOptions]="{standalone: true}"
+                     (ngModelChange)="cdr.markForCheck()"
+                     (keydown.enter)="onDropdownItemClick(seatTypes[0]?.id)">
+            </div>
+
+            <!-- Price Input for Column -->
+            <div *ngIf="showColumnStatusMenu !== null" class="menu-price-input p-2 border-bottom">
+              <input type="number"
+                     class="form-control form-control-sm"
+                     placeholder="Price (optional)"
+                     min="0"
+                     [(ngModel)]="pendingColumnPrice"
+                     [ngModelOptions]="{standalone: true}"
+                     (ngModelChange)="cdr.markForCheck()"
+                     (keydown.enter)="onDropdownItemClick(seatTypes[0]?.id)">
+            </div>
+
+            <!-- Price Input for Individual Seat -->
+            <div *ngIf="openSeatStatusMenu !== null" class="menu-price-input p-2 border-bottom">
+              <input type="number"
+                     class="form-control form-control-sm"
+                     placeholder="Price (optional)"
+                     min="0"
+                     [(ngModel)]="pendingSeatPrice"
+                     [ngModelOptions]="{standalone: true}"
+                     (ngModelChange)="cdr.markForCheck()"
+                     (keydown.enter)="onDropdownItemClick(seatTypes[0]?.id)">
+            </div>
+
+            <div class="menu-items">
+              <button type="button" class="menu-item"
+                      *ngFor="let type of seatTypes"
+                      (click)="onDropdownItemClick(type?.id); $event.stopPropagation()">
+                <span class="menu-item-dot" [ngClass]="'seat-' + type.code" [style.background-color]="type?.color || null" [style.border-color]="type?.color || null"></span>
+                {{ type?.name }} <small class="text-muted" *ngIf="seatTypePrices[type?.id]">(₹{{ seatTypePrices[type?.id] }})</small>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Language, Format, Status -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Language <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('language')" formControlName="language">
+              <option value="">Select Language</option>
+              <option *ngFor="let l of LANGUAGE_OPTIONS" [value]="l.value">{{ l.label }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('language')">{{ getFieldError('language') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Format <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('format')" formControlName="format">
+              <option value="">Select Format</option>
+              <option *ngFor="let f of FORMAT_OPTIONS" [value]="f.value">{{ f.label }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('format')">{{ getFieldError('format') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select class="form-select" [class.is-invalid]="isFieldInvalid('statusCode')" formControlName="statusCode">
+              <option value="">{{ loadingDropdowns ? 'Loading...' : 'Select Status' }}</option>
+              <option *ngFor="let st of showtimeStatuses" [value]="st.code">{{ st.name }} ({{ st.code }})</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('statusCode')">{{ getFieldError('statusCode') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Status -->
+      <div class="row">
+        <div class="col-md-12 d-flex align-items-end pb-3">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="showtimeIsActive" formControlName="isActive">
+            <label class="form-check-label" for="showtimeIsActive">Active</label>
+          </div>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</app-base-modal>

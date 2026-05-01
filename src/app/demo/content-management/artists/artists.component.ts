@@ -1,368 +1,356 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil, finalize } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
-// Shared Components
+import { SharedModule } from '../../../theme/shared/shared.module';
 import { DataTableComponent } from '../../../shared/components/data-table/data-table.component';
 import { ArtistModalComponent } from '../../../shared/components/artist-modal/artist-modal.component';
-import { ConfirmationModalComponent } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
-
-// Interfaces
-import { TableConfig, TableActionEvent, TableColumn } from '../../../shared/interfaces/table.interface';
-import { Artist, ArtistPageRequest, ArtistResponse } from '../../../shared/interfaces/artist.interface';
-
-// Services
+import { ConfirmationModalComponent, ConfirmationConfig } from '../../../shared/components/confirmation-modal/confirmation-modal.component';
+import { ToastService } from '../../../shared/services/toast.service';
+import { TableConfig, PaginationInfo, TableActionEvent, BulkSelectionEvent } from '../../../shared/interfaces/table.interface';
 import { ArtistService } from '../../../shared/services/artist.service';
-import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-artists',
   standalone: true,
-  imports: [
-    CommonModule, 
-    ReactiveFormsModule,
-    DataTableComponent, 
-    ArtistModalComponent,
-    ConfirmationModalComponent
-  ],
+  imports: [CommonModule, SharedModule, DataTableComponent, ArtistModalComponent, ConfirmationModalComponent],
   templateUrl: './artists.component.html',
   styleUrls: ['./artists.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ArtistsComponent implements OnInit, OnDestroy {
-  // Optimistic UI updates for perceived performance
-  private optimisticUpdates = new Map<string, Artist>();
-  
-  // Memory leak prevention
-  private destroy$ = new Subject<void>();
-  
-  // Component state
-  artists: Artist[] = [];
-  loading = false;
-  searchControl = new FormControl('');
-  
-  // Modal states
-  showArtistModal = false;
-  showConfirmModal = false;
-  selectedArtist: Artist | null = null;
-  artistToDelete: Artist | null = null;
-  
-  // Pagination
-  currentPage = 1;
-  totalPages = 1;
-  totalItems = 0;
-  pageSize = 10;
-  
-  // Table configuration
+
   tableConfig: TableConfig = {
     title: 'Artists Management',
     entityName: 'Artist',
-    apiEndpoint: '/api/artists',
+    apiEndpoint: '/api/v1/list/artists',
     searchable: true,
     paginated: true,
-    pageSize: this.pageSize,
+    pageSize: 20,
     sortable: true,
+    bulkSelectable: true,
+    bulkActions: [
+      { label: 'Enable', icon: '', type: 'bulk-enable', class: 'btn-success' },
+      { label: 'Disable', icon: '', type: 'bulk-disable', class: 'btn-warning' },
+      { label: 'Delete', icon: '', type: 'bulk-delete', class: 'btn-danger' }
+    ],
     columns: [
-      {
-        header: 'Name',
-        field: 'full_name',
-        type: 'text',
-        sortable: true,
-        width: '200px'
-      },
-      {
-        header: 'Email',
-        field: 'email',
-        type: 'email',
-        sortable: true,
-        width: '220px'
-      },
-      {
-        header: 'Type',
-        field: 'artist_type_name',
-        type: 'badge',
-        sortable: true,
-        width: '120px',
-        align: 'center'
-      },
-      {
-        header: 'Movies',
-        field: 'movies_count',
-        type: 'number',
-        sortable: true,
-        width: '100px',
-        align: 'center'
-      },
-      {
-        header: 'Rating',
-        field: 'rating',
-        type: 'number',
-        sortable: true,
-        width: '100px',
-        align: 'center'
-      },
-      {
-        header: 'Status',
-        field: 'is_active',
-        type: 'toggle',
-        sortable: true,
-        width: '120px',
-        align: 'center'
-      },
-      {
-        header: 'Created',
-        field: 'created_at',
-        type: 'date',
-        sortable: true,
-        width: '120px'
-      }
+      { header: 'S.N', field: 'sn', type: 'sn', sortable: false, width: '60px', align: 'center' },
+      { header: 'Name', field: 'full_name', type: 'text', sortable: true, width: '200px' },
+      { header: 'Nationality', field: 'nationality', type: 'text', sortable: false, width: '120px' },
+      { header: 'Movies', field: 'movies_count', type: 'number', sortable: true, width: '90px', align: 'center' },
+      { header: 'Rating', field: 'rating', type: 'number', sortable: true, width: '90px', align: 'center' },
+      { header: 'Status', field: 'is_active', type: 'toggle', width: '60px', align: 'center' }
     ],
     actions: [
-      {
-        label: 'Edit',
-        icon: 'ti ti-edit',
-        type: 'edit',
-        class: 'btn-outline-success',
-        visible: true
-      },
-      {
-        label: 'Delete',
-        icon: 'ti ti-trash',
-        type: 'delete',
-        class: 'btn-outline-danger',
-        visible: true
-      }
+      { label: 'Edit', icon: 'ti ti-edit', type: 'edit', class: 'btn-outline-success', visible: true },
+      { label: 'Delete', icon: 'ti ti-trash', type: 'delete', class: 'btn-outline-danger', visible: true }
     ]
   };
 
+  artistsData: any[] = [];
+  loading: boolean = false;
+  pagination: PaginationInfo = { currentPage: 1, totalPages: 1, totalItems: 0, pageSize: 20 };
+  currentFilters: any = { page: 1, size: 20 };
+
+  showModal: boolean = false;
+  selectedItem: any = null;
+  modalLoading: boolean = false;
+
+  showConfirmationModal: boolean = false;
+  confirmationConfig: ConfirmationConfig = {
+    title: 'Confirm Delete',
+    message: '',
+    icon: 'ti ti-trash',
+    iconColor: 'danger',
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    confirmButtonClass: 'btn-danger'
+  };
+  itemToDelete: any = null;
+
+  private destroy$ = new Subject<void>();
+  private searchSubject = new Subject<string>();
+
+  bulkOperation: { type: 'enable' | 'disable' | 'delete' | null; selectedIds: string[] } = {
+    type: null,
+    selectedIds: []
+  };
+
   constructor(
-    private artistService: ArtistService,
-    private toastr: ToastrService,
+    private toastService: ToastService,
+    private service: ArtistService,
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void {
-    this.setupSearch();
-    this.loadArtists();
+  ngOnInit() {
+    this.setupDebouncedSearch();
+    this.loadData();
   }
 
-  ngOnDestroy(): void {
+  ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  // Setup debounced search with performance optimization
-  private setupSearch(): void {
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(300), // Prevent API spam
-        distinctUntilChanged(), // Only search when value actually changes
-        takeUntil(this.destroy$) // Prevent memory leaks
-      )
-      .subscribe(searchTerm => {
-        this.currentPage = 1;
-        this.loadArtists(searchTerm || '');
-      });
-  }
-
-  // Load artists with caching and error handling
-  loadArtists(searchTerm = '', page = this.currentPage): void {
-    this.loading = true;
-    this.cdr.detectChanges();
-
-    const request: ArtistPageRequest = {
-      page,
-      size: this.pageSize,
-      search: searchTerm.trim() || undefined
-    };
-
-    this.artistService.getArtists(request)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => {
-          this.loading = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-        next: (response) => {
-          // Apply optimistic updates if any
-          this.artists = this.applyOptimisticUpdates(response.data);
-          this.totalItems = response.totalElements;
-          this.totalPages = response.totalPages;
-          this.currentPage = response.page;
-          this.cdr.detectChanges();
-        },
-        error: (error) => {
-          console.error('Error loading artists:', error);
-          this.toastr.error('Failed to load artists', 'Error');
-          this.artists = [];
-          this.cdr.detectChanges();
-        }
-      });
-  }
-
-  // Apply optimistic updates to maintain UI responsiveness
-  private applyOptimisticUpdates(artists: Artist[]): Artist[] {
-    return artists.map(artist => {
-      const optimisticUpdate = this.optimisticUpdates.get(artist.id!);
-      return optimisticUpdate ? { ...artist, ...optimisticUpdate } : artist;
+  private setupDebouncedSearch() {
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(searchTerm => {
+      this.currentFilters = { ...this.currentFilters, search: searchTerm || undefined, page: 1 };
+      this.loadData();
     });
   }
 
-  // Handle search with performance optimization
-  onSearch(searchTerm: string): void {
-    this.searchControl.setValue(searchTerm, { emitEvent: false });
-    this.currentPage = 1;
-    this.loadArtists(searchTerm);
+  loadData(additionalFilters?: Partial<any>) {
+    this.loading = true;
+    this.cdr.markForCheck();
+
+    const requestParams = { ...this.currentFilters, ...additionalFilters };
+
+    this.service.getList(requestParams).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (response: any) => {
+        this.artistsData = response.data.flatMap((item: any) => {
+          const records = item['artists'] || item['artist'] || [];
+          if (Array.isArray(records)) return records;
+          return item.id ? [item] : [];
+        });
+        this.pagination = {
+          currentPage: response.page,
+          totalPages: response.totalPages,
+          totalItems: response.totalElements,
+          pageSize: response.size
+        };
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.artistsData = [];
+        this.loading = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
-  // Handle pagination
-  onPageChange(page: number): void {
-    this.currentPage = page;
-    this.loadArtists(this.searchControl.value || '', page);
-  }
-
-  // Handle sorting
-  onSort(event: { field: string; order: 'asc' | 'desc' }): void {
-    // TODO: Implement sorting when API supports it
-    console.log('Sort event:', event);
-  }
-
-  // Handle toggle changes with optimistic updates
-  onToggleChange(event: { item: any; field: string; value: boolean }): void {
-    const artist = event.item as Artist;
-    const newStatus = event.value;
-    
-    // Optimistic update
-    this.optimisticUpdates.set(artist.id!, { ...artist, is_active: newStatus });
-    
-    // Update UI immediately for better UX
-    const artistIndex = this.artists.findIndex(g => g.id === artist.id);
-    if (artistIndex !== -1) {
-      this.artists[artistIndex] = { ...this.artists[artistIndex], is_active: newStatus };
-      this.cdr.detectChanges();
-    }
-
-    // Perform bulk enable/disable
-    const operation = newStatus 
-      ? this.artistService.enableArtist([artist.id!])
-      : this.artistService.disableArtist([artist.id!]);
-
-    operation
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          // Remove optimistic update on success
-          this.optimisticUpdates.delete(artist.id!);
-          const message = newStatus ? 'Artist enabled successfully' : 'Artist disabled successfully';
-          this.toastr.success(message);
-        },
-        error: (error) => {
-          // Revert optimistic update on error
-          this.optimisticUpdates.delete(artist.id!);
-          if (artistIndex !== -1) {
-            this.artists[artistIndex] = { ...this.artists[artistIndex], is_active: !newStatus };
-            this.cdr.detectChanges();
-          }
-          console.error('Error updating artist status:', error);
-          this.toastr.error('Failed to update artist status', 'Error');
-        }
-      });
-  }
-
-  // Handle table actions
-  onTableAction(event: TableActionEvent): void {
-    const artist = event.item as Artist;
-    
+  onTableAction(event: TableActionEvent) {
     switch (event.action) {
-      case 'edit':
-        this.openEditModal(artist);
+      case 'edit': this.editItem(event.item); break;
+      case 'delete': this.deleteItem(event.item); break;
+    }
+  }
+
+  onSearch(searchTerm: string) {
+    this.searchSubject.next(searchTerm);
+  }
+
+  onRefresh() {
+    this.currentFilters = { page: 1, size: this.currentFilters.size || 20 };
+    this.loadData();
+    this.cdr.markForCheck();
+  }
+
+  onPageChange(page: number) {
+    this.currentFilters.page = page;
+    this.loadData();
+  }
+
+  onSort(sortInfo: { field: string, order: 'asc' | 'desc' }) {
+    this.currentFilters = { ...this.currentFilters, sortBy: sortInfo.field, sortDirection: sortInfo.order, page: 1 };
+    this.loadData();
+  }
+
+  onToggleChange(event: { item: any, field: string, value: boolean }) {
+    this.updateInList(event.item.id, { isActive: event.value });
+    this.cdr.markForCheck();
+
+    const operation = event.value ? this.service.enable.bind(this.service) : this.service.disable.bind(this.service);
+    operation([event.item.id]).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (success) => {
+        if (success) {
+          const name = event.item.full_name || event.item.name || 'Artist';
+          const message = event.value ? `"${name}" is now active.` : `"${name}" has been deactivated.`;
+          event.value
+            ? this.toastService.activated(message, 'Activated')
+            : this.toastService.inactive(message, 'Deactivated');
+        } else {
+          this.revertToggle(event.item.id, !event.value);
+        }
+      },
+      error: () => this.revertToggle(event.item.id, !event.value)
+    });
+  }
+
+  private updateInList(id: string, updates: Partial<any>) {
+    this.artistsData = this.artistsData.map(item => item.id === id ? { ...item, ...updates } : item);
+  }
+
+  private revertToggle(id: string, value: boolean) {
+    this.updateInList(id, { isActive: value });
+    this.cdr.markForCheck();
+  }
+
+  onBulkAction(event: BulkSelectionEvent) {
+    if (event.selectedIds.length === 0) {
+      this.toastService.warning('Please select at least one item.', 'No Selection');
+      return;
+    }
+
+    this.bulkOperation.selectedIds = event.selectedIds;
+
+    switch (event.action) {
+      case 'bulk-enable':
+        this.bulkOperation.type = 'enable';
+        this.showBulkConfirmation('enable', event.selectedIds);
         break;
-      case 'delete':
-        this.openDeleteConfirmation(artist);
+      case 'bulk-disable':
+        this.bulkOperation.type = 'disable';
+        this.showBulkConfirmation('disable', event.selectedIds);
+        break;
+      case 'bulk-delete':
+        this.bulkOperation.type = 'delete';
+        this.showBulkConfirmation('delete', event.selectedIds);
         break;
     }
   }
 
-  // Modal Management
-  openCreateModal(): void {
-    this.selectedArtist = null;
-    this.showArtistModal = true;
-    this.cdr.detectChanges();
+  private showBulkConfirmation(operation: 'enable' | 'disable' | 'delete', selectedIds: string[]) {
+    const count = selectedIds.length;
+    if (operation === 'enable') {
+      this.confirmationConfig = {
+        title: 'Enable Artists', icon: 'ti ti-toggle-right', iconColor: 'success',
+        message: `Are you sure you want to <strong>enable</strong> ${count} artist(s)?`,
+        confirmText: 'Enable', cancelText: 'Cancel', confirmButtonClass: 'btn-success', loading: false, size: 'sm'
+      };
+    } else if (operation === 'disable') {
+      this.confirmationConfig = {
+        title: 'Disable Artists', icon: 'ti ti-toggle-left', iconColor: 'warning',
+        message: `Are you sure you want to <strong>disable</strong> ${count} artist(s)?`,
+        confirmText: 'Disable', cancelText: 'Cancel', confirmButtonClass: 'btn-warning', loading: false, size: 'sm'
+      };
+    } else {
+      this.confirmationConfig = {
+        title: 'Delete Artists', icon: 'ti ti-trash-x', iconColor: 'danger',
+        message: `Are you sure you want to <strong>delete</strong> ${count} artist(s)?<br><small class="text-danger">This action cannot be undone.</small>`,
+        confirmText: 'Delete', cancelText: 'Cancel', confirmButtonClass: 'btn-danger', loading: false, size: 'sm'
+      };
+    }
+    this.showConfirmationModal = true;
   }
 
-  openEditModal(artist: Artist): void {
-    this.selectedArtist = { ...artist };
-    this.showArtistModal = true;
-    this.cdr.detectChanges();
+  openAddModal() {
+    this.selectedItem = null;
+    this.showModal = true;
+    this.cdr.markForCheck();
   }
 
-  closeArtistModal(): void {
-    this.showArtistModal = false;
-    this.selectedArtist = null;
-    this.cdr.detectChanges();
+  private editItem(item: any) {
+    this.modalLoading = true;
+    this.cdr.markForCheck();
+
+    this.service.getById(item.id).subscribe({
+      next: (fullItem) => {
+        this.selectedItem = fullItem;
+        this.modalLoading = false;
+        this.showModal = true;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.modalLoading = false;
+        this.selectedItem = item;
+        this.showModal = true;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
-  onArtistSaved(artist: any): void {
-    this.closeArtistModal();
-    this.loadArtists(this.searchControl.value || '', this.currentPage);
+  onModalClosed() {
+    this.showModal = false;
+    this.selectedItem = null;
+    this.modalLoading = false;
   }
 
-  // Delete Confirmation
-  openDeleteConfirmation(artist: Artist): void {
-    this.artistToDelete = artist;
-    this.showConfirmModal = true;
-    this.cdr.detectChanges();
+  onItemSaved(itemData: any) {
+    const name = itemData.full_name || itemData.fullName || 'Artist';
+    if (itemData.id) {
+      this.toastService.success(`"${name}" has been updated successfully!`, 'Updated');
+    } else {
+      this.toastService.success(`"${name}" has been created successfully!`, 'Created');
+    }
+    this.onModalClosed();
+    this.loadData();
   }
 
-  closeDeleteConfirmation(): void {
-    this.showConfirmModal = false;
-    this.artistToDelete = null;
-    this.cdr.detectChanges();
+  private deleteItem(item: any) {
+    this.itemToDelete = item;
+    const name = item.full_name || item.name || 'this artist';
+    this.confirmationConfig = {
+      title: 'Delete Artist',
+      message: `Are you sure you want to delete <strong>"${name}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+      icon: 'ti ti-trash-x', iconColor: 'danger',
+      confirmText: 'Delete', cancelText: 'Cancel', loading: false
+    };
+    this.showConfirmationModal = true;
   }
 
-  confirmDelete(): void {
-    if (!this.artistToDelete) return;
+  onDeleteConfirmed() {
+    if (this.itemToDelete) {
+      this.confirmationConfig.loading = true;
+      const name = this.itemToDelete.full_name || this.itemToDelete.name;
 
-    const artistId = this.artistToDelete.id!;
-    const artistName = this.artistToDelete.full_name;
-
-    // Optimistic update - remove from UI immediately
-    this.artists = this.artists.filter(g => g.id !== artistId);
-    this.cdr.detectChanges();
-    
-    this.artistService.deleteArtist(artistId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
+      this.service.delete(this.itemToDelete.id).subscribe({
         next: () => {
-          this.toastr.success(`${artistName} deleted successfully`);
-          this.closeDeleteConfirmation();
-          this.loadArtists(this.searchControl.value || '', this.currentPage);
+          this.toastService.success(`"${name}" has been deleted successfully!`, 'Deleted');
+          this.loadData();
+          this.showConfirmationModal = false;
+          this.itemToDelete = null;
+          this.confirmationConfig.loading = false;
         },
-        error: (error) => {
-          console.error('Error deleting artist:', error);
-          this.toastr.error('Failed to delete artist', 'Error');
-          // Revert optimistic update on error
-          this.loadArtists(this.searchControl.value || '', this.currentPage);
-          this.closeDeleteConfirmation();
+        error: () => {
+          this.showConfirmationModal = false;
+          this.itemToDelete = null;
+          this.confirmationConfig.loading = false;
         }
       });
+      return;
+    }
+
+    if (this.bulkOperation.type && this.bulkOperation.selectedIds.length > 0) {
+      this.confirmationConfig.loading = true;
+      const selectedIds = this.bulkOperation.selectedIds;
+      const operation = this.bulkOperation.type;
+
+      if (operation === 'enable') {
+        this.service.enable(selectedIds).subscribe({
+          next: () => { this.toastService.activated(`${selectedIds.length} artist(s) enabled.`, 'Enabled'); this.loadData(); this.resetBulkOperation(); },
+          error: () => this.resetBulkOperation()
+        });
+      } else if (operation === 'disable') {
+        this.service.disable(selectedIds).subscribe({
+          next: () => { this.toastService.inactive(`${selectedIds.length} artist(s) disabled.`, 'Disabled'); this.loadData(); this.resetBulkOperation(); },
+          error: () => this.resetBulkOperation()
+        });
+      } else if (operation === 'delete') {
+        this.service.bulkDelete(selectedIds).subscribe({
+          next: () => { this.toastService.success(`${selectedIds.length} artist(s) deleted.`, 'Deleted'); this.loadData(); this.resetBulkOperation(); },
+          error: () => this.resetBulkOperation()
+        });
+      }
+    }
   }
 
-  // Utility getters for template
-  get pagination() {
-    return {
-      currentPage: this.currentPage,
-      totalPages: this.totalPages,
-      totalItems: this.totalItems,
-      pageSize: this.pageSize
-    };
+  onDeleteCancelled() {
+    this.showConfirmationModal = false;
+    this.itemToDelete = null;
+    this.confirmationConfig.loading = false;
+    this.resetBulkOperation();
   }
 
-  get artistsData() {
-    return this.artists;
+  private resetBulkOperation() {
+    this.bulkOperation = { type: null, selectedIds: [] };
+    this.showConfirmationModal = false;
+    this.confirmationConfig.loading = false;
   }
 }

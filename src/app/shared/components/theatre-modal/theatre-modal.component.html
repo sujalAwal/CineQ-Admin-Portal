@@ -1,0 +1,112 @@
+<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (closed)="onModalClose()" (primaryAction)="onModalSave()" (secondaryAction)="onModalClose()">
+  <div class="form-container">
+    <form [formGroup]="form">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('name')" formControlName="name" placeholder="Enter theatre name">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('name')">{{ getFieldError('name') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" [class.is-invalid]="isFieldInvalid('email')" formControlName="email" placeholder="Enter email">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('email')">{{ getFieldError('email') }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Phone <span class="text-danger">*</span></label>
+            <input type="tel" class="form-control" [class.is-invalid]="isFieldInvalid('phone')" formControlName="phone" placeholder="Enter phone">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('phone')">{{ getFieldError('phone') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Chain</label>
+            <input type="text" class="form-control" formControlName="chain" placeholder="Enter chain name">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('chain')">{{ getFieldError('chain') }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="mb-3">
+            <label class="form-label">Address <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('address')" formControlName="address" placeholder="Enter address">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('address')">{{ getFieldError('address') }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">State / Province <span class="text-danger">*</span></label>
+            <select class="form-control" 
+                    [class.is-invalid]="isFieldInvalid('state')" 
+                    [disabled]="dataLoading || provinces.length === 0"
+                    formControlName="state">
+          
+              <option *ngFor="let province of provinces" [value]="province.code">
+                {{ province.title }}
+              </option>
+            </select>
+            <small class="form-text text-muted d-block mt-1" *ngIf="dataLoading">
+              <i class="ti ti-loader-2"></i> Loading provinces...
+            </small>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('state')">{{ getFieldError('state') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">District / City <span class="text-danger">*</span></label>
+            <select class="form-control" 
+                    [class.is-invalid]="isFieldInvalid('city')" 
+                    [disabled]="!selectedProvinceCode || form.get('city')?.disabled || dataLoading"
+                    formControlName="city">
+           
+              <option *ngFor="let district of filteredDistricts" [value]="district.code">
+                {{ district.title }}
+              </option>
+            </select>
+            <small class="form-text text-muted d-block mt-1" *ngIf="!selectedProvinceCode && !dataLoading">
+              <i class="ti ti-info-circle"></i> Select a province first
+            </small>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('city')">{{ getFieldError('city') }}</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Pincode <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('pincode')" formControlName="pincode" placeholder="Enter pincode">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('pincode')">{{ getFieldError('pincode') }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Latitude <span class="text-danger">*</span></label>
+            <input type="number" step="0.000001" class="form-control" [class.is-invalid]="isFieldInvalid('latitude')" formControlName="latitude" placeholder="Enter latitude">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('latitude')">{{ getFieldError('latitude') }}</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Longitude <span class="text-danger">*</span></label>
+            <input type="number" step="0.000001" class="form-control" [class.is-invalid]="isFieldInvalid('longitude')" formControlName="longitude" placeholder="Enter longitude">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('longitude')">{{ getFieldError('longitude') }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="mb-3 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="isActive" formControlName="isActive">
+        <label class="form-check-label" for="isActive">Active</label>
+      </div>
+    </form>
+  </div>
+</app-base-modal>

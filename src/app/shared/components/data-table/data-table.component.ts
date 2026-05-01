@@ -111,12 +111,44 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
       case 'date':
         return value ? new Date(value).toLocaleDateString() : '-';
       case 'currency':
-        return value ? `$${parseFloat(value).toFixed(2)}` : '$0.00';
+        return value ? this.formatNepaliCurrency(parseFloat(value)) : 'Rs 0.00';
       case 'number':
         return value || 0;
       default:
         return value || '-';
     }
+  }
+
+  /**
+   * Format currency in Nepali Rupee (Rs) with Nepali number format
+   * Nepali groups: 3 digits from right, then 2-digit groups
+   * Example: 1234567 → Rs 12,34,567
+   * Example: 1700 → Rs 1,700
+   */
+  private formatNepaliCurrency(amount: number): string {
+    const formatted = amount.toFixed(2);
+    const parts = formatted.split('.');
+    let integerPart = parts[0];
+    const decimalPart = parts[1];
+
+    // If number has 3 or fewer digits, no comma needed
+    if (integerPart.length <= 3) {
+      return `Rs ${formatted}`;
+    }
+
+    // Format with Nepali system: 3 digits from right, then 2-digit groups
+    let result = '';
+    let count = 0;
+    for (let i = integerPart.length - 1; i >= 0; i--) {
+      // Insert comma after: first 3 digits from right, then every 2 digits after that
+      if (count === 3 || (count > 3 && (count - 3) % 2 === 0)) {
+        result = ',' + result;
+      }
+      result = integerPart[i] + result;
+      count++;
+    }
+
+    return `Rs ${result}.${decimalPart}`;
   }
 
   /**
@@ -224,10 +256,34 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
     
     const lowerValue = String(value).toLowerCase();
     switch (lowerValue) {
+      // Success/Green statuses
       case 'active':
+      case 'completed':
+      case 'confirmed':
+      case 'success':
         return 'bg-success';
+      
+      // Danger/Red statuses
       case 'inactive':
+      case 'failed':
+      case 'cancelled':
+      case 'error':
         return 'bg-danger';
+      
+      // Warning/Yellow statuses
+      case 'pending':
+      case 'initiated':
+      case 'reserved':
+      case 'warning':
+        return 'bg-warning';
+      
+      // Info/Blue statuses
+      case 'processing':
+      case 'booked':
+      case 'info':
+        return 'bg-info';
+      
+      // Default
       default:
         return 'bg-secondary';
     }
@@ -375,6 +431,9 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
    * Handle refresh button click
    */
   onRefresh(): void {
+    // Clear search text
+    this.searchTerm = '';
+    // Emit refresh event to parent
     this.refresh.emit();
   }
 

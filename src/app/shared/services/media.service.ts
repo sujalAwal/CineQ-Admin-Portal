@@ -126,7 +126,7 @@ export class MediaService {
   deleteMultiple(request: DeleteMediaRequest): Observable<any> {
     const url = `${this.url}/delete-multiple`;
     
-    return this.http.post<any>(url, request, { withCredentials: true })
+    return this.http.delete<any>(url, { body: request, withCredentials: true })
       .pipe(
         map(response => {
           // Invalidate cache after successful operation

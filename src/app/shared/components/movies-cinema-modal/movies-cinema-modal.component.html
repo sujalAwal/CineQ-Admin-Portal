@@ -1,0 +1,220 @@
+<app-base-modal [isVisible]="isVisible" [config]="modalConfig" (closed)="onModalClose()" (primaryAction)="onModalSave()" (secondaryAction)="onModalClose()">
+  <div class="form-container">
+    <form [formGroup]="form">
+
+      <!-- Basic Info -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('title')" formControlName="title" placeholder="Enter movie title">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('title')">{{ getFieldError('title') }}</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Duration (mins) <span class="text-danger">*</span></label>
+            <input type="number" class="form-control" [class.is-invalid]="isFieldInvalid('duration')" formControlName="duration" placeholder="e.g., 120" min="30" max="300">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('duration')">{{ getFieldError('duration') }}</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Release Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" [class.is-invalid]="isFieldInvalid('releaseDate')" formControlName="releaseDate">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('releaseDate')">{{ getFieldError('releaseDate') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Description <span class="text-danger">*</span></label>
+        <textarea class="form-control" [class.is-invalid]="isFieldInvalid('description')" formControlName="description" placeholder="Enter movie synopsis (min 10 characters)" rows="3"></textarea>
+        <div class="invalid-feedback" *ngIf="isFieldInvalid('description')">{{ getFieldError('description') }}</div>
+      </div>
+
+      <!-- Media -->
+      <div class="row">
+        <!-- Poster URL -->
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Poster URL <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="url" class="form-control" [class.is-invalid]="isFieldInvalid('poster')" formControlName="poster" placeholder="https://...">
+              <button type="button" class="btn btn-outline-secondary" (click)="openMediaManager('poster')" title="Select from Media Manager">
+                <i class="ti ti-photo"></i>
+              </button>
+            </div>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('poster')">{{ getFieldError('poster') }}</div>
+            <!-- Poster Preview -->
+            <div *ngIf="form.get('poster')?.value" class="mt-2">
+              <img [src]="form.get('poster')?.value" alt="Poster Preview" class="img-thumbnail" style="max-height: 150px; max-width: 100px; object-fit: cover;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner URL -->
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Banner URL <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="url" class="form-control" [class.is-invalid]="isFieldInvalid('banner')" formControlName="banner" placeholder="https://...">
+              <button type="button" class="btn btn-outline-secondary" (click)="openMediaManager('banner')" title="Select from Media Manager">
+                <i class="ti ti-photo"></i>
+              </button>
+            </div>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('banner')">{{ getFieldError('banner') }}</div>
+            <!-- Banner Preview -->
+            <div *ngIf="form.get('banner')?.value" class="mt-2">
+              <img [src]="form.get('banner')?.value" alt="Banner Preview" class="img-thumbnail" style="max-height: 100px; max-width: 100%; object-fit: cover;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Trailer URL -->
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label class="form-label">Trailer URL</label>
+            <input type="url" class="form-control" formControlName="trailerUrl" placeholder="https://youtube.com/...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Country <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [class.is-invalid]="isFieldInvalid('country')" formControlName="country" placeholder="e.g., India, USA">
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('country')">{{ getFieldError('country') }}</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Certification <span class="text-danger">*</span></label>
+            <select class="form-select form-select-modern" [class.is-invalid]="isFieldInvalid('certification')" formControlName="certification">
+              <option value="">Select Certification</option>
+              <option *ngFor="let c of certifications" [value]="c.code">{{ c.name }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('certification')">{{ getFieldError('certification') }}</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="mb-3">
+            <label class="form-label">Status <span class="text-danger">*</span></label>
+            <select class="form-select form-select-modern" [class.is-invalid]="isFieldInvalid('status')" formControlName="status">
+              <option value="">Select Status</option>
+              <option *ngFor="let s of releaseStatuses" [value]="s.code">{{ s.name }}</option>
+            </select>
+            <div class="invalid-feedback" *ngIf="isFieldInvalid('status')">{{ getFieldError('status') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Languages & Formats (side by side) -->
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Languages <span class="text-danger">*</span></label>
+            <app-multi-select-dropdown
+              [options]="LANGUAGE_OPTIONS"
+              [selectedIds]="selectedLanguages"
+              [placeholder]="'Select languages...'"
+              [searchPlaceholder]="'Search languages...'"
+              [errorMessage]="multiSelectTouched && selectedLanguages.length === 0 ? 'At least one language is required' : null"
+              (selectionChange)="onLanguageSelectionChange($event)">
+            </app-multi-select-dropdown>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Formats <span class="text-danger">*</span></label>
+            <app-multi-select-dropdown
+              [options]="FORMAT_OPTIONS"
+              [selectedIds]="selectedFormats"
+              [placeholder]="'Select formats...'"
+              [searchPlaceholder]="'Search formats...'"
+              [errorMessage]="multiSelectTouched && selectedFormats.length === 0 ? 'At least one format is required' : null"
+              (selectionChange)="onFormatSelectionChange($event)">
+            </app-multi-select-dropdown>
+          </div>
+        </div>
+      </div>
+
+      <!-- Genres (multi-select dropdown with search) -->
+      <div class="mb-3">
+        <label class="form-label">Genres <span class="text-danger">*</span></label>
+        <app-multi-select-dropdown
+          [options]="genres"
+          [selectedIds]="selectedGenreIds"
+          [placeholder]="'Select genres...'"
+          [searchPlaceholder]="'Search genres...'"
+          [isLoading]="loadingDropdowns"
+          [errorMessage]="multiSelectTouched && selectedGenreIds.length === 0 ? 'At least one genre is required' : null"
+          (selectionChange)="onGenreSelectionChange($event)">
+        </app-multi-select-dropdown>
+      </div>
+
+      <!-- Star Cast & Crew -->
+      <div class="mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label mb-0">Star Cast & Crew <span class="text-danger">*</span> <small class="text-muted">(Min 2)</small></label>
+          <button type="button" class="btn btn-sm btn-outline-primary" (click)="addStarcast()">
+            <i class="ti ti-plus me-1"></i>Add Member
+          </button>
+        </div>
+
+        <div *ngIf="starcastArray.length === 0" class="text-muted small border rounded p-2 text-center">
+          No cast members added. Click "Add Member" to begin.
+        </div>
+
+        <div *ngFor="let member of starcastArray.controls; let i = index" class="border rounded p-2 mb-2" [formArrayName]="'starcast'">
+          <div class="row align-items-end" [formGroupName]="i">
+            <div class="col-md-4">
+              <label class="form-label small">Artist <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" [class.is-invalid]="isStarcastFieldInvalid(i, 'artistId')" formControlName="artistId">
+                <option value="">Select Artist</option>
+                <option *ngFor="let a of artists" [value]="a.id">{{ a.full_name }}</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small">Role <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" [class.is-invalid]="isStarcastFieldInvalid(i, 'artistTypeId')" formControlName="artistTypeId">
+                <option value="">Select Role</option>
+                <option *ngFor="let at of artistTypes" [value]="at.id">{{ at.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small">Character Name</label>
+              <input type="text" class="form-control form-control-sm" formControlName="characterName" placeholder="e.g., Bruce Wayne">
+            </div>
+            <div class="col-md-1 text-end">
+              <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeStarcast(i)" title="Remove">
+                <i class="ti ti-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-danger small mt-1" *ngIf="multiSelectTouched && starcastArray.length < 2">
+          At least 2 cast/crew members are required
+        </div>
+      </div>
+
+      <!-- Status toggle -->
+      <div class="mb-3 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="movieIsActive" formControlName="isActive">
+        <label class="form-check-label" for="movieIsActive">Active</label>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Media Manager Modal -->
+  <app-media-manager-modal 
+    [isVisible]="showMediaManager" 
+    [config]="mediaManagerConfig"
+    (closed)="onMediaManagerClosed()"
+    (filesSelected)="onMediaSelected($event)">
+  </app-media-manager-modal>
+</app-base-modal>

@@ -47,18 +47,20 @@
           </button>
           <button 
             type="button" 
-            class="btn btn-outline-danger btn-sm me-1"
-            (click)="deleteSelectedItems()"
-            [disabled]="state.selectedItems.totalCount === 0 || state.isLoading">
-            <i class="ti ti-trash"></i> Delete
-          </button>
-          <button 
-            type="button" 
             class="btn btn-outline-secondary btn-sm"
             (click)="refreshFiles()"
             [disabled]="state.isLoading">
             <i class="ti ti-refresh"></i> Refresh
           </button>
+          <button
+            *ngIf="state.selectedItems.totalCount > 0"
+            type="button"
+            class="btn btn-danger btn-sm me-1"
+            (click)="deleteSelectedItems()"
+            [disabled]="state.isLoading">
+            <i class="ti ti-trash"></i> Delete ({{ state.selectedItems.totalCount }})
+          </button>
+          
         </div>
       </div>
     </div>
@@ -205,54 +207,6 @@
             </li>
           </ul>
         </nav>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Selected Files Display -->
-<div class="selected-files-section" *ngIf="selectedMediaFiles.length > 0">
-  <div class="card mt-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <h5 class="mb-0">
-        <i class="ti ti-check-circle"></i> Selected Files ({{ selectedMediaFiles.length }})
-      </h5>
-      <button 
-        type="button" 
-        class="btn btn-outline-danger btn-sm"
-        (click)="clearSelection()">
-        <i class="ti ti-trash"></i> Clear All
-      </button>
-    </div>
-    <div class="card-body">
-      <div class="selected-files-grid">
-        <div class="selected-file-item" *ngFor="let file of selectedMediaFiles; let i = index">
-          <div class="file-icon">
-            <i [class]="getFileTypeIcon(file)"></i>
-          </div>
-          <div class="file-info">
-            <div class="file-name">{{ file.fileName }}</div>
-            <div class="file-meta">
-              <span class="file-size">{{ getFileSize(file) }}</span>
-              <span class="file-type">{{ getFileExtension(file).toUpperCase() }}</span>
-            </div>
-          </div>
-          <div class="file-actions">
-            <button 
-              type="button" 
-              class="btn btn-outline-primary btn-sm"
-              [title]="'Preview: ' + file.fileName">
-              <i class="ti ti-eye"></i>
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-outline-danger btn-sm"
-              (click)="removeFile(i)"
-              [title]="'Remove: ' + file.fileName">
-              <i class="ti ti-trash"></i>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   </div>

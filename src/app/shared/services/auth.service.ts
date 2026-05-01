@@ -206,6 +206,17 @@ export class AuthService {
   }
 
   /**
+   * Handle unauthorized (401) - called by HTTP interceptor
+   * Clears auth state without redirect (interceptor handles redirect)
+   */
+  public handleUnauthorized(): void {
+    // Clear only the auth state, not localStorage yet
+    // (the interceptor will clear all storage before calling this)
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+  }
+
+  /**
    * Handle HTTP errors (like Laravel exception handling)
    */
   private handleError = (error: HttpErrorResponse): Observable<never> => {
