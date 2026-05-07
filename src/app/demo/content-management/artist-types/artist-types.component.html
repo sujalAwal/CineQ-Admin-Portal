@@ -18,9 +18,11 @@
             </div>
           </div>
           <div class="col-md-6 text-end">
-            <button class="btn btn-primary" (click)="openAddModal()" [disabled]="loading">
-              <i class="ti ti-plus me-2"></i>Add New Type
-            </button>
+            <ng-container *appIfModulePermission="'create'">
+              <button class="btn btn-primary" (click)="openAddModal()" [disabled]="loading">
+                <i class="ti ti-plus me-2"></i>Add New Type
+              </button>
+            </ng-container>
           </div>
         </div>
 
@@ -35,9 +37,11 @@
         <div *ngIf="!loading && artistTypes.length === 0" class="text-center py-5">
           <i class="ti ti-users-off text-muted" style="font-size: 3rem;"></i>
           <p class="text-muted mt-2">No artist types found.</p>
-          <button class="btn btn-sm btn-primary" (click)="openAddModal()">
-            <i class="ti ti-plus me-1"></i>Add First Type
-          </button>
+          <ng-container *appIfModulePermission="'create'">
+            <button class="btn btn-sm btn-primary" (click)="openAddModal()">
+              <i class="ti ti-plus me-1"></i>Add First Type
+            </button>
+          </ng-container>
         </div>
 
         <!-- Cards grid -->
@@ -55,19 +59,23 @@
                     {{ type.artist_count ?? 0 }} artists
                   </span>
                   <div>
-                    <button
-                      class="btn btn-sm me-1"
-                      [ngClass]="getCardStyle(i).btn"
-                      (click)="editItem(type)"
-                      title="Edit">
-                      <i class="ti ti-edit"></i>
-                    </button>
-                    <button
-                      class="btn btn-sm btn-outline-danger"
-                      (click)="deleteItem(type)"
-                      title="Delete">
-                      <i class="ti ti-trash"></i>
-                    </button>
+                    <ng-container *appIfModulePermission="'update'">
+                      <button
+                        class="btn btn-sm me-1"
+                        [ngClass]="getCardStyle(i).btn"
+                        (click)="editItem(type)"
+                        title="Edit">
+                        <i class="ti ti-edit"></i>
+                      </button>
+                    </ng-container>
+                    <ng-container *appIfModulePermission="'delete'">
+                      <button
+                        class="btn btn-sm btn-outline-danger"
+                        (click)="deleteItem(type)"
+                        title="Delete">
+                        <i class="ti ti-trash"></i>
+                      </button>
+                    </ng-container>
                   </div>
                 </div>
               </div>

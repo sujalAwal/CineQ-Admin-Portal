@@ -8,9 +8,11 @@
         <div class="row mb-3">
           <div class="col-md-6"></div>
           <div class="col-md-6 text-end">
-            <button class="btn btn-primary" (click)="openAddModal()">
-              <i class="ti ti-plus me-2"></i>Add Artist
-            </button>
+            <ng-container *appIfModulePermission="'create'">
+              <button class="btn btn-primary" (click)="openAddModal()">
+                <i class="ti ti-plus me-2"></i>Add Artist
+              </button>
+            </ng-container>
           </div>
         </div>
 

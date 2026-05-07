@@ -1,16 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { BehaviorSubject, forkJoin, Observable, of, throwError } from 'rxjs';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
-import { 
-  User, 
-  LoginRequest, 
-  LoginResponse, 
-  ApiResponse 
-} from '../interfaces/auth.interface';
+import { ApiResponse, LoginRequest, LoginResponse, ProfileResponse, User } from '../interfaces/auth.interface';
+import { AuthorizationService } from './authorization.service';
+import { MasterDataService } from './master-data.service';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +22,9 @@ export class AuthService {
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private authorizationService: AuthorizationService,
+    private masterDataService: MasterDataService
   ) {
     // Check if user is logged in on service initialization
     this.checkAuthStatus();
@@ -42,22 +41,15 @@ export class AuthService {
     })
       .pipe(
         map(response => {
-        
           if (response.success && response.data) {
-            
             return response.data;
           }
           throw new Error(response.message || 'Login failed');
         }),
-        tap(loginResponse => {
+        switchMap((loginResponse) => {
           // Store authentication data (like Laravel session)
           this.setAuthData(loginResponse);
-          
-          // Call profile API after successful login
-          this.fetchProfile().subscribe();
-          
-          // Call my-modules API after successful login
-          this.fetchMyModules().subscribe();
+          return this.bootstrapAuthorization().pipe(map(() => loginResponse));
         }),
         catchError(this.handleError)
       );
@@ -66,22 +58,153 @@ export class AuthService {
   /**
    * Fetch user profile
    */
-  private fetchProfile(): Observable<any> {
+  private fetchProfile(): Observable<ProfileResponse> {
     const url = `${environment.api.baseUrl}/auth/profile`;
     
-    return this.http.get(url, {
+    return this.http.get<ApiResponse<ProfileResponse>>(url, {
       withCredentials: true
-    });
+    }).pipe(
+      map((response) => {
+        if (response?.success && response?.data) {
+          return response.data;
+        }
+        throw new Error(response?.message || 'Failed to fetch profile');
+      })
+    );
   }
 
   /**
-   * Fetch user modules
+   * Load profile + permission definitions and build authorization maps
    */
-  private fetchMyModules(): Observable<any> {
-    const url = `${environment.api.baseUrl}/modules/my-modules`;
-    
-    return this.http.get(url, {
-      withCredentials: true
+  bootstrapAuthorization(): Observable<void> {
+    if (!this.isAuthenticated()) {
+      this.authorizationService.reset();
+      return of(void 0);
+    }
+
+    return forkJoin({
+      profile: this.fetchProfile(),
+      permissions: this.masterDataService.getPermissions$().pipe(catchError(() => of([])))
+    }).pipe(
+      tap(({ profile, permissions }) => {
+        this.authorizationService.initialize(profile?.modules || [], permissions || []);
+      }),
+      map(() => void 0),
+      catchError((error) => {
+        if (error instanceof HttpErrorResponse && error.status === 401) {
+          this.authorizationService.reset();
+          return throwError(() => error);
+        }
+        this.setPermissionDefinitionsFromCache();
+        this.authorizationService.hydrateFromStorage();
+        return of(void 0);
+      })
+    );
+  }
+
+  isRouteAllowed(path: string): boolean {
+    return this.authorizationService.canAccessRoute(path);
+  }
+
+  hasModulePermission(moduleApi: string, action: 'create' | 'read' | 'update' | 'delete'): boolean {
+    return this.authorizationService.can(moduleApi, action);
+  }
+
+  getAllowedNavigationApis(): Set<string> {
+    return this.authorizationService.getAllowedNavigationApis();
+  }
+
+  normalizePath(path: string): string {
+    return this.authorizationService.normalizePath(path);
+  }
+
+  clearSessionAndRedirectToLogin(returnUrl?: string): void {
+    localStorage.removeItem('current_user');
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+    this.authorizationService.reset();
+    this.masterDataService.clearCache();
+
+    if (returnUrl) {
+      this.router.navigate([environment.app.loginRoute], { queryParams: { returnUrl } });
+      return;
+    }
+    this.router.navigate([environment.app.loginRoute]);
+  }
+
+  redirectToDashboard(): void {
+    this.router.navigate([environment.app.defaultRoute]);
+  }
+
+  ensureRouteAccess(path: string): boolean {
+    if (!this.isAuthenticated()) {
+      this.clearSessionAndRedirectToLogin(path);
+      return false;
+    }
+
+    if (!this.isRouteAllowed(path)) {
+      this.redirectToDashboard();
+      return false;
+    }
+
+    return true;
+  }
+
+  isAuthorizationReady$(): Observable<boolean> {
+    return this.authorizationService.initialized$;
+  }
+
+  clearAuthorization(): void {
+    this.authorizationService.reset();
+  }
+
+  getAuthorizationService(): AuthorizationService {
+    return this.authorizationService;
+  }
+
+  canForCurrentRoute(routePath: string, action: 'create' | 'read' | 'update' | 'delete'): boolean {
+    const normalizedPath = this.normalizePath(routePath);
+    return this.authorizationService.canForRoute(normalizedPath, action);
+  }
+
+  setPermissionDefinitionsFromCache(): void {
+    this.authorizationService.setPermissionDefinitions(this.masterDataService.getPermissions());
+  }
+
+  getDashboardRoute(): string {
+    return environment.app.defaultRoute;
+  }
+
+  getLoginRoute(): string {
+    return environment.app.loginRoute;
+  }
+
+  navigateToLogin(returnUrl?: string): void {
+    if (returnUrl) {
+      this.router.navigate([environment.app.loginRoute], { queryParams: { returnUrl } });
+      return;
+    }
+    this.router.navigate([environment.app.loginRoute]);
+  }
+
+  clearSessionWithoutRedirect(): void {
+    localStorage.removeItem('current_user');
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+    this.authorizationService.reset();
+    this.masterDataService.clearCache();
+  }
+
+  initializeAuthorizationOnStartup(): void {
+    if (!this.isAuthenticated()) {
+      return;
+    }
+    this.bootstrapAuthorization().subscribe({
+      error: (err) => {
+        if (err instanceof HttpErrorResponse && err.status === 401) {
+          this.clearSessionAndRedirectToLogin();
+        }
+      }
     });
   }
 
@@ -96,11 +219,11 @@ export class AuthService {
     })
       .pipe(
         tap(() => {
-          this.clearAuthData();
+          this.clearSessionAndRedirectToLogin();
         }),
         catchError((error) => {
           // Even if logout API fails, clear local data
-          this.clearAuthData();
+          this.clearSessionAndRedirectToLogin();
           return throwError(error);
         })
       );
@@ -145,20 +268,20 @@ export class AuthService {
    */
   refreshToken(): Observable<LoginResponse> {
     const url = `${environment.api.baseUrl}/auth/refresh`;
-    
+
     return this.http.post<ApiResponse<LoginResponse>>(url, {}, {
-      withCredentials: true  // Include cookies for token refresh
+      withCredentials: true
     }).pipe(
-      map(response => {
+      map((response) => {
         if (response.success && response.data) {
           return response.data;
         }
-        throw new Error('Token refresh failed');
+        throw new Error(response.message || 'Token refresh failed');
       }),
-      tap(loginResponse => {
+      tap((loginResponse) => {
         this.setAuthData(loginResponse);
       }),
-      catchError(this.handleError)
+      catchError((err: HttpErrorResponse | Error) => throwError(() => err))
     );
   }
 
@@ -174,8 +297,9 @@ export class AuthService {
         const user = JSON.parse(userStr);
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(true);
+        this.initializeAuthorizationOnStartup();
       } catch (error) {
-        this.clearAuthData();
+        this.clearSessionWithoutRedirect();
       }
     }
   }
@@ -196,13 +320,7 @@ export class AuthService {
    * Clear authentication data (like Laravel Auth::logout())
    */
   private clearAuthData(): void {
-    localStorage.removeItem('current_user');
-    
-    this.currentUserSubject.next(null);
-    this.isAuthenticatedSubject.next(false);
-    
-    // Redirect to login
-    this.router.navigate([environment.app.loginRoute]);
+    this.clearSessionAndRedirectToLogin();
   }
 
   /**
@@ -214,6 +332,7 @@ export class AuthService {
     // (the interceptor will clear all storage before calling this)
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+    this.authorizationService.reset();
   }
 
   /**
@@ -267,4 +386,25 @@ export class AuthService {
     
     return throwError(errorMessage);
   };
+
+  /**
+   * Validates a password setup token
+   */
+  validateToken(token: string): Observable<ApiResponse<{valid: boolean, email: string}>> {
+    return this.http.post<ApiResponse<{valid: boolean, email: string}>>(`${environment.api.baseUrl}/auth/validate-token`, { token });
+  }
+
+  /**
+   * Sets password using magic link token
+   */
+  setPassword(token: string, password: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${environment.api.baseUrl}/auth/set-password`, { token, password });
+  }
+
+  /**
+   * Resends a password setup link
+   */
+  resendLink(email: string): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(`${environment.api.baseUrl}/auth/resend-link`, { email });
+  }
 }

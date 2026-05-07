@@ -21,9 +21,13 @@ export interface UserListItem {
   name: string;
   email: string;
   phoneNumber?: string;
-  role: string;
-  roleId?: string;
+  /** All role names from API (order matches roleIds when present) */
+  roleNames: string[];
+  roleIds: string[];
+  /** Badge text: first role or "First +N" when multiple */
+  roleDisplay: string;
   isActive: boolean;
+  passwordStatus?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -36,9 +40,10 @@ export interface UserDetailResponse {
   name: string;
   email: string;
   phoneNumber?: string;
-  role: string;
-  roleId: string;
+  roleNames: string[];
+  roleIds: string[];
   isActive: boolean;
+  passwordStatus?: string;
   emailVerifiedAt?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -50,9 +55,8 @@ export interface UserDetailResponse {
 export interface UserRegisterRequest {
   name: string;
   email: string;
-  password: string;
   phoneNumber: string;
-  roleId: string;
+  roleIds: string[];
 }
 
 /**
@@ -62,7 +66,7 @@ export interface UserUpdateRequest {
   name?: string;
   email?: string;
   phoneNumber?: string;
-  roleId?: string;
+  roleIds?: string[];
   isActive?: boolean;
 }
 

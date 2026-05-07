@@ -6,6 +6,8 @@ import { GuestComponent } from './theme/layout/guest/guest.component';
 // Import guards
 import { AuthGuard } from './shared/guards/auth.guard';
 import { GuestGuard } from './shared/guards/guest.guard';
+import { TokenGuard } from './shared/guards/token.guard';
+import { ModulePermissionGuard } from './shared/guards/module-permission.guard';
 
 const routes: Routes = [
   {
@@ -17,22 +19,11 @@ const routes: Routes = [
     path: '',
     component: AdminComponent,
     canActivate: [AuthGuard], // Protect admin routes
+    canActivateChild: [ModulePermissionGuard],
     children: [
       {
         path: 'dashboard',
         loadComponent: () => import('./demo/dashboard/default/default.component').then((c) => c.DefaultComponent)
-      },
-      {
-        path: 'typography',
-        loadComponent: () => import('./demo/elements/typography/typography.component').then((c) => c.TypographyComponent)
-      },
-      {
-        path: 'color',
-        loadComponent: () => import('./demo/elements/element-color/element-color.component').then((c) => c.ElementColorComponent)
-      },
-      {
-        path: 'sample-page',
-        loadComponent: () => import('./demo/other/sample-page/sample-page.component').then((c) => c.SamplePageComponent)
       },
       // Content Management Routes
       {
@@ -189,8 +180,13 @@ const routes: Routes = [
         loadComponent: () => import('./demo/pages/authentication/login/login.component').then((c) => c.LoginComponent)
       },
       {
-        path: 'register',
-        loadComponent: () => import('./demo/pages/authentication/register/register.component').then((c) => c.RegisterComponent)
+        path: 'set-password',
+        loadComponent: () => import('./demo/pages/authentication/set-password/set-password.component').then((c) => c.SetPasswordComponent),
+        canActivate: [TokenGuard]
+      },
+      {
+        path: 'resend-link',
+        loadComponent: () => import('./demo/pages/authentication/resend-link/resend-link.component').then((c) => c.ResendLinkComponent)
       }
     ]
   }

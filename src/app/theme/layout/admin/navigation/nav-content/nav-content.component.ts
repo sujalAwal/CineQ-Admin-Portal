@@ -1,13 +1,15 @@
 // Angular import
-import { Component, OnInit, output, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, output, inject } from '@angular/core';
 import { Location } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 
 //theme version
 import { environment } from 'src/environments/environment';
 
 // project import
 import { NavigationItem, NavigationItems } from '../navigation';
+import { AuthService } from 'src/app/shared/services/auth.service';
 
 import { NavCollapseComponent } from './nav-collapse/nav-collapse.component';
 import { NavGroupComponent } from './nav-group/nav-group.component';
@@ -22,8 +24,11 @@ import { SharedModule } from 'src/app/theme/shared/shared.module';
   templateUrl: './nav-content.component.html',
   styleUrl: './nav-content.component.scss'
 })
-export class NavContentComponent implements OnInit {
+export class NavContentComponent implements OnInit, OnDestroy {
   private location = inject(Location);
+  private router = inject(Router);
+  private authService = inject(AuthService);
+  private destroy$ = new Subject<void>();
 
   // public props
   NavCollapsedMob = output();
@@ -38,17 +43,69 @@ export class NavContentComponent implements OnInit {
 
   // Constructor
   constructor() {
-    this.navigations = NavigationItems;
+    this.navigations = [];
     this.windowWidth = window.innerWidth;
   }
 
   // Life cycle events
   ngOnInit() {
+    this.updateNavigation();
+    this.authService.isAuthorizationReady$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.updateNavigation());
+
+    this.router.events
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((event) => {
+        if (event instanceof NavigationEnd) {
+          this.updateNavigation();
+        }
+      });
+
     if (this.windowWidth < 1025) {
       setTimeout(() => {
         (document.querySelector('.coded-navbar') as HTMLDivElement).classList.add('menupos-static');
       }, 500);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private updateNavigation(): void {
+    const allowedRoutes = this.authService.getAllowedNavigationApis();
+    const filtered = this.filterNavigationItems(NavigationItems, allowedRoutes);
+    this.navigations = filtered;
+  }
+
+  private filterNavigationItems(items: NavigationItem[], allowedRoutes: Set<string>): NavigationItem[] {
+    const result: NavigationItem[] = [];
+
+    for (const item of items) {
+      if (item.type === 'item') {
+        if (!item.url) {
+          continue;
+        }
+
+        const normalized = this.authService.normalizePath(item.url);
+        if (normalized === '/dashboard' || allowedRoutes.has(normalized)) {
+          result.push({ ...item });
+        }
+        continue;
+      }
+
+      const filteredChildren = item.children ? this.filterNavigationItems(item.children, allowedRoutes) : [];
+      if (filteredChildren.length > 0) {
+        result.push({
+          ...item,
+          children: filteredChildren
+        });
+      }
+    }
+
+    return result;
   }
 
   fireOutClick() {

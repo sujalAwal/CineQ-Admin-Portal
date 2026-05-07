@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Subject } from 'rxjs';
 
 import { BaseModalComponent, ModalConfig } from '../base-modal/base-modal.component';
+import { MultiSelectDropdownComponent } from '../multi-select-dropdown/multi-select-dropdown.component';
 import { UserService } from '../../services/user.service';
 import { RoleService } from '../../services/role.service';
 import { ToastService } from '../../services/toast.service';
@@ -12,7 +13,7 @@ import { UserDetailResponse, UserRegisterRequest, UserUpdateRequest } from '../.
 @Component({
   selector: 'app-user-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, BaseModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, BaseModalComponent, MultiSelectDropdownComponent],
   templateUrl: './user-modal.component.html',
   styleUrls: ['./user-modal.component.scss']
 })
@@ -26,6 +27,8 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
 
   userForm!: FormGroup;
   roles: Array<{id: string, name: string}> = [];
+  selectedRoleIds: string[] = [];
+  multiSelectTouched: boolean = false;
   loading: boolean = false;
   private destroy$ = new Subject<void>();
 
@@ -72,35 +75,13 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
       phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
-      password: ['', []],
-      roleId: ['', [Validators.required]],
+      
+      roleIds: [[], [Validators.required]],  // Changed to roleIds (array)
       isActive: [true]
     });
 
     // Set password validators for create mode
-    this.updatePasswordValidators();
-  }
-
-  private updatePasswordValidators(): void {
-    const passwordControl = this.userForm.get('password');
-    if (!this.user) {
-      // Create mode: password is required
-      passwordControl?.setValidators([
-        Validators.required,
-        Validators.minLength(8),
-        Validators.maxLength(100),
-        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/)
-      ]);
-    } else {
-      // Edit mode: password is optional
-      passwordControl?.setValidators([
-        Validators.minLength(8),
-        Validators.maxLength(100),
-        Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/)
-      ]);
-    }
-    passwordControl?.updateValueAndValidity();
-  }
+      }
 
   private updateModalConfig(): void {
     if (this.user) {
@@ -112,17 +93,17 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
       this.modalConfig.icon = 'user-plus';
       this.modalConfig.primaryButtonText = 'Create User';
     }
-    this.updatePasswordValidators();
-  }
+      }
 
   private populateForm(): void {
     if (this.user && this.userForm) {
+      this.selectedRoleIds = this.user.roleIds?.length ? [...this.user.roleIds] : [];
       this.userForm.patchValue({
         name: this.user.name,
         email: this.user.email,
         phoneNumber: this.user.phoneNumber || '',
-        password: '', // Never populate password
-        roleId: this.user.roleId,
+        
+        roleIds: this.selectedRoleIds,
         isActive: this.user.isActive
       });
       this.cdr.markForCheck();
@@ -150,6 +131,10 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onModalSave(): void {
+    this.multiSelectTouched = true;
+    this.userForm.get('roleIds')?.markAsTouched();
+    this.userForm.patchValue({ roleIds: [...this.selectedRoleIds] });
+
     if (this.userForm.invalid) {
       this.markFormGroupTouched();
       return;
@@ -159,16 +144,19 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
 
     this.modalConfig.primaryButtonLoading = true;
 
+    const roleIds: string[] = Array.isArray(this.selectedRoleIds)
+      ? this.selectedRoleIds.map((id: string) => String(id))
+      : [];
+
     if (this.user) {
       // Update existing user
       const updateData: Partial<UserUpdateRequest> = {
         name: formValue.name.trim(),
         email: formValue.email.trim().toLowerCase(),
         phoneNumber: formValue.phoneNumber.trim(),
-        roleId: formValue.roleId,
+        roleIds,
         isActive: formValue.isActive
       };
-
 
       this.userService.updateUser(this.user.id, updateData).subscribe({
         next: (response) => {
@@ -186,9 +174,9 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
       const registerData: UserRegisterRequest = {
         name: formValue.name.trim(),
         email: formValue.email.trim().toLowerCase(),
-        password: formValue.password,
+        
         phoneNumber: formValue.phoneNumber.trim(),
-        roleId: formValue.roleId
+        roleIds
       };
 
       this.userService.registerUser(registerData).subscribe({
@@ -220,12 +208,14 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private resetForm(): void {
+    this.selectedRoleIds = [];
+    this.multiSelectTouched = false;
     this.userForm.reset({
       name: '',
       email: '',
       phoneNumber: '',
-      password: '',
-      roleId: '',
+      
+      roleIds: [],
       isActive: true
     });
   }
@@ -234,6 +224,13 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
     Object.keys(this.userForm.controls).forEach(key => {
       this.userForm.get(key)?.markAsTouched();
     });
+  }
+
+  onRoleSelectionChange(selectedIds: string[]): void {
+    this.selectedRoleIds = selectedIds;
+    this.userForm.get('roleIds')?.setValue([...selectedIds]);
+    this.userForm.get('roleIds')?.markAsDirty();
+    this.cdr.markForCheck();
   }
 
   isFieldInvalid(fieldName: string): boolean {
@@ -250,8 +247,7 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
       if (field.errors['maxlength']) return `${this.getFieldLabel(fieldName)} must not exceed ${field.errors['maxlength'].requiredLength} characters`;
       if (field.errors['pattern']) {
         if (fieldName === 'phoneNumber') return 'Phone number must be 10 digits';
-        if (fieldName === 'password') return 'Password must contain at least 1 uppercase, 1 lowercase, 1 number and 1 special character';
-      }
+              }
     }
     return '';
   }
@@ -261,8 +257,7 @@ export class UserModalComponent implements OnInit, OnChanges, OnDestroy {
       name: 'Name',
       email: 'Email',
       phoneNumber: 'Phone Number',
-      password: 'Password',
-      roleId: 'Role'
+            roleIds: 'Role'
     };
     return labels[fieldName] || fieldName;
   }

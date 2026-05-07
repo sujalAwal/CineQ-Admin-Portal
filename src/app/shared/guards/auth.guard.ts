@@ -5,8 +5,9 @@ import {
   RouterStateSnapshot,
   Router
 } from '@angular/router';
-import { Observable } from 'rxjs';
-import { map, take } from 'rxjs/operators';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+import { catchError, map, switchMap, take } from 'rxjs/operators';
 
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -28,16 +29,25 @@ export class AuthGuard implements CanActivate {
 
     return this.authService.isAuthenticated$.pipe(
       take(1),
-      map(isAuthenticated => {
+      switchMap(isAuthenticated => {
         if (isAuthenticated) {
-          return true;
+          return this.authService.bootstrapAuthorization().pipe(
+            map(() => true),
+            catchError((err) => {
+              if (err instanceof HttpErrorResponse && err.status === 401) {
+                this.authService.navigateToLogin(state.url);
+                return of(false);
+              }
+              return of(true);
+            })
+          );
         }
 
         // Not authenticated, redirect to login
         this.router.navigate([environment.app.loginRoute], {
           queryParams: { returnUrl: state.url }
         });
-        return false;
+        return of(false);
       })
     );
   }

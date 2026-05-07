@@ -75,7 +75,6 @@ export class DefaultComponent implements OnInit {
   ngOnInit(): void {
     this.loadDashboardStats();
     this.masterDataService.fetchMasterData().subscribe({
-      error: (err) => console.error('Failed to load master data:', err)
     });
   }
 

@@ -15,6 +15,17 @@ import {
   UserApiResponse
 } from '../interfaces/user.interface';
 
+/** Badge label for user table: first role or "First +N" when multiple */
+function computeRoleDisplay(roleNames: string[]): string {
+  if (!roleNames || roleNames.length === 0) {
+    return 'USER';
+  }
+  if (roleNames.length === 1) {
+    return roleNames[0];
+  }
+  return `${roleNames[0]} +${roleNames.length - 1}`;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -59,18 +70,22 @@ export class UserService {
       })
       .pipe(
         map(response => {
-          // Map the response data to UserListItem format
-          const mappedData = response.data.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phoneNumber: user.phoneNumber || user.phone_number || '',
-            role: user.role?.name || user.roleName || 'USER',
-            roleId: user.roleId || user.role?.id || '',
-            isActive: user.isActive ?? user.is_active ?? true,
-            createdAt: user.createdAt || user.created_at || '',
-            updatedAt: user.updatedAt || user.updated_at || ''
-          }));
+          const mappedData = response.data.map((user: any) => {
+            const roleNames: string[] = Array.isArray(user.roleNames) ? user.roleNames : [];
+            const roleIds: string[] = Array.isArray(user.roleIds) ? user.roleIds : [];
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phoneNumber: user.phoneNumber || user.phone_number || '',
+              roleNames,
+              roleIds,
+              roleDisplay: computeRoleDisplay(roleNames),
+              isActive: user.isActive ?? user.is_active ?? true,
+              createdAt: user.createdAt || user.created_at || '',
+              updatedAt: user.updatedAt || user.updated_at || ''
+            };
+          });
 
           return {
             ...response,
@@ -94,13 +109,15 @@ export class UserService {
         map(response => {
           if (response.success && response.data) {
             const user = response.data;
+            const roleNames: string[] = Array.isArray(user.roleNames) ? user.roleNames : [];
+            const roleIds: string[] = Array.isArray(user.roleIds) ? user.roleIds : [];
             return {
               id: user.id,
               name: user.name,
               email: user.email,
               phoneNumber: user.phoneNumber || user.phone_number || '',
-              roleId: user.roleId || user.role?.id || '',
-              role: user.role?.name || user.roleName || 'USER',
+              roleNames,
+              roleIds,
               isActive: user.isActive ?? user.is_active ?? true,
               emailVerifiedAt: user.emailVerifiedAt || user.email_verified_at || '',
               createdAt: user.createdAt || user.created_at || '',

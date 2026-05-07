@@ -53,15 +53,8 @@
             </div>
             
             <!-- Remember Me & Forgot Password -->
-            <div class="d-flex mt-1 justify-content-between">
-              <div class="form-check" *ngIf="environment.features.enableRememberMe">
-                <input 
-                  class="form-check-input input-primary" 
-                  type="checkbox" 
-                  id="customCheckc1" 
-                  formControlName="remember_me" />
-                <label class="form-check-label text-muted" for="customCheckc1">Remember me</label>
-              </div>
+            <div class="d-flex mt-1 justify-content-end">
+              
               <h5 class="text-secondary" *ngIf="environment.features.enableForgotPassword">
                 <a href="javascript:">Forgot Password?</a>
               </h5>
@@ -80,11 +73,7 @@
           </form>
           
           <hr />
-          
-          <!-- Registration Link -->
-          <h5 class="d-flex justify-content-center" *ngIf="environment.features.enableRegistration">
-            <a [routerLink]="['/register']">Don't have an account?</a>
-          </h5>
+        
         </div>
       </div>
     </div>

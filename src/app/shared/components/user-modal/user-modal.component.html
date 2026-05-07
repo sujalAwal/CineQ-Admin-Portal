@@ -52,44 +52,21 @@
       <small class="form-text text-muted">Enter 10-digit phone number without spaces or dashes</small>
     </div>
 
-    <!-- Password -->
-    <div class="mb-3">
-      <label class="form-label">
-        Password 
-        <span class="text-danger" *ngIf="!user">*</span>
-        <span class="text-muted" *ngIf="user">(Leave blank to keep current password)</span>
-      </label>
-      <input
-        type="password"
-        class="form-control"
-        formControlName="password"
-        [placeholder]="user ? 'Enter new password (optional)' : 'Enter password'"
-        [class.is-invalid]="isFieldInvalid('password')"
-      />
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('password')">
-        {{ getFieldError('password') }}
-      </div>
-      <small class="form-text text-muted">
-        Password must be at least 8 characters with 1 uppercase, 1 lowercase, 1 number and 1 special character
-      </small>
-    </div>
-
     <!-- Role -->
     <div class="mb-3">
       <label class="form-label">Role <span class="text-danger">*</span></label>
-      <select
-        class="form-select"
-        formControlName="roleId"
-        [class.is-invalid]="isFieldInvalid('roleId')"
-      >
-        <option value="">Select a role</option>
-        <option *ngFor="let role of roles" [value]="role.id">
-          {{ role.name }}
-        </option>
-      </select>
-      <div class="invalid-feedback" *ngIf="isFieldInvalid('roleId')">
-        {{ getFieldError('roleId') }}
+      <div class="role-select-wrapper">
+        <app-multi-select-dropdown
+          [options]="roles"
+          [selectedIds]="selectedRoleIds"
+          [placeholder]="'Select roles...'"
+          [searchPlaceholder]="'Search roles...'"
+          [isLoading]="loading"
+          [errorMessage]="multiSelectTouched && selectedRoleIds.length === 0 ? getFieldError('roleIds') : null"
+          (selectionChange)="onRoleSelectionChange($event)">
+        </app-multi-select-dropdown>
       </div>
+      <small class="form-text text-muted d-block mt-2">Select one or multiple roles</small>
     </div>
 
     <!-- Status -->

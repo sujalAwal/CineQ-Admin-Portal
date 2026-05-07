@@ -9,18 +9,20 @@
           <i class="ti ti-photo me-1"></i> Media Manager
         </h5>
         <div class="d-flex align-items-center gap-1">
-          <button
-            type="button"
-            class="btn btn-success btn-sm"
-            (click)="openCreateFolderModal()">
-            <i class="ti ti-folder-plus"></i> Create Folder
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary btn-sm"
-            (click)="openUploadModal()">
-            <i class="ti ti-upload"></i> Upload Files
-          </button>
+          <ng-container *appIfModulePermission="'create'">
+            <button
+              type="button"
+              class="btn btn-success btn-sm"
+              (click)="openCreateFolderModal()">
+              <i class="ti ti-folder-plus"></i> Create Folder
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              (click)="openUploadModal()">
+              <i class="ti ti-upload"></i> Upload Files
+            </button>
+          </ng-container>
           <button
             type="button"
             class="btn btn-outline-primary btn-sm"
@@ -33,13 +35,15 @@
             (click)="refreshFiles()">
             <i class="ti ti-refresh"></i> Refresh
           </button>
-          <button
-            *ngIf="selectedFiles.length > 0"
-            type="button"
-            class="btn btn-danger btn-sm"
-            (click)="deleteSelectedFiles()">
-            <i class="ti ti-trash"></i> Delete ({{ selectedFiles.length }})
-          </button>
+          <ng-container *appIfModulePermission="'delete'">
+            <button
+              *ngIf="selectedFiles.length > 0"
+              type="button"
+              class="btn btn-danger btn-sm"
+              (click)="deleteSelectedFiles()">
+              <i class="ti ti-trash"></i> Delete ({{ selectedFiles.length }})
+            </button>
+          </ng-container>
         </div>
       </div>
 

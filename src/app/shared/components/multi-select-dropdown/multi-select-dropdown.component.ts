@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnInit, OnChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnInit, OnChanges, ChangeDetectorRef, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -34,7 +34,10 @@ export class MultiSelectDropdownComponent implements OnInit, OnChanges {
   isOpen = false;
   filteredOptions: MultiSelectOption[] = [];
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private elementRef: ElementRef<HTMLElement>
+  ) {}
 
   ngOnInit(): void {
     this.updateFilteredOptions();
@@ -123,6 +126,21 @@ export class MultiSelectDropdownComponent implements OnInit, OnChanges {
   closeDropdown(): void {
     this.isOpen = false;
     this.dropdownToggle.emit(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isOpen) {
+      return;
+    }
+
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const clickedInside = path.includes(this.elementRef.nativeElement);
+
+    if (!clickedInside) {
+      this.closeDropdown();
+      this.cdr.markForCheck();
+    }
   }
 }
 

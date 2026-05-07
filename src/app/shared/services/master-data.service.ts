@@ -62,7 +62,6 @@ export class MasterDataService {
       }),
       catchError(error => {
         console.error('Failed to fetch master data:', error);
-        this.toastr.error('Failed to load master data', 'Error');
         return throwError(() => error);
       })
     );

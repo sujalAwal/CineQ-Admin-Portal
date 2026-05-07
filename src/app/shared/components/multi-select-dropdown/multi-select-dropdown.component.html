@@ -2,7 +2,9 @@
   <!-- Main button/display area with selected chips -->
   <div class="multi-select-container">
     <!-- Selected chips display area -->
-    <div class="selected-chips-area" *ngIf="selectedIds.length > 0; else emptyState">
+    <div class="selected-chips-area"
+         *ngIf="selectedIds.length > 0; else emptyState"
+         (click)="toggleDropdown()">
       <div class="chips-container">
         <div *ngFor="let id of selectedIds" class="chip">
           <span class="chip-text">{{ getOptionDisplayName(getSelectedOption(id)!) }}</span>
@@ -14,13 +16,6 @@
           </button>
         </div>
       </div>
-      <button type="button" 
-              class="btn-clear-all" 
-              (click)="clearAllSelections($event)"
-              *ngIf="selectedIds.length > 1"
-              title="Clear all">
-        <i class="ti ti-trash"></i>
-      </button>
     </div>
 
     <!-- Empty state (no selection yet) -->
@@ -75,7 +70,7 @@
         <button *ngFor="let option of filteredOptions" 
                 type="button"
                 class="option-item"
-                (click)="selectOption(getOptionId(option))">
+                (click)="selectOption(getOptionId(option)); $event.stopPropagation()">
           <span class="option-content">
             <i class="ti ti-plus icon-plus"></i>
             <span class="option-text">{{ getOptionDisplayName(option) }}</span>

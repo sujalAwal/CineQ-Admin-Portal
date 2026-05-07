@@ -8,6 +8,7 @@ import { CardComponent } from './components/card/card.component';
 
 // Shared Components
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
+import { IfModulePermissionDirective } from '../../shared/directives/if-module-permission.directive';
 import { BaseModalComponent } from '../../shared/components/base-modal/base-modal.component';
 import { GenreModalComponent } from '../../shared/components/genre-modal/genre-modal.component';
 import { ArtistModalComponent } from '../../shared/components/artist-modal/artist-modal.component';
@@ -25,6 +26,7 @@ import { NgbDropdownModule, NgbNavModule, NgbModule, NgbCollapseModule } from '@
     ReactiveFormsModule,
     CardComponent,
     DataTableComponent,
+    IfModulePermissionDirective,
     BaseModalComponent,
     GenreModalComponent,
     ArtistModalComponent,
@@ -40,6 +42,7 @@ import { NgbDropdownModule, NgbNavModule, NgbModule, NgbCollapseModule } from '@
     ReactiveFormsModule,
     CardComponent,
     DataTableComponent,
+    IfModulePermissionDirective,
     BaseModalComponent,
     GenreModalComponent,
     ArtistModalComponent,

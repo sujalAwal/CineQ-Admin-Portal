@@ -15,6 +15,7 @@
         <div class="btn-group btn-group-sm" *ngIf="config.bulkActions && config.bulkActions.length > 0">
           <button
             *ngFor="let action of config.bulkActions"
+            [hidden]="!isBulkActionAllowed(action.type)"
             type="button"
             class="btn"
             [class]="action.class || 'btn-outline-primary'"
@@ -207,6 +208,7 @@
               <div class="btn-group btn-group-sm" role="group">
                 <ng-container *ngFor="let action of config.actions">
                   <button
+                    *ngIf="isActionVisible(action, item)"
                     type="button"
                     class="btn"
                     [class]="action.class || 'btn-outline-primary'"

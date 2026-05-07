@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 import { 
@@ -12,6 +13,7 @@ import {
   TableActionEvent,
   BulkSelectionEvent 
 } from '../../interfaces/table.interface';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-data-table',
@@ -52,6 +54,11 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
   // 🆕 Bulk selection state
   selectedItems: Set<string> = new Set();
   isAllSelected: boolean = false;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     // Setup search debouncing (wait 300ms after user stops typing)
@@ -215,7 +222,10 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
   isToggleDisabled(item: any, column: TableColumn): boolean {
     // Check if item has a specific disabled property
     const disabledField = column.field + '_disabled';
-    return item[disabledField] || false;
+    if (item[disabledField]) {
+      return true;
+    }
+    return !this.authService.hasModulePermission(this.getPermissionApi(), 'update');
   }
 
   /**
@@ -300,8 +310,9 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
     if (item.hasOwnProperty(visibilityField)) {
       return item[visibilityField];
     }
-    
-    return true;
+
+    const actionName = this.mapTableActionToPermission(action.type);
+    return this.authService.hasModulePermission(this.getPermissionApi(), actionName);
   }
 
   /**
@@ -407,6 +418,10 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
    * Handle bulk action click
    */
   onBulkAction(actionType: string): void {
+    if (!this.isBulkActionAllowed(actionType)) {
+      return;
+    }
+
     const selectedIds = Array.from(this.selectedItems);
     
     if (selectedIds.length === 0) {
@@ -441,4 +456,42 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
    * Reference to Math for use in template
    */
   Math = Math;
+
+  isBulkActionAllowed(actionType: string): boolean {
+    const mapped = this.mapBulkActionToPermission(actionType);
+    if (!mapped) {
+      return true;
+    }
+
+    return this.authService.hasModulePermission(this.getPermissionApi(), mapped);
+  }
+
+  private getPermissionApi(): string {
+    if (this.config?.moduleApi) {
+      return this.config.moduleApi;
+    }
+    return this.authService.normalizePath(this.router.url);
+  }
+
+  private mapTableActionToPermission(action: TableAction['type']): 'read' | 'update' | 'delete' {
+    switch (action) {
+      case 'view':
+        return 'read';
+      case 'edit':
+        return 'update';
+      case 'delete':
+      default:
+        return 'delete';
+    }
+  }
+
+  private mapBulkActionToPermission(actionType: string): 'create' | 'update' | 'delete' | null {
+    if (actionType === 'bulk-delete') {
+      return 'delete';
+    }
+    if (actionType === 'bulk-enable' || actionType === 'bulk-disable') {
+      return 'update';
+    }
+    return null;
+  }
 }

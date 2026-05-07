@@ -86,9 +86,9 @@ export class RoleService {
       map(response => {
         if (response && response.success && Array.isArray(response.data)) {
           // Extract id and name from the nested formData structure
-          return response.data.map((item: any) => ({
+          return response.data?.[0]?.role.map((item: any) => ({
             id: item.id,
-            name: item.formData?.name || item.name || 'Unnamed Role'
+            name: item.name || 'Unnamed Role'
           }));
         }
         throw new Error(response?.message || 'Failed to fetch role options');

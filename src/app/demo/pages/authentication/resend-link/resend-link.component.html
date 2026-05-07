@@ -1,0 +1,65 @@
+<div class="auth-main">
+  <div class="auth-wrapper v3">
+    <div class="auth-form">
+      <div class="card my-5">
+        <div class="card-body">
+          <a href="#" class="d-flex justify-content-center">
+            <img [src]="environment.app.logoUrl" alt="logo" />
+          </a>
+          <div class="row">
+            <div class="d-flex justify-content-center">
+              <div class="auth-header">
+                <p class="fs-4 mt-2">Resend Setup Link</p>
+              </div>
+            </div>
+          </div>
+          
+          <ng-container *ngIf="!submitted; else successMessage">
+            <p class="text-center text-muted mb-4">Enter your email address and we'll send you a new link to set up your account.</p>
+            
+            <form [formGroup]="resendForm" (ngSubmit)="onSubmit()" novalidate>
+              <div class="form-floating mb-3">
+                <input 
+                  type="email" 
+                  class="form-control" 
+                  id="email" 
+                  formControlName="email"
+                  [class.is-invalid]="resendForm.get('email')?.touched && resendForm.get('email')?.invalid"
+                  placeholder="Email address" />
+                <label for="email">Email address</label>
+                <div *ngIf="resendForm.get('email')?.touched && resendForm.get('email')?.errors?.['required']" class="invalid-feedback">
+                  Email is required
+                </div>
+                <div *ngIf="resendForm.get('email')?.touched && resendForm.get('email')?.errors?.['email']" class="invalid-feedback">
+                  Please enter a valid email address
+                </div>
+              </div>
+
+              <div class="d-grid mt-4">
+                <button 
+                  type="submit" 
+                  class="btn btn-secondary"
+                  [disabled]="loading || resendForm.invalid">
+                  <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  {{ loading ? 'Sending...' : 'Send New Link' }}
+                </button>
+              </div>
+            </form>
+          </ng-container>
+
+          <ng-template #successMessage>
+            <div class="alert alert-success mt-3" role="alert">
+              If an account exists with that email, we have sent a setup link. Please check your inbox and spam folder.
+            </div>
+          </ng-template>
+          
+          <hr />
+          
+          <h5 class="d-flex justify-content-center">
+            <a routerLink="/login">Back to Login</a>
+          </h5>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

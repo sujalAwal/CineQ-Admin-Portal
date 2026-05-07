@@ -10,6 +10,7 @@ import { AppComponent } from './app/app.component';
 // Import interceptors
 import { AuthInterceptor } from './app/shared/interceptors/auth.interceptor';
 import { LoadingInterceptor } from './app/shared/interceptors/loading.interceptor';
+import { PermissionInterceptor } from './app/shared/interceptors/permission.interceptor';
 
 // Import toastr
 import { provideToastr } from 'ngx-toastr';
@@ -41,6 +42,11 @@ bootstrapApplication(AppComponent, {
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: PermissionInterceptor,
       multi: true
     },
     {

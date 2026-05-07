@@ -22,6 +22,7 @@ export interface TableConfig {
   title: string;
   entityName: string;
   apiEndpoint: string;
+  moduleApi?: string;
   columns: TableColumn[];
   actions: TableAction[];
   searchable?: boolean;

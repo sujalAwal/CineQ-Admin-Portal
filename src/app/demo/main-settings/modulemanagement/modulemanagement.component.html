@@ -11,9 +11,11 @@
             <!-- Left side - can add title or other elements here if needed -->
           </div>
           <div class="col-md-6 text-end">
-            <button class="btn btn-primary" (click)="openAddModuleModal()">
-              <i class="ti ti-plus me-2"></i>Add New Module
-            </button>
+            <ng-container *appIfModulePermission="'create'">
+              <button class="btn btn-primary" (click)="openAddModuleModal()">
+                <i class="ti ti-plus me-2"></i>Add New Module
+              </button>
+            </ng-container>
           </div>
         </div>
         

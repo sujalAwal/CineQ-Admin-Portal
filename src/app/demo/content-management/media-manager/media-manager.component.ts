@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { MediaManagerModalComponent } from '../../../shared/components/media-manager-modal/media-manager-modal.component';
+import { IfModulePermissionDirective } from '../../../shared/directives/if-module-permission.directive';
 import { MediaFile, MediaFolder, MediaManagerConfig } from '../../../shared/interfaces/media.interface';
 import { ToastService } from '../../../shared/services/toast.service';
 import { MediaService } from '../../../shared/services/media.service';
@@ -11,7 +12,7 @@ import { MediaService } from '../../../shared/services/media.service';
 @Component({
   selector: 'app-media-manager',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MediaManagerModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, MediaManagerModalComponent, IfModulePermissionDirective],
   templateUrl: './media-manager.component.html',
   styleUrls: ['./media-manager.component.scss']
 })

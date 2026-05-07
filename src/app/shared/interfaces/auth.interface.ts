@@ -47,3 +47,27 @@ export interface ErrorResponse {
     [key: string]: string[];
   };
 }
+
+export interface ProfileModule {
+  id: string;
+  code: number;
+  name: string;
+  displayName: string;
+  api: string;
+  description?: string;
+  isEnabled: boolean;
+  parentId?: string | null;
+  permissionIds: number[];
+}
+
+export interface ProfileResponse {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  role?: Array<{ id: string; name: string; isActive: boolean }>;
+  modules?: ProfileModule[];
+}

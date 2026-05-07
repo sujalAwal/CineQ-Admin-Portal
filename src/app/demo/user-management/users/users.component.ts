@@ -68,10 +68,10 @@ export class UsersComponent implements OnInit, OnDestroy {
       },
       {
         header: 'Role',
-        field: 'role',
+        field: 'roleDisplay',
         type: 'badge',
-        sortable: true,
-        width: '130px',
+        sortable: false,
+        width: '150px',
         align: 'center'
       },
       {
