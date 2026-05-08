@@ -37,12 +37,15 @@ export class ShowtimeComponent implements OnInit, OnDestroy {
     ],
     columns: [
       { header: 'S.N', field: 'sn', type: 'sn', sortable: false, width: '60px', align: 'center' },
-      { header: 'Movie', field: 'movieId', type: 'text', sortable: true, width: '200px' },
-      { header: 'Theatre', field: 'theatreName', type: 'text', sortable: true, width: '150px' },
-      { header: 'Screen', field: 'screenName', type: 'text', sortable: true, width: '150px' },
+      { header: 'Movie', field: 'movies.title', type: 'text', sortable: true, width: '200px' },
+      { header: 'Theatre', field: 'theatres.name', type: 'text', sortable: true, width: '170px' },
+      { header: 'Screen', field: 'screens.screenName', type: 'text', sortable: true, width: '150px' },
+      { header: 'Language', field: 'language', type: 'text', sortable: true, width: '100px' },
+      { header: 'Format', field: 'format', type: 'text', sortable: true, width: '90px' },
       { header: 'Show Date', field: 'showDate', type: 'date', sortable: true, width: '120px' },
       { header: 'Show Time', field: 'showTime', type: 'text', sortable: false, width: '100px' },
-      { header: 'Price', field: 'basePrice', type: 'number', sortable: true, width: '100px' },
+      { header: 'Price', field: 'pricePerLayout.0.basePrice', type: 'number', sortable: true, width: '100px' },
+      { header: 'Status Code', field: 'statusCode', type: 'badge', sortable: true, width: '110px' },
       { header: 'Status', field: 'isActive', type: 'toggle', width: '60px', align: 'center' }
     ],
     actions: [

@@ -39,7 +39,7 @@ export class SeatLayoutComponent implements OnInit, OnDestroy {
       { header: 'S.N', field: 'sn', type: 'sn', sortable: false, width: '60px', align: 'center' },
       { header: 'Layout Name', field: 'name', type: 'text', sortable: true, width: '200px' },
       { header: 'Type', field: 'isDefault', type: 'badge', sortable: false, width: '100px', align: 'center' },
-      { header: 'Screen', field: 'screenName', type: 'text', sortable: false, width: '150px' },
+      { header: 'Screen', field: 'screens.screenName', type: 'text', sortable: false, width: '150px' },
       { header: 'Status', field: 'isActive', type: 'toggle', width: '60px', align: 'center' }
     ],
     actions: [

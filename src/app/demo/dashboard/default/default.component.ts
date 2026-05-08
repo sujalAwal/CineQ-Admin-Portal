@@ -60,7 +60,7 @@ export class DefaultComponent implements OnInit {
   dashboardData: DashboardStats | null = null;
   isLoading = true;
   isRevenueChartLoading = false;
-  selectedPeriod: number = 7;
+  selectedPeriod: number = 30;
 
   revenueChartOptions: Partial<ChartOptions>;
   bookingStatusChartOptions: Partial<ChartOptions>;
@@ -187,14 +187,30 @@ export class DefaultComponent implements OnInit {
 
     const total = data.reduce((acc, item) => acc + item.amount, 0);
 
+    const labels = data.map((item) => item.method);
+    const paymentMethodColorMap: Record<string, string> = {
+      KHALTI: '#d30943',
+      ESEWA: '#60bb46'
+    };
+    const fallbackColors = ['#4680ff', '#e58a00', '#8b5cf6', '#0ea5e9'];
+    let fallbackColorIndex = 0;
+    const colors = labels.map((label) => {
+      const normalizedLabel = label?.toUpperCase();
+      const mappedColor = paymentMethodColorMap[normalizedLabel];
+      if (mappedColor) return mappedColor;
+      const color = fallbackColors[fallbackColorIndex % fallbackColors.length];
+      fallbackColorIndex += 1;
+      return color;
+    });
+
     this.paymentMethodChartOptions = {
       chart: {
         type: 'pie',
         height: 350
       },
       series: data.map((item) => item.amount),
-      labels: data.map((item) => item.method),
-      colors: ['#d30943', '#60bb46', '#4680ff', '#e58a00'],
+      labels,
+      colors,
       legend: {
         position: 'bottom'
       },
