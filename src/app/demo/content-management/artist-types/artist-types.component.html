@@ -46,23 +46,23 @@
 
         <!-- Cards grid -->
         <div class="row" *ngIf="!loading && artistTypes.length > 0">
-          <div class="col-lg-4 col-md-6 mb-3" *ngFor="let type of artistTypes; let i = index">
-            <div class="card border-0 h-100" [ngClass]="getCardStyle(i).bg">
+          <div class="col-lg-4 col-md-6 mb-3" *ngFor="let type of artistTypes">
+            <div class="card border-0 h-100" [ngClass]="getCardStyle(type.is_active).bg">
               <div class="card-body text-center">
                 <div class="mb-3">
-                  <i [class]="(type.icon || 'ti ti-user') + ' ' + getCardStyle(i).icon" style="font-size: 3rem;"></i>
+                  <i [class]="(type.icon || 'ti ti-user') + ' ' + getCardStyle(type.is_active).icon" style="font-size: 3rem;"></i>
                 </div>
-                <h5 class="mb-1">{{ type.name }}</h5>
+                <h5 class="mb-1 text-black">{{ type.name }}</h5>
                 <p class="text-muted mb-3 small">{{ type.description || '—' }}</p>
                 <div class="d-flex justify-content-between align-items-center">
-                  <span class="badge" [ngClass]="getCardStyle(i).badge">
-                    {{ type.artist_count ?? 0 }} artists
+                  <span class="badge" [ngClass]="getCardStyle(type.is_active).badge">
+                    {{ type.is_active ? 'Active' : 'Inactive' }}
                   </span>
                   <div>
                     <ng-container *appIfModulePermission="'update'">
                       <button
                         class="btn btn-sm me-1"
-                        [ngClass]="getCardStyle(i).btn"
+                        [ngClass]="getCardStyle(type.is_active).btn"
                         (click)="editItem(type)"
                         title="Edit">
                         <i class="ti ti-edit"></i>

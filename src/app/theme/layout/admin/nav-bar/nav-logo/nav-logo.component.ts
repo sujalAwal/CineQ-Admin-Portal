@@ -1,13 +1,13 @@
 // Angular import
 import { Component, Input, output, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 // project import
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 
 @Component({
   selector: 'app-nav-logo',
-  imports: [SharedModule],
+  imports: [SharedModule, RouterModule],
   templateUrl: './nav-logo.component.html',
   styleUrl: './nav-logo.component.scss'
 })
@@ -33,7 +33,8 @@ export class NavLogoComponent {
     }
   }
 
-  returnToHome() {
-    this.router.navigate(['/default']);
+  returnToDashboard(event?: Event) {
+    event?.preventDefault();
+    this.router.navigate(['/dashboard']);
   }
 }

@@ -153,7 +153,7 @@
             >
               <!-- SN -->
               <span *ngIf="column.type === 'sn'">
-                {{ pagination.currentPage * pagination.pageSize + i + 1 }}
+                {{ getSerialNumber(i) }}
               </span>
               <!-- Text/Number/Date/Email Display -->
               <span *ngIf="column.type === 'text' || column.type === 'number' || column.type === 'date' || column.type === 'currency'"
@@ -243,8 +243,8 @@
     >
       <!-- Pagination Info -->
       <div class="text-muted">
-        Showing {{ (pagination.currentPage - 1) * pagination.pageSize + 1 }} to
-        {{ Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems) }}
+        Showing {{ getShowingFrom() }} to
+        {{ getShowingTo() }}
         of {{ pagination.totalItems }} entries
       </div>
 

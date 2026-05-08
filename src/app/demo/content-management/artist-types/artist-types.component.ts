@@ -42,15 +42,19 @@ export class ArtistTypesComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  // Card color cycling for visual variety
-  readonly cardStyles = [
-    { bg: 'bg-light-primary', icon: 'text-primary', badge: 'bg-primary', btn: 'btn-outline-primary' },
-    { bg: 'bg-light-success', icon: 'text-success', badge: 'bg-success', btn: 'btn-outline-success' },
-    { bg: 'bg-light-warning', icon: 'text-warning', badge: 'bg-warning', btn: 'btn-outline-warning' },
-    { bg: 'bg-light-info',    icon: 'text-info',    badge: 'bg-info',    btn: 'btn-outline-info'    },
-    { bg: 'bg-light-secondary', icon: 'text-secondary', badge: 'bg-secondary', btn: 'btn-outline-secondary' },
-    { bg: 'bg-light-dark',   icon: 'text-dark',    badge: 'bg-dark',    btn: 'btn-outline-dark'    }
-  ];
+  readonly activeCardStyle = {
+    bg: 'bg-light-success',
+    icon: 'text-success',
+    badge: 'bg-success',
+    btn: 'btn-outline-success'
+  };
+
+  readonly inactiveCardStyle = {
+    bg: 'bg-light-danger',
+    icon: 'text-danger',
+    badge: 'bg-danger',
+    btn: 'btn-outline-danger'
+  };
 
   constructor(
     private service: ArtistTypesService,
@@ -99,8 +103,8 @@ export class ArtistTypesComponent implements OnInit, OnDestroy {
     });
   }
 
-  getCardStyle(index: number) {
-    return this.cardStyles[index % this.cardStyles.length];
+  getCardStyle(isActive: boolean) {
+    return isActive ? this.activeCardStyle : this.inactiveCardStyle;
   }
 
   openAddModal(): void {

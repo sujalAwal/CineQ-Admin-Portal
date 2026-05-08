@@ -237,6 +237,28 @@ export class DataTableComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   /**
+   * Normalize current page to a 1-based page number.
+   * Some modules may still pass 0, so fallback to page 1.
+   */
+  private getNormalizedCurrentPage(): number {
+    return Math.max(1, this.pagination?.currentPage || 1);
+  }
+
+  getSerialNumber(index: number): number {
+    const startIndex = (this.getNormalizedCurrentPage() - 1) * this.pagination.pageSize;
+    return startIndex + index + 1;
+  }
+
+  getShowingFrom(): number {
+    if (this.pagination.totalItems === 0) return 0;
+    return (this.getNormalizedCurrentPage() - 1) * this.pagination.pageSize + 1;
+  }
+
+  getShowingTo(): number {
+    return Math.min(this.getNormalizedCurrentPage() * this.pagination.pageSize, this.pagination.totalItems);
+  }
+
+  /**
    * Calculate page numbers for pagination
    */
   calculatePageNumbers() {
